@@ -1,65 +1,95 @@
 import Link from 'next/link'
-import { Phone, Mail, MapPin, MessageCircle, Facebook, Twitter, Linkedin } from 'lucide-react'
+import { Phone, Mail, MapPin, MessageCircle, Facebook, Twitter, Linkedin, Award, Shield, Clock } from 'lucide-react'
+import Logo from './Logo'
 
 const Footer = () => {
   return (
-    <footer className="bg-primary text-white">
-      <div className="container-custom section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+    <footer className="bg-gradient-to-br from-primary via-primary to-primary/90 text-white relative overflow-hidden">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full"></div>
+        <div className="absolute top-20 right-20 w-24 h-24 bg-secondary rounded-full"></div>
+        <div className="absolute bottom-20 left-1/3 w-16 h-16 bg-white rounded-full"></div>
+        <div className="absolute bottom-10 right-10 w-20 h-20 bg-secondary rounded-full"></div>
+      </div>
+
+      <div className="container-custom section-padding relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-3">
-              <div className="w-10 h-10 bg-secondary rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-lg">G</span>
-              </div>
-              <div>
-                <h3 className="text-xl font-bold">Goldoak Insurance</h3>
-                <p className="text-sm text-gray-300">Agency Limited</p>
-              </div>
-            </div>
-            <p className="text-gray-300 text-sm leading-relaxed">
+          <div className="lg:col-span-1 space-y-6">
+            <Logo variant="gold" size="lg" showText={true} className="text-white" />
+            <p className="text-gray-200 text-base leading-relaxed">
               Licensed insurance agency in Kenya, regulated by the Insurance Regulatory Authority. 
               We help you transfer unforeseen risks to dependable insurance partners.
             </p>
+            
+            {/* Trust Badges */}
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <Award className="w-5 h-5 text-secondary" />
+                <span className="text-sm text-gray-200">IRA Licensed & Regulated</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Shield className="w-5 h-5 text-secondary" />
+                <span className="text-sm text-gray-200">10,000+ Happy Clients</span>
+              </div>
+              <div className="flex items-center space-x-3">
+                <Clock className="w-5 h-5 text-secondary" />
+                <span className="text-sm text-gray-200">24/7 Customer Support</span>
+              </div>
+            </div>
+
+            {/* Social Links */}
             <div className="flex space-x-4">
-              <a href="#" className="text-gray-300 hover:text-secondary transition-colors">
+              <a href="#" className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-secondary hover:scale-110 transition-all duration-300">
                 <Facebook className="w-5 h-5" />
               </a>
-              <a href="#" className="text-gray-300 hover:text-secondary transition-colors">
+              <a href="#" className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-secondary hover:scale-110 transition-all duration-300">
                 <Twitter className="w-5 h-5" />
               </a>
-              <a href="#" className="text-gray-300 hover:text-secondary transition-colors">
+              <a href="#" className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center hover:bg-secondary hover:scale-110 transition-all duration-300">
                 <Linkedin className="w-5 h-5" />
               </a>
             </div>
           </div>
 
           {/* Quick Links */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold">Quick Links</h4>
-            <ul className="space-y-2">
+          <div className="space-y-6">
+            <h4 className="text-xl font-bold text-white">Quick Links</h4>
+            <ul className="space-y-3">
               <li>
-                <Link href="/about" className="text-gray-300 hover:text-secondary transition-colors text-sm">
+                <Link href="/" className="text-gray-200 hover:text-secondary transition-colors text-base flex items-center group">
+                  <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link href="/about" className="text-gray-200 hover:text-secondary transition-colors text-base flex items-center group">
+                  <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
                   About Us
                 </Link>
               </li>
               <li>
-                <Link href="/partners" className="text-gray-300 hover:text-secondary transition-colors text-sm">
+                <Link href="/partners" className="text-gray-200 hover:text-secondary transition-colors text-base flex items-center group">
+                  <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
                   Our Partners
                 </Link>
               </li>
               <li>
-                <Link href="/products" className="text-gray-300 hover:text-secondary transition-colors text-sm">
+                <Link href="/products" className="text-gray-200 hover:text-secondary transition-colors text-base flex items-center group">
+                  <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
                   Insurance Products
                 </Link>
               </li>
               <li>
-                <Link href="/quote" className="text-gray-300 hover:text-secondary transition-colors text-sm">
+                <Link href="/quote" className="text-gray-200 hover:text-secondary transition-colors text-base flex items-center group">
+                  <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
                   Get Quote
                 </Link>
               </li>
               <li>
-                <Link href="/contact" className="text-gray-300 hover:text-secondary transition-colors text-sm">
+                <Link href="/contact" className="text-gray-200 hover:text-secondary transition-colors text-base flex items-center group">
+                  <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
                   Contact Us
                 </Link>
               </li>
@@ -67,67 +97,118 @@ const Footer = () => {
           </div>
 
           {/* Insurance Products */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold">Insurance Products</h4>
-            <ul className="space-y-2">
-              <li className="text-gray-300 text-sm">Medical Insurance</li>
-              <li className="text-gray-300 text-sm">Life Insurance</li>
-              <li className="text-gray-300 text-sm">Motor Insurance</li>
-              <li className="text-gray-300 text-sm">Travel Insurance</li>
-              <li className="text-gray-300 text-sm">Home Insurance</li>
-              <li className="text-gray-300 text-sm">Corporate Insurance</li>
+          <div className="space-y-6">
+            <h4 className="text-xl font-bold text-white">Insurance Products</h4>
+            <ul className="space-y-3">
+              <li className="text-gray-200 text-base flex items-center group">
+                <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                Medical Insurance
+              </li>
+              <li className="text-gray-200 text-base flex items-center group">
+                <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                Life Insurance
+              </li>
+              <li className="text-gray-200 text-base flex items-center group">
+                <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                Motor Insurance
+              </li>
+              <li className="text-gray-200 text-base flex items-center group">
+                <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                Travel Insurance
+              </li>
+              <li className="text-gray-200 text-base flex items-center group">
+                <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                Home Insurance
+              </li>
+              <li className="text-gray-200 text-base flex items-center group">
+                <span className="w-2 h-2 bg-secondary rounded-full mr-3 group-hover:scale-125 transition-transform"></span>
+                Corporate Insurance
+              </li>
             </ul>
           </div>
 
           {/* Contact Info */}
-          <div className="space-y-4">
-            <h4 className="text-lg font-semibold">Contact Info</h4>
-            <div className="space-y-3">
-              <div className="flex items-start space-x-3">
-                <Phone className="w-5 h-5 text-secondary mt-0.5" />
+          <div className="space-y-6">
+            <h4 className="text-xl font-bold text-white">Contact Info</h4>
+            <div className="space-y-4">
+              <div className="flex items-start space-x-4 group">
+                <div className="w-10 h-10 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
+                  <Phone className="w-5 h-5 text-secondary" />
+                </div>
                 <div>
-                  <p className="text-gray-300 text-sm">+254 729 911 311</p>
-                  <p className="text-gray-400 text-xs">Call us anytime</p>
+                  <p className="text-gray-200 text-base font-medium">+254 729 911 311</p>
+                  <p className="text-gray-400 text-sm">Call us anytime</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <Mail className="w-5 h-5 text-secondary mt-0.5" />
+              
+              <div className="flex items-start space-x-4 group">
+                <div className="w-10 h-10 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
+                  <Mail className="w-5 h-5 text-secondary" />
+                </div>
                 <div>
-                  <p className="text-gray-300 text-sm">info@goldoak.co.ke</p>
-                  <p className="text-gray-400 text-xs">Email us</p>
+                  <p className="text-gray-200 text-base font-medium">info@goldoak.co.ke</p>
+                  <p className="text-gray-400 text-sm">Email us</p>
                 </div>
               </div>
-              <div className="flex items-start space-x-3">
-                <MapPin className="w-5 h-5 text-secondary mt-0.5" />
+              
+              <div className="flex items-start space-x-4 group">
+                <div className="w-10 h-10 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
+                  <MapPin className="w-5 h-5 text-secondary" />
+                </div>
                 <div>
-                  <p className="text-gray-300 text-sm">Nairobi, Kenya</p>
-                  <p className="text-gray-400 text-xs">Licensed in Kenya</p>
+                  <p className="text-gray-200 text-base font-medium">Nairobi, Kenya</p>
+                  <p className="text-gray-400 text-sm">Licensed in Kenya</p>
                 </div>
               </div>
+              
               <a
                 href="https://wa.me/254729911311"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center space-x-2 bg-secondary text-white px-4 py-2 rounded-lg hover:bg-opacity-90 transition-colors text-sm"
+                className="inline-flex items-center space-x-3 bg-secondary text-white px-6 py-3 rounded-xl hover:bg-secondary/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
               >
-                <MessageCircle className="w-4 h-4" />
-                <span>WhatsApp</span>
+                <MessageCircle className="w-5 h-5" />
+                <span className="font-semibold">WhatsApp Us</span>
               </a>
             </div>
           </div>
         </div>
 
-        <div className="border-t border-gray-700 mt-12 pt-8">
+        {/* Newsletter Signup */}
+        <div className="mt-16 pt-8 border-t border-white/20">
+          <div className="max-w-4xl mx-auto text-center">
+            <h3 className="text-2xl font-bold text-white mb-4">Stay Updated</h3>
+            <p className="text-gray-200 mb-8">
+              Get the latest insurance tips, updates, and exclusive offers delivered to your inbox.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+              <input
+                type="email"
+                placeholder="Enter your email"
+                className="flex-1 px-4 py-3 rounded-xl border-0 text-gray-900 placeholder-gray-500 focus:ring-2 focus:ring-secondary focus:outline-none"
+              />
+              <button className="btn-secondary px-8 py-3">
+                Subscribe
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Bottom Bar */}
+        <div className="border-t border-white/20 mt-12 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
             <p className="text-gray-300 text-sm">
               © 2024 Goldoak Insurance Agency Limited. All rights reserved.
             </p>
-            <div className="flex space-x-6 text-sm">
+            <div className="flex space-x-8 text-sm">
               <Link href="/privacy" className="text-gray-300 hover:text-secondary transition-colors">
                 Privacy Policy
               </Link>
               <Link href="/terms" className="text-gray-300 hover:text-secondary transition-colors">
                 Terms of Service
+              </Link>
+              <Link href="/sitemap" className="text-gray-300 hover:text-secondary transition-colors">
+                Sitemap
               </Link>
             </div>
           </div>

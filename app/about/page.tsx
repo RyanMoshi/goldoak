@@ -3,6 +3,7 @@ import AboutContent from '@/components/AboutContent'
 import Team from '@/components/Team'
 import Values from '@/components/Values'
 import Licensing from '@/components/Licensing'
+import BrandShowcase from '@/components/BrandShowcase'
 
 export const metadata = {
   title: 'About Us - Goldoak Insurance Agency',
@@ -16,6 +17,7 @@ export default function About() {
       <AboutContent />
       <Values />
       <Team />
+      <BrandShowcase />
       <Licensing />
     </div>
   )

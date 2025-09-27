@@ -41,8 +41,8 @@ export async function POST(request: NextRequest) {
     // Create email transporter
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: false,
+      port: parseInt(process.env.SMTP_PORT || '465'),
+      secure: true,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -160,7 +160,7 @@ export async function POST(request: NextRequest) {
     const mailOptions = {
       from: process.env.SMTP_USER,
       to: process.env.TO_EMAIL,
-      subject: `New Insurance Quote Request from ${fullName}`,
+      subject: `New Insurance Application - ${fullName}`,
       html: htmlContent,
       attachments: attachments,
     }
@@ -171,41 +171,39 @@ export async function POST(request: NextRequest) {
     const clientHtmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <div style="background: linear-gradient(135deg, #004B87 0%, #C19A6B 100%); padding: 30px; text-align: center;">
-          <h1 style="color: white; margin: 0; font-size: 24px;">Thank You for Your Quote Request!</h1>
+          <h1 style="color: white; margin: 0; font-size: 24px;">Thank You – We've Received Your Insurance Application</h1>
           <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Goldoak Insurance Agency</p>
         </div>
         
         <div style="padding: 30px; background: #f8f9fa;">
+          <h2 style="color: #004B87; margin-top: 0;">Thank you, ${fullName}!</h2>
           <p style="color: #333; font-size: 16px; line-height: 1.6;">
-            Dear ${fullName},
-          </p>
-          
-          <p style="color: #333; font-size: 16px; line-height: 1.6;">
-            Thank you for choosing Goldoak Insurance Agency for your insurance needs. We have received your quote request and our team will contact you within 2 hours.
+            We've received your insurance application and one of our advisors will be in touch shortly.
           </p>
           
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #004B87; margin-top: 0;">What happens next?</h3>
-            <ul style="color: #333; line-height: 1.6;">
-              <li>Our insurance experts will review your requirements</li>
-              <li>We'll obtain quotes from multiple insurance companies</li>
-              <li>We'll contact you with the best options available</li>
-              <li>We'll help you compare and choose the right coverage</li>
+            <h3 style="color: #004B87; margin-top: 0;">Application Summary</h3>
+            <ul style="color: #333; line-height: 1.6; margin: 0; padding-left: 20px;">
+              <li><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</li>
+              <li><strong>Insurance Type:</strong> ${insuranceType.join(', ')}</li>
+              <li><strong>Preferred Insurer:</strong> ${preferredInsurer || 'No preference'}</li>
             </ul>
           </div>
           
+          <p style="color: #333; font-size: 16px; line-height: 1.6;">
+            If you have any urgent questions, you can reach us directly on:
+          </p>
+          
           <div style="background: #C19A6B; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="margin: 0 0 10px 0;">Need immediate assistance?</h3>
             <p style="margin: 0; font-size: 14px;">
-              Call us: <strong>+254 729 911 311</strong><br>
-              WhatsApp: <strong>+254 729 911 311</strong><br>
-              Email: <strong>info@goldoak.co.ke</strong>
+              📞 <a href="tel:+254729911311" style="color: white; text-decoration: none;">+254729911311</a><br />
+              💬 <a href="https://wa.me/254729911311" style="color: white; text-decoration: none;">Chat on WhatsApp</a><br />
+              📧 <a href="mailto:info@goldoak.co.ke" style="color: white; text-decoration: none;">info@goldoak.co.ke</a>
             </p>
           </div>
           
           <p style="color: #333; font-size: 16px; line-height: 1.6;">
-            Best regards,<br>
-            <strong>Goldoak Insurance Agency Team</strong>
+            — The Goldoak Team
           </p>
         </div>
       </div>
@@ -214,7 +212,7 @@ export async function POST(request: NextRequest) {
     const clientMailOptions = {
       from: process.env.SMTP_USER,
       to: email,
-      subject: 'Thank you for your insurance quote request - Goldoak Insurance',
+      subject: 'Thank You – We\'ve Received Your Insurance Application',
       html: clientHtmlContent,
     }
 
