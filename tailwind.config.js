@@ -8,14 +8,15 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // Brand Colors Only
-        primary: '#004B87', // Green (Primary)
-        secondary: '#C19A6B', // Gold (Secondary)
-        green: '#004B87',
+        // Goldoak Insurance Brand Colors
+        primary: '#0d3d6e', // Deep Blue (Primary)
+        secondary: '#C19A6B', // Warm Gold (Secondary)
+        accent: '#1e5a8a', // Lighter Blue
         gold: '#C19A6B',
         // Brand color aliases
-        'brand-green': '#004B87',
+        'brand-blue': '#0d3d6e',
         'brand-gold': '#C19A6B',
+        'brand-accent': '#1e5a8a',
       },
       fontFamily: {
         sans: ['Inter', 'Poppins', 'Nunito', 'sans-serif'],

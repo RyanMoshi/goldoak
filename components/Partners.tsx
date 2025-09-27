@@ -11,18 +11,18 @@ const Partners = () => {
   const isInView = useInView(ref, { once: true })
 
   const partners = [
-    { name: 'Jubilee Insurance', logo: '/assets/logos/jubilee.png', website: 'https://jubileeinsurance.com', established: '1937' },
-    { name: 'Britam Holdings', logo: '/assets/logos/britam.png', website: 'https://britam.com', established: '1967' },
-    { name: 'Old Mutual', logo: '/assets/logos/old-mutual.png', website: 'https://oldmutual.co.ke', established: '1845' },
-    { name: 'CIC Insurance', logo: '/assets/logos/cic.png', website: 'https://cic.co.ke', established: '1978' },
-    { name: 'AAR Insurance', logo: '/assets/logos/aar.png', website: 'https://aar.co.ke', established: '1984' },
-    { name: 'GA Insurance', logo: '/assets/logos/ga.png', website: 'https://gainsurance.com', established: '1987' },
-    { name: 'Heritage Insurance', logo: '/assets/logos/heritage.png', website: 'https://heritage.co.ke', established: '1994' },
-    { name: 'Madison Insurance', logo: '/assets/logos/madison.png', website: 'https://madison.co.ke', established: '1996' },
-    { name: 'APA Insurance', logo: '/assets/logos/apa.png', website: 'https://apainsurance.com', established: '1998' },
-    { name: 'UAP Insurance', logo: '/assets/logos/uap.png', website: 'https://uap.co.ke', established: '1937' },
-    { name: 'Sanlam Kenya', logo: '/assets/logos/sanlam.png', website: 'https://sanlam.co.ke', established: '1918' },
-    { name: 'First Assurance', logo: '/assets/logos/first-assurance.png', website: 'https://firstassurance.co.ke', established: '2000' }
+    { name: 'Jubilee Insurance', logo: '/assets/logos/jubilee.png', website: 'https://jubileeinsurance.com', established: '1937', specialty: 'General Insurance' },
+    { name: 'Britam Holdings', logo: '/assets/logos/britam.png', website: 'https://britam.com', established: '1967', specialty: 'Life & Health' },
+    { name: 'Old Mutual', logo: '/assets/logos/old-mutual.png', website: 'https://oldmutual.co.ke', established: '1845', specialty: 'Life Insurance' },
+    { name: 'CIC Insurance', logo: '/assets/logos/cic.png', website: 'https://cic.co.ke', established: '1978', specialty: 'General Insurance' },
+    { name: 'AAR Insurance', logo: '/assets/logos/aar.png', website: 'https://aar.co.ke', established: '1984', specialty: 'Medical Insurance' },
+    { name: 'GA Insurance', logo: '/assets/logos/ga.png', website: 'https://gainsurance.com', established: '1987', specialty: 'General Insurance' },
+    { name: 'Heritage Insurance', logo: '/assets/logos/heritage.png', website: 'https://heritage.co.ke', established: '1994', specialty: 'General Insurance' },
+    { name: 'Madison Insurance', logo: '/assets/logos/madison.png', website: 'https://madison.co.ke', established: '1996', specialty: 'General Insurance' },
+    { name: 'APA Insurance', logo: '/assets/logos/apa.png', website: 'https://apainsurance.com', established: '1998', specialty: 'General Insurance' },
+    { name: 'UAP Insurance', logo: '/assets/logos/uap.png', website: 'https://uap.co.ke', established: '1937', specialty: 'General Insurance' },
+    { name: 'Sanlam Kenya', logo: '/assets/logos/sanlam.png', website: 'https://sanlam.co.ke', established: '1918', specialty: 'Life Insurance' },
+    { name: 'First Assurance', logo: '/assets/logos/first-assurance.png', website: 'https://firstassurance.co.ke', established: '2000', specialty: 'General Insurance' }
   ]
 
   return (
@@ -40,10 +40,10 @@ const Partners = () => {
           </div>
           
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Our Trusted <span className="text-gradient">Insurance Partners</span>
+            Trusted by <span className="text-gradient">5,000+ Clients</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
-            We work with Kenya's leading insurance companies to provide you with the best coverage options, 
+            We work with Kenya's top insurance companies to provide you with the best coverage options, 
             competitive rates, and exceptional service. All our partners are licensed by the Insurance Regulatory Authority.
           </p>
         </motion.div>
@@ -101,6 +101,9 @@ const Partners = () => {
                       {partner.name}
                     </h3>
                     <p className="text-sm text-gray-500">
+                      {partner.specialty}
+                    </p>
+                    <p className="text-xs text-gray-400">
                       Since {partner.established}
                     </p>
                   </div>

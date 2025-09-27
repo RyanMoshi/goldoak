@@ -2,68 +2,17 @@
 
 import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { ArrowRight, Shield, Users, Clock, CheckCircle, Star, Award } from 'lucide-react'
+import { ArrowRight, Shield, Users, Clock, CheckCircle, Star, Award, Zap, TrendingUp } from 'lucide-react'
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Premium Background */}
-      <div className="absolute inset-0 hero-gradient"></div>
-      <div className="absolute inset-0 bg-black/10"></div>
-      
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 opacity-20">
-        <motion.div 
-          animate={{ 
-            y: [0, -20, 0],
-            rotate: [0, 5, 0]
-          }}
-          transition={{ 
-            duration: 6,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-          className="absolute top-20 left-20 w-32 h-32 bg-white/20 rounded-full blur-sm"
-        />
-        <motion.div 
-          animate={{ 
-            y: [0, 20, 0],
-            rotate: [0, -5, 0]
-          }}
-          transition={{ 
-            duration: 8,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          }}
-          className="absolute top-40 right-32 w-24 h-24 bg-secondary/30 rounded-full blur-sm"
-        />
-        <motion.div 
-          animate={{ 
-            y: [0, -15, 0],
-            x: [0, 10, 0]
-          }}
-          transition={{ 
-            duration: 7,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
-          className="absolute bottom-32 left-1/3 w-16 h-16 bg-white/20 rounded-full blur-sm"
-        />
-        <motion.div 
-          animate={{ 
-            y: [0, 25, 0],
-            x: [0, -15, 0]
-          }}
-          transition={{ 
-            duration: 9,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 0.5
-          }}
-          className="absolute bottom-20 right-20 w-20 h-20 bg-secondary/20 rounded-full blur-sm"
-        />
+    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary via-accent to-secondary">
+      {/* Background Pattern */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-20 left-20 w-32 h-32 bg-white rounded-full blur-sm"></div>
+        <div className="absolute top-40 right-32 w-24 h-24 bg-secondary rounded-full blur-sm"></div>
+        <div className="absolute bottom-32 left-1/3 w-16 h-16 bg-white rounded-full blur-sm"></div>
+        <div className="absolute bottom-20 right-20 w-20 h-20 bg-secondary rounded-full blur-sm"></div>
       </div>
 
       <div className="container-custom relative z-10">
@@ -73,7 +22,7 @@ const Hero = () => {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-white space-y-10"
+            className="text-white space-y-8"
           >
             <div className="space-y-6">
               <motion.div
@@ -92,8 +41,8 @@ const Hero = () => {
                 transition={{ duration: 0.8, delay: 0.4 }}
                 className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight"
               >
-                Cover Your Life Journey
-                <span className="block text-gradient-reverse mt-2">Live Life without Worries</span>
+                Get the Best Insurance Quotes in Kenya
+                <span className="block text-secondary mt-2">– Instantly</span>
               </motion.h1>
               
               <motion.p
@@ -102,61 +51,78 @@ const Hero = () => {
                 transition={{ duration: 0.8, delay: 0.6 }}
                 className="text-xl md:text-2xl text-gray-100 leading-relaxed max-w-2xl"
               >
-                Goldoak helps you get covered through trusted insurance providers. 
-                We make insurance simple, affordable, and accessible for everyone.
+                Compare quotes from Kenya's top insurance companies in minutes. 
+                Save up to 40% on your insurance premiums with our free service.
               </motion.p>
             </div>
+
+            {/* Quick Quote Form */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8, delay: 0.8 }}
+              className="bg-white/10 backdrop-blur-lg rounded-2xl p-6 border border-white/20"
+            >
+              <h3 className="text-xl font-semibold text-white mb-4">Get Your Quote in 30 Seconds</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <select className="px-4 py-3 rounded-xl border-0 text-gray-900 focus:ring-2 focus:ring-secondary focus:outline-none">
+                  <option>Type of Insurance</option>
+                  <option>Motor Insurance</option>
+                  <option>Medical Insurance</option>
+                  <option>Life Insurance</option>
+                  <option>Home Insurance</option>
+                </select>
+                <input 
+                  type="text" 
+                  placeholder="Car Model (if Motor)" 
+                  className="px-4 py-3 rounded-xl border-0 text-gray-900 focus:ring-2 focus:ring-secondary focus:outline-none"
+                />
+                <input 
+                  type="text" 
+                  placeholder="Your Location" 
+                  className="px-4 py-3 rounded-xl border-0 text-gray-900 focus:ring-2 focus:ring-secondary focus:outline-none"
+                />
+              </div>
+              <Link href="/quote" className="btn-secondary w-full text-center justify-center mt-4 inline-flex items-center group">
+                Get Quote
+                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              </Link>
+            </motion.div>
 
             {/* Trust Indicators */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
+              transition={{ duration: 0.8, delay: 1.0 }}
               className="grid grid-cols-1 sm:grid-cols-3 gap-6"
             >
+              <div className="flex items-center space-x-3 group">
+                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
+                  <Zap className="w-6 h-6 text-secondary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">Instant Quotes</p>
+                  <p className="text-xs text-gray-300">Compare in minutes</p>
+                </div>
+              </div>
+              <div className="flex items-center space-x-3 group">
+                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
+                  <TrendingUp className="w-6 h-6 text-secondary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-white">Save Up to 40%</p>
+                  <p className="text-xs text-gray-300">Best rates guaranteed</p>
+                </div>
+              </div>
               <div className="flex items-center space-x-3 group">
                 <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
                   <Shield className="w-6 h-6 text-secondary" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-white">Licensed & Regulated</p>
-                  <p className="text-xs text-gray-300">IRA Kenya Certified</p>
+                  <p className="text-sm font-medium text-white">100% Free</p>
+                  <p className="text-xs text-gray-300">No hidden fees</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-3 group">
-                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
-                  <Users className="w-6 h-6 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">10,000+ Clients</p>
-                  <p className="text-xs text-gray-300">Trusted by Many</p>
-                </div>
-              </div>
-              <div className="flex items-center space-x-3 group">
-                <div className="w-12 h-12 bg-secondary/20 rounded-xl flex items-center justify-center group-hover:bg-secondary/30 transition-colors">
-                  <Clock className="w-6 h-6 text-secondary" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-white">24/7 Support</p>
-                  <p className="text-xs text-gray-300">Always Here</p>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 1.0 }}
-              className="flex flex-col sm:flex-row gap-6"
-            >
-              <Link href="/quote" className="btn-secondary inline-flex items-center justify-center group text-lg px-10 py-5">
-                Start Application
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Link>
-              <Link href="/contact" className="btn-outline border-white text-white hover:bg-white hover:text-primary inline-flex items-center justify-center text-lg px-10 py-5">
-                Talk to an Advisor
-              </Link>
             </motion.div>
 
             {/* Social Proof */}
@@ -173,107 +139,49 @@ const Hero = () => {
                 <span className="text-sm text-gray-200 ml-2">4.9/5 Rating</span>
               </div>
               <div className="text-sm text-gray-300">
-                <span className="font-semibold text-white">500+</span> Happy Customers This Month
+                <span className="font-semibold text-white">5,000+</span> Happy Customers
               </div>
             </motion.div>
           </motion.div>
 
-          {/* Premium Visual Card */}
+          {/* Visual Card */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
             className="relative"
           >
-            <div className="relative">
-              {/* Main Card */}
-              <div className="bg-white/10 backdrop-blur-xl rounded-3xl p-8 border border-white/20 shadow-2xl">
-                <div className="space-y-8">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-secondary to-secondary/80 rounded-2xl flex items-center justify-center shadow-lg">
-                      <Shield className="w-8 h-8 text-white" />
-                    </div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-white">Complete Protection</h3>
-                      <p className="text-gray-200">All your insurance needs in one place</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    {[
-                      'Medical Insurance',
-                      'Life Insurance', 
-                      'Motor Insurance',
-                      'Travel Insurance',
-                      'Home Insurance',
-                      'Corporate Insurance'
-                    ].map((item, index) => (
-                      <motion.div
-                        key={item}
-                        initial={{ opacity: 0, x: 20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.5, delay: 1.0 + index * 0.1 }}
-                        className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors group"
-                      >
-                        <span className="text-white font-medium group-hover:text-secondary transition-colors">{item}</span>
-                        <CheckCircle className="w-5 h-5 text-secondary group-hover:scale-110 transition-transform" />
-                      </motion.div>
-                    ))}
-                  </div>
+            <div className="bg-white rounded-3xl p-8 shadow-2xl">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h3 className="text-2xl font-bold text-primary mb-2">Why Choose Goldoak?</h3>
+                  <p className="text-gray-600">Kenya's most trusted insurance comparison platform</p>
+                </div>
+                
+                <div className="space-y-4">
+                  {[
+                    { icon: Clock, text: 'Get quotes in under 2 minutes', color: 'text-blue-500' },
+                    { icon: Users, text: 'Compare 12+ top insurers', color: 'text-green-500' },
+                    { icon: Shield, text: 'Licensed by IRA Kenya', color: 'text-purple-500' },
+                    { icon: CheckCircle, text: '100% free, no obligation', color: 'text-orange-500' }
+                  ].map((item, index) => (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 1.0 + index * 0.1 }}
+                      className="flex items-center space-x-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                    >
+                      <item.icon className={`w-6 h-6 ${item.color}`} />
+                      <span className="text-gray-700 font-medium">{item.text}</span>
+                    </motion.div>
+                  ))}
                 </div>
               </div>
-
-              {/* Floating Elements */}
-              <motion.div 
-                animate={{ 
-                  y: [0, -10, 0],
-                  rotate: [0, 5, 0]
-                }}
-                transition={{ 
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                className="absolute -top-6 -right-6 w-12 h-12 bg-secondary rounded-full shadow-lg flex items-center justify-center"
-              >
-                <Star className="w-6 h-6 text-white" />
-              </motion.div>
-              
-              <motion.div 
-                animate={{ 
-                  y: [0, 10, 0],
-                  rotate: [0, -5, 0]
-                }}
-                transition={{ 
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: 1
-                }}
-                className="absolute -bottom-6 -left-6 w-10 h-10 bg-white rounded-full shadow-lg flex items-center justify-center"
-              >
-                <CheckCircle className="w-5 h-5 text-primary" />
-              </motion.div>
             </div>
           </motion.div>
         </div>
       </div>
-
-      {/* Scroll Indicator */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 2.0 }}
-        className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
-      >
-        <div className="w-6 h-10 border-2 border-white/50 rounded-full flex justify-center backdrop-blur-sm">
-          <motion.div
-            animate={{ y: [0, 12, 0] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="w-1 h-3 bg-white rounded-full mt-2"
-          />
-        </div>
-      </motion.div>
     </section>
   )
 }

@@ -47,15 +47,19 @@
   
   /* Premium Gradients */
   .gradient-bg {
-    background: linear-gradient(135deg, #004B87 0%, #C19A6B 100%);
+    background: linear-gradient(135deg, #0d3d6e 0%, #C19A6B 100%);
   }
   
   .gradient-bg-reverse {
-    background: linear-gradient(135deg, #C19A6B 0%, #004B87 100%);
+    background: linear-gradient(135deg, #C19A6B 0%, #0d3d6e 100%);
   }
   
   .hero-gradient {
-    background: linear-gradient(135deg, #004B87 0%, #1a5a8a 50%, #C19A6B 100%);
+    background: linear-gradient(135deg, #0d3d6e 0%, #1e5a8a 50%, #C19A6B 100%);
+  }
+  
+  .brand-gradient {
+    background: linear-gradient(135deg, #0d3d6e 0%, #C19A6B 100%);
   }
   
   .card-gradient {
@@ -64,38 +68,38 @@
   
   /* Text Gradients */
   .text-gradient {
-    background: linear-gradient(135deg, #004B87 0%, #C19A6B 100%);
+    background: linear-gradient(135deg, #0d3d6e 0%, #C19A6B 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   
   .text-gradient-reverse {
-    background: linear-gradient(135deg, #C19A6B 0%, #004B87 100%);
+    background: linear-gradient(135deg, #C19A6B 0%, #0d3d6e 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   
   /* Brand-specific utilities */
-  .bg-brand-green {
-    background-color: #004B87;
+  .bg-brand-blue {
+    background-color: #0d3d6e;
   }
   
   .bg-brand-gold {
     background-color: #C19A6B;
   }
   
-  .text-brand-green {
-    color: #004B87;
+  .text-brand-blue {
+    color: #0d3d6e;
   }
   
   .text-brand-gold {
     color: #C19A6B;
   }
   
-  .border-brand-green {
-    border-color: #004B87;
+  .border-brand-blue {
+    border-color: #0d3d6e;
   }
   
   .border-brand-gold {

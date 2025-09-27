@@ -4,7 +4,7 @@ import Logo from './Logo'
 
 const Footer = () => {
   return (
-    <footer className="bg-gradient-to-br from-primary via-primary to-primary/90 text-white relative overflow-hidden">
+    <footer className="bg-gradient-to-br from-primary via-primary to-secondary text-white relative overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full"></div>
