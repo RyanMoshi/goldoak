@@ -1,0 +1,22 @@
+# Insurance Partner Logos
+
+This directory should contain the following logo files:
+
+- jubilee.png
+- britam.png
+- old-mutual.png
+- cic.png
+- aar.png
+- ga.png
+- heritage.png
+- madison.png
+- apa.png
+- uap.png
+- sanlam.png
+- first-assurance.png
+
+Each logo should be:
+- PNG format
+- Approximately 120x60 pixels
+- White background or transparent
+- High quality for web display

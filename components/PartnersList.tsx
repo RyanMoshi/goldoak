@@ -13,7 +13,7 @@ const PartnersList = () => {
   const partners = [
     {
       name: 'Jubilee Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/jubilee.png',
       description: 'Leading general insurance company with comprehensive coverage options.',
       rating: 4.8,
       products: ['Medical', 'Motor', 'Property', 'Travel'],
@@ -22,7 +22,7 @@ const PartnersList = () => {
     },
     {
       name: 'Britam Holdings',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/britam.png',
       description: 'Diversified financial services group offering life and general insurance.',
       rating: 4.7,
       products: ['Life Insurance', 'Medical', 'Investment', 'Pension'],
@@ -31,7 +31,7 @@ const PartnersList = () => {
     },
     {
       name: 'Old Mutual',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/old-mutual.png',
       description: 'International insurance company with strong local presence.',
       rating: 4.6,
       products: ['Life Insurance', 'Medical', 'Investment', 'Savings'],
@@ -40,7 +40,7 @@ const PartnersList = () => {
     },
     {
       name: 'CIC Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/cic.png',
       description: 'Cooperative insurance company with focus on agricultural and general insurance.',
       rating: 4.5,
       products: ['Agricultural', 'Medical', 'Motor', 'Property'],
@@ -49,7 +49,7 @@ const PartnersList = () => {
     },
     {
       name: 'AAR Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/aar.png',
       description: 'Healthcare-focused insurance company with extensive medical network.',
       rating: 4.8,
       products: ['Medical Insurance', 'Travel', 'Motor', 'Property'],
@@ -58,7 +58,7 @@ const PartnersList = () => {
     },
     {
       name: 'GA Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/ga.png',
       description: 'General insurance company with comprehensive coverage options.',
       rating: 4.4,
       products: ['Motor', 'Property', 'Medical', 'Travel'],
@@ -67,7 +67,7 @@ const PartnersList = () => {
     },
     {
       name: 'Heritage Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/heritage.png',
       description: 'Growing insurance company with innovative products and services.',
       rating: 4.3,
       products: ['Motor', 'Property', 'Medical', 'Life'],
@@ -76,7 +76,7 @@ const PartnersList = () => {
     },
     {
       name: 'Madison Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/madison.png',
       description: 'Established insurance company with strong market presence.',
       rating: 4.5,
       products: ['General Insurance', 'Medical', 'Motor', 'Property'],
@@ -85,7 +85,7 @@ const PartnersList = () => {
     },
     {
       name: 'APA Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/apa.png',
       description: 'Pan-African insurance company with regional expertise.',
       rating: 4.6,
       products: ['General Insurance', 'Life', 'Medical', 'Travel'],
@@ -94,7 +94,7 @@ const PartnersList = () => {
     },
     {
       name: 'UAP Insurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/uap.png',
       description: 'Leading insurance company with comprehensive product portfolio.',
       rating: 4.7,
       products: ['Life Insurance', 'General', 'Medical', 'Investment'],
@@ -103,7 +103,7 @@ const PartnersList = () => {
     },
     {
       name: 'Sanlam Kenya',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/sanlam.png',
       description: 'International insurance company with local expertise.',
       rating: 4.5,
       products: ['Life Insurance', 'Investment', 'Pension', 'Medical'],
@@ -112,7 +112,7 @@ const PartnersList = () => {
     },
     {
       name: 'First Assurance',
-      logo: '/api/placeholder/120/60',
+      logo: '/assets/logos/first-assurance.png',
       description: 'Growing insurance company with focus on customer service.',
       rating: 4.4,
       products: ['General Insurance', 'Motor', 'Property', 'Medical'],

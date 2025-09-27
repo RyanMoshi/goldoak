@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Create email transporter
-    const transporter = nodemailer.createTransporter({
+    const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587'),
       secure: false,
@@ -151,10 +151,10 @@ export async function POST(request: NextRequest) {
     `
 
     // Prepare attachments
-    const attachments = files.map((file, index) => ({
+    const attachments = await Promise.all(files.map(async (file, index) => ({
       filename: file.name,
       content: Buffer.from(await file.arrayBuffer()),
-    }))
+    })))
 
     // Send email
     const mailOptions = {

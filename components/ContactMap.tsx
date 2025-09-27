@@ -1,11 +1,10 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
 import { useRef } from 'react'
+import { motion, useInView } from 'framer-motion'
 import { MapPin, Phone, Mail, Clock } from 'lucide-react'
 
-const ContactMap = () => {
+export default function ContactMap() {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true })
 
@@ -64,8 +63,8 @@ const ContactMap = () => {
                 <h3 className="text-lg font-semibold text-gray-900">Office Address</h3>
               </div>
               <p className="text-gray-700">
-                Goldoak Insurance Agency Limited<br>
-                Nairobi, Kenya<br>
+                Goldoak Insurance Agency Limited<br />
+                Nairobi, Kenya<br />
                 East Africa
               </p>
             </div>
@@ -147,5 +146,3 @@ const ContactMap = () => {
     </section>
   )
 }
-
-export default ContactMap

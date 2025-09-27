@@ -1,27 +1,27 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { useInView } from 'framer-motion'
+import { motion, useInView } from 'framer-motion'
 import { useRef } from 'react'
 import Image from 'next/image'
+import Link from 'next/link'
 
 const Partners = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true })
 
   const partners = [
-    { name: 'Jubilee Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'Britam Holdings', logo: '/api/placeholder/120/60' },
-    { name: 'Old Mutual', logo: '/api/placeholder/120/60' },
-    { name: 'CIC Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'AAR Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'GA Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'Heritage Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'Madison Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'APA Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'UAP Insurance', logo: '/api/placeholder/120/60' },
-    { name: 'Sanlam Kenya', logo: '/api/placeholder/120/60' },
-    { name: 'First Assurance', logo: '/api/placeholder/120/60' }
+    { name: 'Jubilee Insurance', logo: '/assets/logos/jubilee.png', website: 'https://jubileeinsurance.com' },
+    { name: 'Britam Holdings', logo: '/assets/logos/britam.png', website: 'https://britam.com' },
+    { name: 'Old Mutual', logo: '/assets/logos/old-mutual.png', website: 'https://oldmutual.co.ke' },
+    { name: 'CIC Insurance', logo: '/assets/logos/cic.png', website: 'https://cic.co.ke' },
+    { name: 'AAR Insurance', logo: '/assets/logos/aar.png', website: 'https://aar.co.ke' },
+    { name: 'GA Insurance', logo: '/assets/logos/ga.png', website: 'https://gainsurance.com' },
+    { name: 'Heritage Insurance', logo: '/assets/logos/heritage.png', website: 'https://heritage.co.ke' },
+    { name: 'Madison Insurance', logo: '/assets/logos/madison.png', website: 'https://madison.co.ke' },
+    { name: 'APA Insurance', logo: '/assets/logos/apa.png', website: 'https://apainsurance.com' },
+    { name: 'UAP Insurance', logo: '/assets/logos/uap.png', website: 'https://uap.co.ke' },
+    { name: 'Sanlam Kenya', logo: '/assets/logos/sanlam.png', website: 'https://sanlam.co.ke' },
+    { name: 'First Assurance', logo: '/assets/logos/first-assurance.png', website: 'https://firstassurance.co.ke' }
   ]
 
   return (
@@ -49,22 +49,41 @@ const Partners = () => {
           className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-8"
         >
           {partners.map((partner, index) => (
-            <motion.div
+            <motion.a
               key={partner.name}
+              href={partner.website}
+              target="_blank"
+              rel="noopener noreferrer"
               initial={{ opacity: 0, y: 30 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
               className="bg-white rounded-lg shadow-md hover:shadow-lg transition-all duration-300 p-6 flex items-center justify-center group hover:border-primary/20 border border-gray-100"
             >
               <div className="text-center">
-                <div className="w-20 h-10 bg-gray-200 rounded flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
-                  <span className="text-xs font-semibold text-gray-600 group-hover:text-primary">
+                <div className="w-20 h-10 bg-gray-100 rounded flex items-center justify-center mb-2 group-hover:bg-primary/10 transition-colors">
+                  <Image
+                    src={partner.logo}
+                    alt={`${partner.name} logo`}
+                    width={80}
+                    height={32}
+                    className="object-contain max-w-full max-h-full"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      const fallback = target.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'block';
+                    }}
+                  />
+                  <span 
+                    className="text-xs font-semibold text-gray-600 group-hover:text-primary hidden"
+                    style={{ display: 'none' }}
+                  >
                     {partner.name.split(' ')[0]}
                   </span>
                 </div>
                 <p className="text-xs text-gray-500 font-medium">{partner.name}</p>
               </div>
-            </motion.div>
+            </motion.a>
           ))}
         </motion.div>
 
