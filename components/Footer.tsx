@@ -4,16 +4,9 @@ import Logo from './Logo'
 
 const Footer = () => {
   return (
-    <footer className="bg-gradient-to-br from-primary via-primary to-secondary text-white relative overflow-hidden">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full"></div>
-        <div className="absolute top-20 right-20 w-24 h-24 bg-secondary rounded-full"></div>
-        <div className="absolute bottom-20 left-1/3 w-16 h-16 bg-white rounded-full"></div>
-        <div className="absolute bottom-10 right-10 w-20 h-20 bg-secondary rounded-full"></div>
-      </div>
+    <footer className="bg-primary text-white">
 
-      <div className="container-custom section-padding relative z-10">
+      <div className="container-custom py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
           <div className="lg:col-span-1 space-y-6">

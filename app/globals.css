@@ -19,17 +19,17 @@
 }
 
 @layer components {
-  /* Premium Button Styles */
+  /* Flat Button Styles */
   .btn-primary {
-    @apply bg-primary text-white px-8 py-4 rounded-xl font-semibold hover:bg-primary/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
+    @apply bg-secondary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-secondary/90 transition-colors duration-200;
   }
   
   .btn-secondary {
-    @apply bg-secondary text-white px-8 py-4 rounded-xl font-semibold hover:bg-secondary/90 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 active:translate-y-0;
+    @apply bg-primary text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-200;
   }
   
   .btn-outline {
-    @apply border-2 border-primary text-primary px-8 py-4 rounded-xl font-semibold hover:bg-primary hover:text-white transition-all duration-300 shadow-md hover:shadow-lg transform hover:-translate-y-0.5 active:translate-y-0;
+    @apply border-2 border-primary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-primary hover:text-white transition-colors duration-200;
   }
   
   .btn-ghost {
@@ -45,65 +45,51 @@
     @apply max-w-7xl mx-auto;
   }
   
-  /* Premium Gradients */
-  .gradient-bg {
-    background: linear-gradient(135deg, #0d3d6e 0%, #C19A6B 100%);
+  /* Flat Colors Only - No Gradients */
+  .bg-flat-green {
+    background-color: #003220;
   }
   
-  .gradient-bg-reverse {
-    background: linear-gradient(135deg, #C19A6B 0%, #0d3d6e 100%);
-  }
-  
-  .hero-gradient {
-    background: linear-gradient(135deg, #0d3d6e 0%, #1e5a8a 50%, #C19A6B 100%);
-  }
-  
-  .brand-gradient {
-    background: linear-gradient(135deg, #0d3d6e 0%, #C19A6B 100%);
+  .bg-flat-gold {
+    background-color: #be862b;
   }
   
   .card-gradient {
     background: linear-gradient(145deg, #ffffff 0%, #f8fafc 100%);
   }
   
-  /* Text Gradients */
-  .text-gradient {
-    background: linear-gradient(135deg, #0d3d6e 0%, #C19A6B 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  /* Flat Text Colors */
+  .text-flat-green {
+    color: #003220;
   }
   
-  .text-gradient-reverse {
-    background: linear-gradient(135deg, #C19A6B 0%, #0d3d6e 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
+  .text-flat-gold {
+    color: #be862b;
   }
   
   /* Brand-specific utilities */
-  .bg-brand-blue {
-    background-color: #0d3d6e;
+  .bg-brand-green {
+    background-color: #003220;
   }
   
   .bg-brand-gold {
-    background-color: #C19A6B;
+    background-color: #be862b;
   }
   
-  .text-brand-blue {
-    color: #0d3d6e;
+  .text-brand-green {
+    color: #003220;
   }
   
   .text-brand-gold {
-    color: #C19A6B;
+    color: #be862b;
   }
   
-  .border-brand-blue {
-    border-color: #0d3d6e;
+  .border-brand-green {
+    border-color: #003220;
   }
   
   .border-brand-gold {
-    border-color: #C19A6B;
+    border-color: #be862b;
   }
   
   /* Premium Card Styles */

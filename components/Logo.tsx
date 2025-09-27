@@ -36,27 +36,11 @@ const Logo = ({
   }
   
   const getLogoSrc = () => {
-    if (variant === 'gold') {
-      return '/assets/Gold Icon.png'
-    } else {
-      return '/assets/Green icon.png'
-    }
+    return '/assets/Gold Icon.png'
   }
   
   const getTextLogo = () => {
-    if (variant === 'gold') {
-      return '/assets/Gold Downname logo.png'
-    } else {
-      return '/assets/Green Downname logo.png'
-    }
-  }
-  
-  const getSideLogo = () => {
-    if (variant === 'gold') {
-      return '/assets/Gold SideNamelogo.png'
-    } else {
-      return '/assets/Green SideNamelogo.png'
-    }
+    return '/assets/Gold Downname logo.png'
   }
 
   return (

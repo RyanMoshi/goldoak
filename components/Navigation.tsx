@@ -31,14 +31,14 @@ const Navigation = () => {
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${
       isScrolled 
-        ? 'bg-white/95 backdrop-blur-lg shadow-xl border-b border-gray-100' 
-        : 'bg-white shadow-lg'
+        ? 'bg-primary shadow-lg' 
+        : 'bg-primary'
     }`}>
       <div className="container-custom">
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <Logo variant="gold" size="md" showText={true} />
+            <Logo variant="gold" size="md" showText={false} />
           </Link>
 
           {/* Desktop Navigation */}
@@ -47,8 +47,8 @@ const Navigation = () => {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`nav-link ${
-                  pathname === item.href ? 'active' : ''
+                className={`font-medium text-white hover:text-secondary transition-colors duration-200 ${
+                  pathname === item.href ? 'text-secondary border-b-2 border-secondary' : ''
                 }`}
               >
                 {item.name}
@@ -60,14 +60,14 @@ const Navigation = () => {
           <div className="hidden lg:flex items-center space-x-4">
             <a
               href="tel:+254729911311"
-              className="flex items-center space-x-2 text-primary hover:text-secondary transition-colors group"
+              className="flex items-center space-x-2 text-white hover:text-secondary transition-colors group"
             >
               <Phone className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium">+254 729 911 311</span>
             </a>
             <Link
               href="/quote"
-              className="btn-primary text-sm inline-flex items-center group"
+              className="bg-secondary text-primary px-6 py-2 rounded-lg font-semibold hover:bg-secondary/90 transition-colors text-sm inline-flex items-center group"
             >
               <span>Get a Quote</span>
               <ChevronDown className="w-4 h-4 ml-1 group-hover:translate-y-0.5 transition-transform" />
@@ -76,7 +76,7 @@ const Navigation = () => {
               href="https://wa.me/254729911311"
               target="_blank"
               rel="noopener noreferrer"
-              className="btn-secondary text-sm inline-flex items-center group"
+              className="bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-sm inline-flex items-center group"
             >
               <MessageCircle className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
               WhatsApp
@@ -86,7 +86,7 @@ const Navigation = () => {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-3 rounded-xl text-gray-700 hover:text-primary hover:bg-primary/10 transition-all duration-300"
+            className="lg:hidden p-3 rounded-xl text-white hover:text-secondary hover:bg-white/10 transition-all duration-300"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -96,7 +96,7 @@ const Navigation = () => {
         <div className={`lg:hidden transition-all duration-300 overflow-hidden ${
           isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
         }`}>
-          <div className="border-t border-gray-200 py-6 space-y-4">
+          <div className="border-t border-white/20 py-6 space-y-4">
             {navItems.map((item) => (
               <Link
                 key={item.name}
@@ -104,18 +104,18 @@ const Navigation = () => {
                 onClick={() => setIsOpen(false)}
                 className={`block py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
                   pathname === item.href
-                    ? 'text-primary bg-primary/10'
-                    : 'text-gray-700 hover:text-primary hover:bg-primary/5'
+                    ? 'text-secondary bg-white/10'
+                    : 'text-white hover:text-secondary hover:bg-white/5'
                 }`}
               >
                 {item.name}
               </Link>
             ))}
             
-            <div className="pt-4 border-t border-gray-200 space-y-4">
+            <div className="pt-4 border-t border-white/20 space-y-4">
               <a
                 href="tel:+254729911311"
-                className="flex items-center space-x-3 py-3 px-4 text-primary hover:bg-primary/5 rounded-xl transition-colors"
+                className="flex items-center space-x-3 py-3 px-4 text-white hover:bg-white/5 rounded-xl transition-colors"
               >
                 <Phone className="w-5 h-5" />
                 <span className="font-medium">+254 729 911 311</span>
@@ -124,7 +124,7 @@ const Navigation = () => {
               <Link
                 href="/quote"
                 onClick={() => setIsOpen(false)}
-                className="btn-primary w-full text-center justify-center"
+                className="bg-secondary text-primary w-full text-center justify-center py-3 px-4 rounded-xl font-semibold hover:bg-secondary/90 transition-colors"
               >
                 Get a Quote
               </Link>
@@ -133,7 +133,7 @@ const Navigation = () => {
                 href="https://wa.me/254729911311"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="btn-secondary w-full text-center justify-center"
+                className="bg-white text-primary w-full text-center justify-center py-3 px-4 rounded-xl font-semibold hover:bg-gray-100 transition-colors inline-flex items-center"
               >
                 <MessageCircle className="w-4 h-4 mr-2" />
                 WhatsApp
