@@ -28,8 +28,8 @@ const Hero = () => {
         }} />
       </div>
 
-      <div className="container-custom relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
           {/* Content */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -37,22 +37,22 @@ const Hero = () => {
             transition={{ duration: 0.8 }}
             className="text-gray-900 space-y-8"
           >
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.2 }}
-                className="inline-flex items-center space-x-2 bg-primary text-white rounded-full px-4 py-2"
+                className="inline-flex items-center space-x-2 bg-primary text-white rounded-full px-3 py-2 sm:px-4"
               >
                 <Award className="w-4 h-4" />
-                <span className="text-sm font-medium">Licensed by IRA Kenya</span>
+                <span className="text-xs sm:text-sm font-medium">Licensed by IRA Kenya</span>
               </motion.div>
 
               <motion.h1
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-5xl md:text-6xl lg:text-7xl font-bold leading-tight text-gray-900"
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight text-gray-900"
               >
                 Tailored Insurance Solutions for You & Your Business
               </motion.h1>
@@ -61,7 +61,7 @@ const Hero = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
-                className="text-xl md:text-2xl text-gray-600 leading-relaxed max-w-2xl"
+                className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-2xl"
               >
                 Professional insurance coverage across Kenya. From medical to motor, life to property – we've got you covered with trusted partners and competitive rates.
               </motion.p>
@@ -72,21 +72,21 @@ const Hero = () => {
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.8 }}
-              className="flex flex-col sm:flex-row gap-4"
+              className="flex flex-col sm:flex-row gap-4 max-w-md sm:max-w-none"
             >
               <button 
                 onClick={scrollToContact}
-                className="bg-primary text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-200 text-lg inline-flex items-center justify-center group"
+                className="w-full sm:w-auto bg-primary text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-200 text-base sm:text-lg inline-flex items-center justify-center group"
               >
                 Get a Quote
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
               <button 
                 onClick={scrollToBooking}
-                className="bg-secondary text-primary px-8 py-4 rounded-lg font-semibold hover:bg-secondary/90 transition-colors duration-200 text-lg inline-flex items-center justify-center group"
+                className="w-full sm:w-auto bg-secondary text-primary px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-semibold hover:bg-secondary/90 transition-colors duration-200 text-base sm:text-lg inline-flex items-center justify-center group"
               >
                 Book a Call
-                <Calendar className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform" />
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:scale-110 transition-transform" />
               </button>
             </motion.div>
 
@@ -100,10 +100,6 @@ const Hero = () => {
               <div className="flex items-center space-x-2">
                 <CheckCircle className="w-4 h-4 text-secondary" />
                 <span>Licensed by IRA</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Shield className="w-4 h-4 text-secondary" />
-                <span>Trusted Partners</span>
               </div>
               <div className="flex items-center space-x-2">
                 <Star className="w-4 h-4 text-secondary" />

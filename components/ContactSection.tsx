@@ -66,20 +66,20 @@ const ContactSection = () => {
   }
 
   return (
-    <section id="contact" ref={ref} className="section-padding bg-bg-section">
-      <div className="container-custom">
+    <section id="contact" ref={ref} className="py-12 px-4 sm:px-6 lg:px-8 bg-bg-section">
+      <div className="max-w-7xl mx-auto">
         <div className="max-w-4xl mx-auto">
           {/* Section Header */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
             transition={{ duration: 0.8 }}
-            className="text-center mb-16"
+            className="text-center mb-12 sm:mb-16"
           >
-            <h2 className="text-3xl font-semibold text-primary mb-4">
+            <h2 className="text-2xl sm:text-3xl font-semibold text-primary mb-4">
               Get in Touch
             </h2>
-            <p className="text-lg text-gray-700 mb-10">
+            <p className="text-base sm:text-lg text-gray-700 mb-6 sm:mb-10">
               Ready to secure your future? Contact us today for a free consultation or get an instant quote for your insurance needs.
             </p>
           </motion.div>
@@ -88,19 +88,39 @@ const ContactSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="grid md:grid-cols-2 gap-8 text-left"
+            className="grid gap-6 sm:gap-8 sm:grid-cols-2 text-left"
           >
-            <div>
-              <h3 className="text-xl font-semibold text-green-900 mb-2">Contact Information</h3>
-              <p><strong>Phone:</strong> <a href="tel:+254729911311" className="text-secondary">+254 729 911 311</a></p>
-              <p><strong>Email:</strong> <a href="mailto:info@goldoak.co.ke" className="text-secondary">info@goldoak.co.ke</a></p>
-              <p><strong>WhatsApp:</strong> <a href="https://wa.me/254729911311" className="text-secondary" target="_blank">Start Chat</a></p>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-lg sm:text-xl font-semibold text-primary mb-4">Contact Information</h3>
+              <div className="space-y-3">
+                <p className="text-sm sm:text-base">
+                  <strong className="text-gray-900">Phone:</strong> 
+                  <a href="tel:+254729911311" className="text-secondary ml-2 hover:text-secondary/80 transition-colors">+254 729 911 311</a>
+                </p>
+                <p className="text-sm sm:text-base">
+                  <strong className="text-gray-900">Email:</strong> 
+                  <a href="mailto:info@goldoak.co.ke" className="text-secondary ml-2 hover:text-secondary/80 transition-colors">info@goldoak.co.ke</a>
+                </p>
+                <p className="text-sm sm:text-base">
+                  <strong className="text-gray-900">WhatsApp:</strong> 
+                  <a href="https://wa.me/254729911311" className="text-secondary ml-2 hover:text-secondary/80 transition-colors" target="_blank">Start Chat</a>
+                </p>
+              </div>
             </div>
 
-            <div>
-              <h3 className="text-xl font-semibold text-green-900 mb-2">Location & Hours</h3>
-              <p><strong>Location:</strong> Nairobi, Kenya</p>
-              <p><strong>Business Hours:</strong><br/>Mon – Fri: 8:00 AM – 6:00 PM</p>
+            <div className="bg-white p-6 rounded-lg shadow-sm">
+              <h3 className="text-lg sm:text-xl font-semibold text-primary mb-4">Location & Hours</h3>
+              <div className="space-y-3">
+                <p className="text-sm sm:text-base">
+                  <strong className="text-gray-900">Location:</strong> 
+                  <span className="text-gray-700 ml-2">Nairobi, Kenya</span>
+                </p>
+                <p className="text-sm sm:text-base">
+                  <strong className="text-gray-900">Business Hours:</strong>
+                  <br/>
+                  <span className="text-gray-700">Mon – Fri: 8:00 AM – 6:00 PM</span>
+                </p>
+              </div>
             </div>
           </motion.div>
 
@@ -109,25 +129,25 @@ const ContactSection = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-center mt-12 space-y-4"
+            className="text-center mt-8 sm:mt-12"
           >
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto">
               <button
                 onClick={() => setIsQuoteModalOpen(true)}
-                className="bg-primary text-white py-4 px-8 rounded-xl font-semibold hover:bg-primary/90 transition-colors duration-200 flex items-center justify-center group"
+                className="w-full sm:w-auto bg-primary text-white py-3 px-6 sm:px-8 rounded-xl font-semibold hover:bg-primary/90 transition-colors duration-200 flex items-center justify-center group text-sm sm:text-base"
               >
-                <FileText className="w-5 h-5 mr-2" />
+                <FileText className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Get a Quote
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
               
               <button
                 onClick={() => setIsBookingModalOpen(true)}
-                className="bg-secondary text-primary py-4 px-8 rounded-xl font-semibold hover:bg-secondary/90 transition-colors duration-200 flex items-center justify-center group"
+                className="w-full sm:w-auto bg-secondary text-primary py-3 px-6 sm:px-8 rounded-xl font-semibold hover:bg-secondary/90 transition-colors duration-200 flex items-center justify-center group text-sm sm:text-base"
               >
-                <Calendar className="w-5 h-5 mr-2" />
+                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 Book a Call
-                <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
             </div>
           </motion.div>
