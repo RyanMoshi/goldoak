@@ -10,7 +10,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
           <div className="lg:col-span-1 space-y-6">
-            <Logo variant="gold" size="lg" showText={true} className="text-white" />
+            <Logo variant="gold" size="lg" showText={true} textColor="text-white" />
             <p className="text-gray-200 text-base leading-relaxed">
               Licensed insurance agency in Kenya, regulated by the Insurance Regulatory Authority. 
               We help you transfer unforeseen risks to dependable insurance partners.

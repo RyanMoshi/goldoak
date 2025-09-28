@@ -63,7 +63,7 @@ const ContactSection = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Get in <span className="text-gradient">Touch</span>
+            Get in <span className="text-secondary">Touch</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Have questions about insurance? Need help finding the right coverage? 
@@ -206,7 +206,7 @@ const ContactSection = () => {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="mt-16 text-center"
         >
-          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-white">
+          <div className="bg-primary rounded-2xl p-8 text-white">
             <h3 className="text-2xl font-bold mb-4">Need Insurance Right Now?</h3>
             <p className="text-lg opacity-90 mb-6">
               Get instant quotes from Kenya's top insurance companies in minutes.

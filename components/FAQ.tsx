@@ -63,7 +63,7 @@ const FAQ = () => {
           </div>
           
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Got <span className="text-gradient">Questions?</span>
+            Got <span className="text-secondary">Questions?</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Find answers to the most common questions about our insurance comparison service. 
@@ -120,7 +120,7 @@ const FAQ = () => {
           transition={{ duration: 0.6, delay: 0.8 }}
           className="text-center mt-16"
         >
-          <div className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-white">
+          <div className="bg-primary rounded-2xl p-8 text-white">
             <h3 className="text-2xl font-bold mb-4">Still Have Questions?</h3>
             <p className="text-lg opacity-90 mb-6">
               Our insurance experts are here to help you find the perfect coverage.

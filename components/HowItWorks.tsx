@@ -48,7 +48,7 @@ const HowItWorks = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            How It <span className="text-gradient">Works</span>
+            How It <span className="text-secondary">Works</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Get the best insurance quotes in Kenya in just 3 simple steps. 
@@ -58,7 +58,7 @@ const HowItWorks = () => {
 
         <div className="relative">
           {/* Connection Line */}
-          <div className="hidden lg:block absolute top-24 left-0 right-0 h-0.5 bg-gradient-to-r from-primary via-secondary to-green-500"></div>
+          <div className="hidden lg:block absolute top-24 left-0 right-0 h-0.5 bg-primary"></div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-12">
             {steps.map((step, index) => (
@@ -72,7 +72,7 @@ const HowItWorks = () => {
                 <div className="text-center">
                   {/* Step Number & Icon */}
                   <div className="relative mb-8">
-                    <div className={`w-24 h-24 mx-auto rounded-full bg-gradient-to-r ${step.color} flex items-center justify-center shadow-lg`}>
+                    <div className={`w-24 h-24 mx-auto rounded-full ${step.bgColor} flex items-center justify-center shadow-lg`}>
                       <step.icon className="w-12 h-12 text-white" />
                     </div>
                     <div className="absolute -top-2 -right-2 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-md border-2 border-gray-100">

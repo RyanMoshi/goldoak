@@ -26,7 +26,7 @@ const Partners = () => {
   ]
 
   return (
-    <section ref={ref} className="section-padding bg-gradient-to-br from-gray-50 to-white">
+    <section ref={ref} className="section-padding bg-gray-50">
       <div className="container-custom">
         <motion.div
           initial={{ opacity: 0, y: 50 }}
@@ -40,7 +40,7 @@ const Partners = () => {
           </div>
           
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Trusted by <span className="text-gradient">5,000+ Clients</span>
+            Trusted by <span className="text-secondary">5,000+ Clients</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-4xl mx-auto leading-relaxed">
             We work with Kenya's top insurance companies to provide you with the best coverage options, 
@@ -124,7 +124,7 @@ const Partners = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           transition={{ duration: 0.6, delay: 1.2 }}
-          className="bg-gradient-to-r from-primary to-secondary rounded-3xl p-12 text-center text-white"
+          className="bg-primary rounded-3xl p-12 text-center text-white"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>

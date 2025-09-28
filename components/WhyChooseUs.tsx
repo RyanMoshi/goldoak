@@ -70,7 +70,7 @@ const WhyChooseUs = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            Why Choose <span className="text-gradient">Goldoak?</span>
+            Why Choose <span className="text-secondary">Goldoak?</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             We're Kenya's most trusted insurance comparison platform, helping you find the best coverage at the best prices.
@@ -103,7 +103,7 @@ const WhyChooseUs = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           transition={{ duration: 0.6, delay: 0.6 }}
-          className="bg-gradient-to-r from-primary to-secondary rounded-3xl p-12 text-white text-center mb-16"
+          className="bg-primary rounded-3xl p-12 text-white text-center mb-16"
         >
           <h3 className="text-3xl font-bold mb-8">Our Impact in Numbers</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">

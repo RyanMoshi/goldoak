@@ -38,7 +38,7 @@ const Navigation = () => {
         <div className="flex justify-between items-center py-4">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <Logo variant="gold" size="md" showText={false} />
+            <Logo variant="gold" size="lg" showText={false} />
           </Link>
 
           {/* Desktop Navigation */}

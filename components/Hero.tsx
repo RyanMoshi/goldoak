@@ -86,17 +86,25 @@ const Hero = () => {
             </motion.div>
           </motion.div>
 
-          {/* Right Side - Placeholder for image */}
+          {/* Right Side - Insurance Image */}
           <motion.div
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
             className="relative"
           >
-            <div className="bg-gray-100 rounded-lg p-8 h-96 flex items-center justify-center">
-              <div className="text-center text-gray-500">
-                <p className="text-lg font-medium">Insurance Illustration</p>
-                <p className="text-sm">Placeholder for image</p>
+            <div className="relative">
+              <img 
+                src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
+                alt="Professional Insurance and Financial Planning"
+                className="w-full h-96 object-cover rounded-lg shadow-lg"
+              />
+              <div className="absolute inset-0 bg-primary/30 rounded-lg"></div>
+              <div className="absolute bottom-6 left-6 right-6">
+                <div className="bg-white/90 backdrop-blur-sm rounded-lg p-4">
+                  <h3 className="text-lg font-bold text-primary mb-2">Secure Your Future</h3>
+                  <p className="text-sm text-gray-700">Professional insurance coverage for all your needs</p>
+                </div>
               </div>
             </div>
           </motion.div>

@@ -76,7 +76,7 @@ const Reviews = () => {
           className="text-center mb-16"
         >
           <h2 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-            What Our <span className="text-gradient">Customers Say</span>
+            What Our <span className="text-secondary">Customers Say</span>
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
             Don't just take our word for it. Here's what real customers across Kenya have to say about their experience with Goldoak.
@@ -142,7 +142,7 @@ const Reviews = () => {
           initial={{ opacity: 0, y: 30 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
           transition={{ duration: 0.6, delay: 0.8 }}
-          className="bg-gradient-to-r from-primary to-secondary rounded-2xl p-8 text-white text-center"
+          className="bg-primary rounded-2xl p-8 text-white text-center"
         >
           <h3 className="text-2xl font-bold mb-4">Join Thousands of Satisfied Customers</h3>
           <p className="text-lg opacity-90 mb-6">

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useForm } from 'react-hook-form'
-import { ChevronLeft, ChevronRight, Check, Upload, X, Download } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Check, Upload, X, Download, Shield, Clock } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { generateInsurancePDF } from '@/lib/pdfGenerator'
 

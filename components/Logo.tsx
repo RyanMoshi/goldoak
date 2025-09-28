@@ -7,13 +7,15 @@ interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
   showText?: boolean
   className?: string
+  textColor?: string
 }
 
 const Logo = ({ 
   variant = 'gold', 
   size = 'md', 
   showText = true, 
-  className = '' 
+  className = '',
+  textColor = 'text-primary'
 }: LogoProps) => {
   const [imageError, setImageError] = useState(false)
   
@@ -45,22 +47,22 @@ const Logo = ({
 
   return (
     <div className={`flex items-center space-x-3 ${className}`}>
-      <div className={`${sizeClasses[size]} bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center`}>
-        {!imageError ? (
-          <img 
-            src={getLogoSrc()} 
-            alt="Goldoak Insurance Logo" 
-            className={`${iconSizes[size]} object-contain`}
-            onError={() => setImageError(true)}
-          />
-        ) : (
+      {!imageError ? (
+        <img 
+          src={getLogoSrc()} 
+          alt="Goldoak Insurance Logo" 
+          className={`${sizeClasses[size]} object-contain`}
+          onError={() => setImageError(true)}
+        />
+      ) : (
+        <div className={`${sizeClasses[size]} bg-secondary rounded-lg flex items-center justify-center`}>
           <span className="text-white font-bold text-lg">G</span>
-        )}
-      </div>
+        </div>
+      )}
       
       {showText && (
         <div>
-          <h1 className={`${textSizes[size]} font-bold text-primary`}>
+          <h1 className={`${textSizes[size]} font-bold ${textColor}`}>
             Goldoak Insurance
           </h1>
           <p className="text-sm text-gray-600">Agency Limited</p>
