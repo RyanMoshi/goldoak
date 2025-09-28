@@ -140,7 +140,12 @@ const QuoteForm = () => {
         body: formData,
       })
       
+      console.log('Response status:', response.status)
+      console.log('Response ok:', response.ok)
+      
       if (response.ok) {
+        const result = await response.json()
+        console.log('Success response:', result)
         toast.success('Quote request submitted successfully! We\'ll contact you within 2 hours.')
         
         // Generate and download PDF
@@ -155,11 +160,20 @@ const QuoteForm = () => {
         setExperienceChoice(null)
         setUploadedFiles([])
       } else {
-        throw new Error('Failed to submit form')
+        const errorData = await response.json().catch(() => ({ error: 'Unknown error' }))
+        console.error('Server error response:', errorData)
+        console.error('Response status:', response.status)
+        console.error('Response statusText:', response.statusText)
+        throw new Error(`Server error: ${errorData.error || response.statusText}`)
       }
     } catch (error) {
       toast.error('Failed to submit quote request. Please try again.')
       console.error('Form submission error:', error)
+      console.error('Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : 'No stack trace',
+        name: error instanceof Error ? error.name : 'Unknown'
+      })
     }
   }
 
@@ -521,13 +535,13 @@ const QuoteForm = () => {
   }
 
   return (
-    <section className="section-padding bg-gradient-to-br from-gray-50 to-white">
+    <section className="section-padding bg-bg-section">
       <div className="container-custom">
         <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
             <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6">
-              Get Your <span className="text-gradient">Insurance Quote</span>
+              Get Your <span className="text-primary">Insurance Quote</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Fill out our simple form and get quotes from multiple insurance providers in minutes. 
@@ -537,7 +551,7 @@ const QuoteForm = () => {
 
           <div className="card-premium overflow-hidden">
             {/* Premium Progress Bar */}
-            <div className="bg-gradient-to-r from-primary/10 to-secondary/10 px-8 py-8">
+            <div className="bg-primary/5 px-8 py-8">
               <div className="flex items-center justify-between mb-6">
                 <div>
                   <h2 className="text-2xl font-bold text-gray-900">Application Progress</h2>
@@ -577,7 +591,7 @@ const QuoteForm = () => {
                 {/* Progress Line */}
                 <div className="absolute top-6 left-6 right-6 h-0.5 bg-gray-200 -z-10">
                   <div 
-                    className="h-full bg-gradient-to-r from-primary to-secondary transition-all duration-500"
+                    className="h-full bg-primary transition-all duration-500"
                     style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}
                   />
                 </div>

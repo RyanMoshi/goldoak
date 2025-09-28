@@ -1,16 +1,22 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   html {
-    font-family: 'Inter', 'Poppins', sans-serif;
+    font-family: 'Inter', sans-serif;
     scroll-behavior: smooth;
   }
   
   body {
-    @apply text-gray-900 bg-white antialiased;
+    @apply text-text-body bg-white antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', sans-serif;
+    @apply text-text-headline font-semibold;
   }
   
   * {
@@ -51,10 +57,10 @@
   }
   
   .bg-flat-gold {
-    background-color: #be862b;
+    background-color: #BE862B;
   }
   
-  .card-gradient {
+  .card-solid {
     background: #ffffff;
   }
   
@@ -64,7 +70,7 @@
   }
   
   .text-flat-gold {
-    color: #be862b;
+    color: #BE862B;
   }
   
   /* Brand-specific utilities */
@@ -73,7 +79,7 @@
   }
   
   .bg-brand-gold {
-    background-color: #be862b;
+    background-color: #BE862B;
   }
   
   .text-brand-green {
@@ -81,7 +87,7 @@
   }
   
   .text-brand-gold {
-    color: #be862b;
+    color: #BE862B;
   }
   
   .border-brand-green {
@@ -89,7 +95,7 @@
   }
   
   .border-brand-gold {
-    border-color: #be862b;
+    border-color: #BE862B;
   }
   
   /* Premium Card Styles */

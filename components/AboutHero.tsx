@@ -5,7 +5,7 @@ import { Shield, Users, Award, Clock } from 'lucide-react'
 
 const AboutHero = () => {
   return (
-    <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-gradient-to-br from-primary to-secondary">
+    <section className="relative min-h-[60vh] flex items-center justify-center overflow-hidden bg-primary">
       <div className="absolute inset-0 bg-black opacity-20"></div>
       
       <div className="container-custom relative z-10">

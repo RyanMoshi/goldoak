@@ -252,13 +252,31 @@ const ProductsList = () => {
                   <p className="text-sm text-gray-500">Starting from</p>
                   <p className="text-lg font-semibold text-primary">{product.price}</p>
                 </div>
-                <Link 
-                  href="/quote" 
-                  className="btn-primary text-sm inline-flex items-center group"
-                >
-                  Get Quote
-                  <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-                </Link>
+                <div className="flex gap-2">
+                  {product.category === 'Medical Insurance' && (
+                    <Link 
+                      href="/insurance/medical" 
+                      className="text-secondary hover:text-secondary/80 text-sm font-medium transition-colors"
+                    >
+                      Learn More
+                    </Link>
+                  )}
+                  {product.category === 'Motor Insurance' && (
+                    <Link 
+                      href="/insurance/motor" 
+                      className="text-secondary hover:text-secondary/80 text-sm font-medium transition-colors"
+                    >
+                      Learn More
+                    </Link>
+                  )}
+                  <Link 
+                    href="/quote" 
+                    className="btn-primary text-sm inline-flex items-center group"
+                  >
+                    Get Quote
+                    <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                  </Link>
+                </div>
               </div>
             </motion.div>
           ))}

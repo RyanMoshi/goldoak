@@ -5,19 +5,22 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Menu, X, Phone, MessageCircle, ChevronDown } from 'lucide-react'
 import Logo from './Logo'
+import QuoteModal from './QuoteModal'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false)
   const pathname = usePathname()
 
   const navItems = [
-    { name: 'Home', href: '/' },
-    { name: 'About Us', href: '/about' },
-    { name: 'Our Partners', href: '/partners' },
-    { name: 'Insurance Products', href: '/products' },
-    { name: 'Get Quote', href: '/quote' },
-    { name: 'Contact', href: '/contact' },
+    { name: 'Home', href: '#hero' },
+    { name: 'About', href: '#about' },
+    { name: 'Services', href: '#services' },
+    { name: 'Process', href: '#process' },
+    { name: 'Claims', href: '#claims' },
+    { name: 'Why Choose Us', href: '#why-choose-us' },
+    { name: 'Contact', href: '#contact' },
   ]
 
   useEffect(() => {
@@ -27,6 +30,16 @@ const Navigation = () => {
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
+
+  const handleNavClick = (href: string) => {
+    if (href.startsWith('#')) {
+      const element = document.querySelector(href)
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' })
+      }
+      setIsOpen(false)
+    }
+  }
 
   return (
     <nav className={`sticky top-0 z-50 transition-all duration-300 ${
@@ -44,15 +57,13 @@ const Navigation = () => {
           {/* Desktop Navigation */}
           <div className="hidden lg:flex items-center space-x-8">
             {navItems.map((item) => (
-              <Link
+              <button
                 key={item.name}
-                href={item.href}
-                className={`font-medium text-white hover:text-secondary transition-colors duration-200 ${
-                  pathname === item.href ? 'text-secondary border-b-2 border-secondary' : ''
-                }`}
+                onClick={() => handleNavClick(item.href)}
+                className="font-medium text-white hover:text-secondary transition-colors duration-200"
               >
                 {item.name}
-              </Link>
+              </button>
             ))}
           </div>
 
@@ -65,13 +76,13 @@ const Navigation = () => {
               <Phone className="w-4 h-4 group-hover:scale-110 transition-transform" />
               <span className="text-sm font-medium">+254 729 911 311</span>
             </a>
-            <Link
-              href="/quote"
+            <button
+              onClick={() => setIsQuoteModalOpen(true)}
               className="bg-secondary text-primary px-6 py-2 rounded-lg font-semibold hover:bg-secondary/90 transition-colors text-sm inline-flex items-center group"
             >
               <span>Get a Quote</span>
               <ChevronDown className="w-4 h-4 ml-1 group-hover:translate-y-0.5 transition-transform" />
-            </Link>
+            </button>
             <a
               href="https://wa.me/254729911311"
               target="_blank"
@@ -98,18 +109,13 @@ const Navigation = () => {
         }`}>
           <div className="border-t border-white/20 py-6 space-y-4">
             {navItems.map((item) => (
-              <Link
+              <button
                 key={item.name}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className={`block py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
-                  pathname === item.href
-                    ? 'text-secondary bg-white/10'
-                    : 'text-white hover:text-secondary hover:bg-white/5'
-                }`}
+                onClick={() => handleNavClick(item.href)}
+                className="block py-3 px-4 rounded-xl font-medium transition-all duration-200 text-white hover:text-secondary hover:bg-white/5 w-full text-left"
               >
                 {item.name}
-              </Link>
+              </button>
             ))}
             
             <div className="pt-4 border-t border-white/20 space-y-4">
@@ -121,13 +127,15 @@ const Navigation = () => {
                 <span className="font-medium">+254 729 911 311</span>
               </a>
               
-              <Link
-                href="/quote"
-                onClick={() => setIsOpen(false)}
+              <button
+                onClick={() => {
+                  setIsQuoteModalOpen(true)
+                  setIsOpen(false)
+                }}
                 className="bg-secondary text-primary w-full text-center justify-center py-3 px-4 rounded-xl font-semibold hover:bg-secondary/90 transition-colors"
               >
                 Get a Quote
-              </Link>
+              </button>
               
               <a
                 href="https://wa.me/254729911311"
@@ -142,6 +150,12 @@ const Navigation = () => {
           </div>
         </div>
       </div>
+      
+      {/* Quote Modal */}
+      <QuoteModal 
+        isOpen={isQuoteModalOpen} 
+        onClose={() => setIsQuoteModalOpen(false)} 
+      />
     </nav>
   )
 }

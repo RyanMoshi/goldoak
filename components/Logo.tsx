@@ -20,15 +20,15 @@ const Logo = ({
   const [imageError, setImageError] = useState(false)
   
   const sizeClasses = {
-    sm: 'w-8 h-8',
-    md: 'w-12 h-12', 
-    lg: 'w-16 h-16'
+    sm: 'w-10 h-10',
+    md: 'w-16 h-16', 
+    lg: 'w-20 h-20'
   }
   
   const textSizes = {
-    sm: 'text-sm',
-    md: 'text-xl',
-    lg: 'text-2xl'
+    sm: 'text-base',
+    md: 'text-2xl',
+    lg: 'text-3xl'
   }
   
   const iconSizes = {
