@@ -90,22 +90,6 @@ const Hero = () => {
               </button>
             </motion.div>
 
-            {/* Trust Badges */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 1.0 }}
-              className="flex flex-wrap items-center gap-6 text-sm text-gray-600"
-            >
-              <div className="flex items-center space-x-2">
-                <CheckCircle className="w-4 h-4 text-secondary" />
-                <span>Licensed by IRA</span>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Star className="w-4 h-4 text-secondary" />
-                <span>Client-First Approach</span>
-              </div>
-            </motion.div>
           </motion.div>
 
           {/* Right Side - Insurance Image */}
