@@ -19,6 +19,7 @@ const ServicesSection = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
   const [expandedService, setExpandedService] = useState<string | null>(null)
+  const [showAll, setShowAll] = useState(false)
 
   const services = [
     {
@@ -71,58 +72,56 @@ const ServicesSection = () => {
     }
   ]
 
+  const visibleServices = showAll ? services : services.slice(0, 3)
+
   return (
-    <section id="services" ref={ref} className="py-12 px-4 sm:px-6 lg:px-8 bg-white">
+    <section id="services" ref={ref} className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 bg-white">
       <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-12"
+          className="text-center mb-8 sm:mb-12"
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
+          <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">
             Our Insurance Products
           </h2>
-          <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto">
-            Comprehensive insurance solutions across multiple sectors, partnering with Kenya's leading providers.
+          <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto">
+            Comprehensive insurance solutions across multiple sectors.
           </p>
         </motion.div>
 
         {/* Services Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {services.map((service, index) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          {visibleServices.map((service, index) => (
             <motion.div
               key={service.title}
               initial={{ opacity: 0, y: 50 }}
               animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
               transition={{ duration: 0.8, delay: index * 0.1 }}
-              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-300"
+              className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border border-gray-100"
             >
-              {/* Icon */}
-              <div className={`w-12 h-12 ${service.color} rounded-full flex items-center justify-center mb-4`}>
-                <service.icon className={`w-6 h-6 ${service.iconColor}`} />
+              <div className={`w-10 h-10 ${service.color} rounded-full flex items-center justify-center mb-3`}>
+                <service.icon className={`w-5 h-5 ${service.iconColor}`} />
               </div>
+              <h3 className="text-lg font-bold text-gray-900 mb-2">{service.title}</h3>
+              <p className="text-xs sm:text-sm text-gray-600 mb-3">{service.description}</p>
 
-              {/* Content */}
-              <h3 className="text-xl font-bold text-gray-900 mb-2">{service.title}</h3>
-              <p className="text-sm text-gray-600 mb-4">{service.description}</p>
-
-              {/* Features Accordion */}
               <button
                 onClick={() => setExpandedService(expandedService === service.title ? null : service.title)}
-                className="w-full flex items-center justify-between text-sm font-medium text-primary mb-3 hover:text-primary/80 transition-colors"
+                className="w-full flex items-center justify-between text-xs font-medium text-primary mb-2"
               >
-                <span>View Coverage Details</span>
+                <span>Details</span>
                 <ChevronDown 
-                  className={`w-4 h-4 transition-transform ${
+                  className={`w-3 h-3 transition-transform ${
                     expandedService === service.title ? 'rotate-180' : ''
                   }`}
                 />
               </button>
 
               {expandedService === service.title && (
-                <div className="space-y-2 pt-2 border-t border-gray-100">
+                <div className="space-y-1.5 pt-2 border-t border-gray-100 mb-3">
                   {service.features.map((feature, featureIndex) => (
                     <div key={featureIndex} className="flex items-center space-x-2">
                       <CheckCircle className="w-3 h-3 text-secondary flex-shrink-0" />
@@ -132,26 +131,36 @@ const ServicesSection = () => {
                 </div>
               )}
 
-              {/* CTA */}
-              <button className="w-full mt-4 bg-primary text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors duration-200 inline-flex items-center justify-center group">
+              <button className="w-full bg-primary text-white py-2 px-3 rounded-lg text-xs sm:text-sm font-semibold hover:bg-primary/90 transition-colors">
                 Get Quote
-                <ArrowRight className="w-3 h-3 ml-2 group-hover:translate-x-1 transition-transform" />
               </button>
             </motion.div>
           ))}
         </div>
+
+        {/* Show More Button */}
+        {!showAll && (
+          <div className="text-center mt-6">
+            <button
+              onClick={() => setShowAll(true)}
+              className="text-primary text-sm font-semibold hover:text-primary/80"
+            >
+              Show All Services
+            </button>
+          </div>
+        )}
 
         {/* Bottom CTA */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8, delay: 0.8 }}
-          className="text-center mt-12"
+          className="text-center mt-8 sm:mt-12"
         >
-          <div className="bg-primary rounded-xl p-6 sm:p-8 text-white">
-            <h3 className="text-xl sm:text-2xl font-bold mb-3">Need Help Choosing Coverage?</h3>
-            <p className="text-sm sm:text-base mb-6 opacity-90">
-              Our advisors help you find the perfect insurance solution.
+          <div className="bg-primary rounded-xl p-4 sm:p-6 text-white">
+            <h3 className="text-lg sm:text-xl font-bold mb-2">Need Help Choosing?</h3>
+            <p className="text-xs sm:text-sm mb-4 opacity-90">
+              Our advisors help you find the perfect solution.
             </p>
             <button 
               onClick={() => {
@@ -160,10 +169,9 @@ const ServicesSection = () => {
                   element.scrollIntoView({ behavior: 'smooth' })
                 }
               }}
-              className="bg-secondary text-primary px-6 py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-secondary/90 transition-colors duration-200 inline-flex items-center group"
+              className="bg-secondary text-primary px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold hover:bg-secondary/90 transition-colors"
             >
               Get Expert Advice
-              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </motion.div>
