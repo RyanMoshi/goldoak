@@ -2,146 +2,146 @@
 
 import { motion } from 'framer-motion'
 import { useInView } from 'framer-motion'
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import { 
   MessageCircle, 
   FileText, 
   Users, 
   CheckCircle, 
   HeadphonesIcon,
-  ArrowRight
+  ArrowRight,
+  ChevronDown
 } from 'lucide-react'
 
 const ProcessSection = () => {
   const ref = useRef(null)
   const isInView = useInView(ref, { once: true, margin: "-100px" })
+  const [expandedStep, setExpandedStep] = useState<string | null>(null)
 
   const steps = [
     {
       number: '01',
       icon: MessageCircle,
-      title: 'Consultation & Needs Assessment',
-      description: 'We start with a detailed consultation to understand your specific insurance needs, risk profile, and budget requirements.',
+      title: 'Consultation & Assessment',
+      description: 'We understand your insurance needs, risk profile, and budget.',
       details: [
         'Initial consultation call or meeting',
         'Risk assessment and analysis',
-        'Budget and coverage requirements discussion',
+        'Budget and coverage discussion',
         'Documentation review'
       ]
     },
     {
       number: '02',
       icon: FileText,
-      title: 'Custom Proposal & Competitive Quotes',
-      description: 'We prepare tailored proposals with quotes from multiple top insurance providers to give you the best options.',
+      title: 'Custom Proposal & Quotes',
+      description: 'Tailored proposals with quotes from multiple top providers.',
       details: [
-        'Market research and provider comparison',
+        'Market research and comparison',
         'Custom proposal preparation',
         'Multiple quote options',
-        'Coverage comparison and recommendations'
+        'Coverage recommendations'
       ]
     },
     {
       number: '03',
       icon: Users,
-      title: 'Guidance on Selection',
-      description: 'Our experts guide you through the selection process, explaining terms, conditions, and helping you make informed decisions.',
+      title: 'Selection Guidance',
+      description: 'Expert guidance through policy selection and terms explanation.',
       details: [
-        'Policy comparison and analysis',
-        'Terms and conditions explanation',
+        'Policy comparison',
+        'Terms explanation',
         'Coverage recommendations',
-        'Decision support and guidance'
+        'Decision support'
       ]
     },
     {
       number: '04',
       icon: CheckCircle,
       title: 'Onboarding & Activation',
-      description: 'We handle all the paperwork and ensure your policy is activated smoothly with all necessary documentation.',
+      description: 'We handle paperwork and ensure smooth policy activation.',
       details: [
         'Application processing',
         'Documentation completion',
         'Policy activation',
-        'Welcome package delivery'
+        'Welcome package'
       ]
     },
     {
       number: '05',
       icon: HeadphonesIcon,
-      title: 'Ongoing Client Support',
-      description: 'We provide continuous support throughout your policy term, including claims assistance and policy management.',
+      title: 'Ongoing Support',
+      description: 'Continuous support including claims assistance and policy management.',
       details: [
         'Regular policy reviews',
-        'Claims support and guidance',
-        'Policy updates and modifications',
+        'Claims support',
+        'Policy updates',
         'Renewal assistance'
       ]
     }
   ]
 
   return (
-    <section id="process" ref={ref} className="section-padding bg-gray-50">
-      <div className="container-custom">
+    <section id="process" ref={ref} className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-50">
+      <div className="max-w-7xl mx-auto">
         {/* Section Header */}
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
           transition={{ duration: 0.8 }}
-          className="text-center mb-16"
+          className="text-center mb-12"
         >
-          <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+          <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-4">
             How We Work
           </h2>
-          <p className="text-xl text-gray-600 leading-relaxed max-w-3xl mx-auto">
-            Our streamlined process ensures you get the right insurance coverage 
-            with minimal hassle and maximum support throughout your journey.
+          <p className="text-base sm:text-lg text-gray-600 leading-relaxed max-w-3xl mx-auto">
+            Streamlined process for the right coverage with minimal hassle and maximum support.
           </p>
         </motion.div>
 
         {/* Process Steps */}
-        <div className="space-y-8">
+        <div className="space-y-4">
           {steps.map((step, index) => (
             <motion.div
               key={step.number}
-              initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-              animate={isInView ? { opacity: 1, x: 0 } : { opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
-              transition={{ duration: 0.8, delay: index * 0.2 }}
-              className={`flex flex-col lg:flex-row items-center gap-8 ${
-                index % 2 === 1 ? 'lg:flex-row-reverse' : ''
-              }`}
+              initial={{ opacity: 0, y: 30 }}
+              animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
+              transition={{ duration: 0.6, delay: index * 0.1 }}
+              className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
             >
-              {/* Content */}
-              <div className="flex-1">
-                <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 bg-primary text-white rounded-full flex items-center justify-center font-bold text-lg mr-4">
-                      {step.number}
-                    </div>
-                    <div className="w-12 h-12 bg-secondary/10 rounded-full flex items-center justify-center">
-                      <step.icon className="w-6 h-6 text-secondary" />
-                    </div>
+              <button
+                onClick={() => setExpandedStep(expandedStep === step.number ? null : step.number)}
+                className="w-full flex items-center justify-between text-left"
+              >
+                <div className="flex items-center space-x-4 flex-1">
+                  <div className="w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0">
+                    {step.number}
                   </div>
-                  
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4">{step.title}</h3>
-                  <p className="text-gray-600 leading-relaxed mb-6">{step.description}</p>
-                  
-                  <div className="space-y-3">
-                    {step.details.map((detail, detailIndex) => (
-                      <div key={detailIndex} className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-secondary rounded-full flex-shrink-0"></div>
-                        <span className="text-sm text-gray-600">{detail}</span>
-                      </div>
-                    ))}
+                  <div className="w-10 h-10 bg-secondary/10 rounded-full flex items-center justify-center flex-shrink-0">
+                    <step.icon className="w-5 h-5 text-secondary" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-1">{step.title}</h3>
+                    <p className="text-sm text-gray-600">{step.description}</p>
                   </div>
                 </div>
-              </div>
-
-              {/* Visual Element */}
-              <div className="flex-shrink-0">
-                <div className="w-32 h-32 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                  <step.icon className="w-16 h-16 text-white" />
+                <ChevronDown 
+                  className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ml-4 ${
+                    expandedStep === step.number ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+              
+              {expandedStep === step.number && (
+                <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                  {step.details.map((detail, detailIndex) => (
+                    <div key={detailIndex} className="flex items-center space-x-3">
+                      <div className="w-2 h-2 bg-secondary rounded-full flex-shrink-0"></div>
+                      <span className="text-sm text-gray-600">{detail}</span>
+                    </div>
+                  ))}
                 </div>
-              </div>
+              )}
             </motion.div>
           ))}
         </div>
@@ -150,13 +150,13 @@ const ProcessSection = () => {
         <motion.div
           initial={{ opacity: 0, y: 50 }}
           animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
-          transition={{ duration: 0.8, delay: 1.0 }}
-          className="text-center mt-16"
+          transition={{ duration: 0.8, delay: 0.6 }}
+          className="text-center mt-12"
         >
-          <div className="bg-white rounded-2xl p-8 shadow-lg border border-gray-100">
-            <h3 className="text-2xl font-bold text-gray-900 mb-4">Ready to Get Started?</h3>
-            <p className="text-gray-600 mb-6">
-              Begin your insurance journey with us today. Our experts are ready to guide you through every step.
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <h3 className="text-xl font-bold text-gray-900 mb-3">Ready to Get Started?</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              Begin your insurance journey today. Our experts are ready to guide you.
             </p>
             <button 
               onClick={() => {
@@ -165,10 +165,10 @@ const ProcessSection = () => {
                   element.scrollIntoView({ behavior: 'smooth' })
                 }
               }}
-              className="bg-primary text-white px-8 py-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-200 inline-flex items-center group"
+              className="bg-primary text-white px-6 py-3 rounded-lg text-sm sm:text-base font-semibold hover:bg-primary/90 transition-colors duration-200 inline-flex items-center group"
             >
               Start Your Journey
-              <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
+              <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
           </div>
         </motion.div>

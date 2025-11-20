@@ -61,9 +61,9 @@ const Hero = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.8, delay: 0.6 }}
-                className="text-base sm:text-lg md:text-xl lg:text-2xl text-gray-600 leading-relaxed max-w-2xl"
+                className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl"
               >
-                Professional insurance coverage across Kenya. From medical to motor, life to property – we've got you covered with trusted partners and competitive rates.
+                Comprehensive insurance solutions for individuals and businesses across Kenya. Expert guidance, competitive rates, trusted coverage.
               </motion.p>
             </div>
 
