@@ -45,7 +45,7 @@ const Navigation = () => {
       <div className="container-custom">
         <div className="flex justify-between items-center py-4">
           <Link href="/" className="flex-shrink-0" aria-label="GoldOak - Home">
-            <Logo variant="gold" size="lg" showText={false} />
+            <Logo variant="gold" size="lg" logoType="sidename" />
           </Link>
 
           {/* Desktop Navigation */}

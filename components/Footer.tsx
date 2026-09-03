@@ -11,7 +11,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Brand */}
           <div className="space-y-6">
-            <Logo variant="gold" size="lg" showText={true} textColor="text-white" />
+            <Logo variant="gold" size="xl" logoType="downname" />
             <p className="text-gray-300 text-sm leading-relaxed max-w-xs">
               An insurance solutions agency serving individuals, SMEs and corporate organisations. 
               We understand the risk first. The policy comes after.
