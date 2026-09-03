@@ -9,7 +9,6 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@next/swc-win32-x64-msvc": "^14.0.4",
     "framer-motion": "^10.16.16",
     "html2canvas": "^1.4.1",
     "jspdf": "^3.0.3",
