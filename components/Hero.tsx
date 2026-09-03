@@ -1,124 +1,86 @@
 'use client'
 
-import { motion } from 'framer-motion'
-import { ArrowRight, Shield, Award, Star, CheckCircle, Phone, Calendar } from 'lucide-react'
-import Image from 'next/image'
+import Link from 'next/link'
+import { ArrowRight, Shield, Users, BarChart3 } from 'lucide-react'
+import AnimatedSection from './AnimatedSection'
 
 const Hero = () => {
-  const scrollToContact = () => {
-    const element = document.querySelector('#contact')
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
-
-  const scrollToBooking = () => {
-    const element = document.querySelector('#booking')
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' })
-    }
-  }
-
   return (
-    <section id="hero" className="relative min-h-screen flex items-center justify-center bg-white">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
+    <section className="relative min-h-[90vh] flex items-center hero-gradient-navy overflow-hidden">
+      {/* Subtle pattern overlay */}
+      <div className="absolute inset-0 opacity-[0.03]">
         <div className="absolute inset-0" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23004B87' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='1.5'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
         }} />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-gray-900 space-y-8"
-          >
-            <div className="space-y-4 sm:space-y-6">
-              <motion.div
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2 }}
-                className="inline-flex items-center space-x-2 bg-primary text-white rounded-full px-3 py-2 sm:px-4"
-              >
-                <Award className="w-4 h-4" />
-                <span className="text-xs sm:text-sm font-medium">Licensed by IRA Kenya</span>
-              </motion.div>
+      {/* Gold accent line at top */}
+      <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-secondary to-transparent" />
 
-              <motion.h1
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.4 }}
-                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight text-gray-900"
-              >
-                Tailored Insurance Solutions for You & Your Business
-              </motion.h1>
-              
-              <motion.p
-                initial={{ opacity: 0, y: 30 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.6 }}
-                className="text-base sm:text-lg md:text-xl text-gray-600 leading-relaxed max-w-2xl"
-              >
-                Comprehensive insurance solutions for individuals and businesses across Kenya. Expert guidance, competitive rates, trusted coverage.
-              </motion.p>
+      <div className="container-custom px-4 sm:px-6 lg:px-8 relative z-10 py-20">
+        <div className="max-w-4xl">
+          <AnimatedSection animation="fade-up" delay={100}>
+            <div className="badge-gold mb-8 inline-flex">
+              <Shield className="w-4 h-4" />
+              Insurance solutions, not just policies
             </div>
+          </AnimatedSection>
 
-            {/* CTA Buttons */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.8 }}
-              className="flex flex-col sm:flex-row gap-4 max-w-md sm:max-w-none"
-            >
-              <button 
-                onClick={scrollToContact}
-                className="w-full sm:w-auto bg-primary text-white px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-semibold hover:bg-primary/90 transition-colors duration-200 text-base sm:text-lg inline-flex items-center justify-center group"
+          <AnimatedSection animation="fade-up" delay={200}>
+            <h1 className="font-serif text-display text-white mb-6">
+              Understand the risk first.{' '}
+              <span className="text-secondary italic">The policy comes after.</span>
+            </h1>
+          </AnimatedSection>
+
+          <AnimatedSection animation="fade-up" delay={300}>
+            <p className="text-body-lg text-gray-300 max-w-2xl mb-10 leading-relaxed">
+              GoldOak is an insurance solutions agency working with individuals, growing businesses 
+              and corporate organisations. We start by understanding what a client actually stands to 
+              lose, then find, compare and place cover that answers it — and we stay involved long 
+              after the policy is issued.
+            </p>
+          </AnimatedSection>
+
+          <AnimatedSection animation="fade-up" delay={400}>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <Link
+                href="/contact"
+                className="bg-secondary text-white px-8 py-4 rounded-lg font-semibold hover:bg-gold-500 transition-all duration-300 inline-flex items-center justify-center gap-2 group text-lg"
               >
-                Get a Quote
-                <ArrowRight className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:translate-x-1 transition-transform" />
-              </button>
-              <button 
-                onClick={scrollToBooking}
-                className="w-full sm:w-auto bg-secondary text-primary px-6 py-3 sm:px-8 sm:py-4 rounded-lg font-semibold hover:bg-secondary/90 transition-colors duration-200 text-base sm:text-lg inline-flex items-center justify-center group"
+                Start a Risk Review
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/solutions"
+                className="border-2 border-white/30 text-white px-8 py-4 rounded-lg font-semibold hover:bg-white/10 transition-all duration-300 inline-flex items-center justify-center gap-2 text-lg"
               >
-                Book a Call
-                <Calendar className="w-4 h-4 sm:w-5 sm:h-5 ml-2 group-hover:scale-110 transition-transform" />
-              </button>
-            </motion.div>
+                Explore Our Solutions
+              </Link>
+            </div>
+          </AnimatedSection>
 
-          </motion.div>
-
-          {/* Right Side - Insurance Image */}
-          <motion.div
-            initial={{ opacity: 0, x: 50 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="relative"
-          >
-            <div className="relative">
-              <Image 
-                src="https://images.unsplash.com/photo-1450101499163-c8848c66ca85?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1000&q=80"
-                alt="Professional Insurance and Financial Planning"
-                width={1000}
-                height={400}
-                className="w-full h-96 object-cover rounded-lg shadow-lg"
-                priority
-              />
-              <div className="absolute inset-0 bg-primary/20 rounded-lg"></div>
-              <div className="absolute bottom-6 left-6 right-6">
-                <div className="bg-white/95 backdrop-blur-sm rounded-lg p-4 shadow-lg">
-                  <h3 className="text-lg font-bold text-primary mb-2">Secure Your Future</h3>
-                  <p className="text-sm text-gray-700">Professional insurance coverage for all your needs</p>
-                </div>
+          <AnimatedSection animation="fade-up" delay={500}>
+            <div className="mt-16 flex flex-wrap gap-8 text-sm text-gray-400">
+              <div className="flex items-center gap-2">
+                <Users className="w-4 h-4 text-secondary" />
+                <span>Individual, SME & Corporate</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <BarChart3 className="w-4 h-4 text-secondary" />
+                <span>Multi-insurer comparison</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-secondary" />
+                <span>Claims support throughout</span>
               </div>
             </div>
-          </motion.div>
+          </AnimatedSection>
         </div>
       </div>
+
+      {/* Bottom gold accent */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-secondary/30 to-transparent" />
     </section>
   )
 }

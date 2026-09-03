@@ -1,72 +1,57 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 
 interface LogoProps {
   variant?: 'gold' | 'green'
   size?: 'sm' | 'md' | 'lg'
   showText?: boolean
-  className?: string
   textColor?: string
 }
 
-const Logo = ({ 
-  variant = 'gold', 
-  size = 'md', 
-  showText = true, 
-  className = '',
-  textColor = 'text-primary'
-}: LogoProps) => {
-  const [imageError, setImageError] = useState(false)
-  
-  const sizeClasses = {
-    sm: 'w-10 h-10',
-    md: 'w-16 h-16', 
-    lg: 'w-20 h-20'
+const Logo = ({ variant = 'gold', size = 'md', showText = false, textColor }: LogoProps) => {
+  const [imgError, setImgError] = useState(false)
+
+  const sizes: Record<string, { width: number; height: number; containerClass: string; textClass: string }> = {
+    sm: { width: 28, height: 28, containerClass: 'w-7 h-7', textClass: 'text-lg' },
+    md: { width: 36, height: 36, containerClass: 'w-9 h-9', textClass: 'text-xl' },
+    lg: { width: 44, height: 44, containerClass: 'w-11 h-11', textClass: 'text-2xl' },
   }
-  
-  const textSizes = {
-    sm: 'text-base',
-    md: 'text-2xl',
-    lg: 'text-3xl'
-  }
-  
-  const iconSizes = {
-    sm: 'w-6 h-6',
-    md: 'w-8 h-8',
-    lg: 'w-10 h-10'
-  }
-  
-  const getLogoSrc = () => {
-    return '/assets/Gold Icon.png'
-  }
-  
-  const getTextLogo = () => {
-    return '/assets/Gold Downname logo.png'
+
+  const config = sizes[size]
+  const logoSrc = variant === 'gold' ? '/assets/Gold Icon.png' : '/assets/Green icon.png'
+
+  if (imgError) {
+    return (
+      <div className="flex items-center gap-2">
+        <div className={`${config.containerClass} rounded-lg bg-secondary flex items-center justify-center`}>
+          <span className="text-white font-serif font-bold text-lg">G</span>
+        </div>
+        {showText && (
+          <span className={`font-serif font-semibold ${config.textClass} ${textColor || 'text-white'}`}>
+            GoldOak
+          </span>
+        )}
+      </div>
+    )
   }
 
   return (
-    <div className={`flex items-center space-x-3 ${className}`}>
-      {!imageError ? (
-        <img 
-          src={getLogoSrc()} 
-          alt="Goldoak Insurance Logo" 
-          className={`${sizeClasses[size]} object-contain`}
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <div className={`${sizeClasses[size]} bg-secondary rounded-lg flex items-center justify-center`}>
-          <span className="text-white font-bold text-lg">G</span>
-        </div>
-      )}
-      
+    <div className="flex items-center gap-2">
+      <Image
+        src={logoSrc}
+        alt="GoldOak Insurance Solutions"
+        width={config.width}
+        height={config.height}
+        className={`${config.containerClass} object-contain`}
+        onError={() => setImgError(true)}
+        priority
+      />
       {showText && (
-        <div>
-          <h1 className={`${textSizes[size]} font-bold ${textColor}`}>
-            Goldoak Insurance
-          </h1>
-          <p className="text-sm text-gray-600">Agency Limited</p>
-        </div>
+        <span className={`font-serif font-semibold ${config.textClass} ${textColor || 'text-white'}`}>
+          GoldOak
+        </span>
       )}
     </div>
   )

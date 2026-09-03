@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GoldOak Agency — Company Profile</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Petrona:ital,wght@0,400;0,500;0,600;1,400&family=Karla:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --page:      #E5E5DB;
+    --paper:     #F4F3ED;
+    --ink:       #2E251C;
+    --muted:     #6A6055;
+    --moss:      #2C3D33;
+    --moss-ink:  #EEEEE4;
+    --moss-mute: #A9B8AC;
+    --gold:      #8E6716;
+    --gold-lit:  #C9A24A;
+    --rule:      rgba(46, 37, 28, 0.18);
+    --rule-soft: rgba(46, 37, 28, 0.10);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --page:      #191D1A;
+      --paper:     #212722;
+      --ink:       #E9E7DE;
+      --muted:     #A49B8D;
+      --moss:      #0F1411;
+      --moss-ink:  #E9E7DE;
+      --moss-mute: #96A399;
+      --gold:      #C9A24A;
+      --gold-lit:  #C9A24A;
+      --rule:      rgba(233, 231, 222, 0.20);
+      --rule-soft: rgba(233, 231, 222, 0.10);
+    }
+  }
+  :root[data-theme="dark"] {
+    --page:      #191D1A;
+    --paper:     #212722;
+    --ink:       #E9E7DE;
+    --muted:     #A49B8D;
+    --moss:      #0F1411;
+    --moss-ink:  #E9E7DE;
+    --moss-mute: #96A399;
+    --gold:      #C9A24A;
+    --gold-lit:  #C9A24A;
+    --rule:      rgba(233, 231, 222, 0.20);
+    --rule-soft: rgba(233, 231, 222, 0.10);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: "Karla", "Helvetica Neue", Arial, sans-serif;
+    font-size: 17px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 28px;
+  }
+
+  section { padding: 68px 0; }
+  section + section { border-top: 1px solid var(--rule-soft); }
+
+  h1, h2, h3 {
+    font-family: "Petrona", Georgia, serif;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin: 0;
+  }
+
+  p { max-width: 62ch; }
+
+  /* ---------- masthead + hero ---------- */
+
+  .masthead {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 34px 0 0;
+  }
+  .mark { width: 26px; height: 34px; flex: none; }
+  .mark path { fill: var(--gold); }
+  .mark line { stroke: var(--page); stroke-width: 1.1; }
+  .wordmark {
+    font-family: "Petrona", Georgia, serif;
+    font-size: 21px;
+    font-weight: 600;
+    letter-spacing: 0.005em;
+  }
+  .wordmark span { color: var(--muted); font-weight: 400; }
+
+  .hero { padding: 46px 0 74px; }
+  .hero h1 {
+    font-size: clamp(2.35rem, 7.2vw, 4.05rem);
+    line-height: 1.04;
+    max-width: 15ch;
+    margin-bottom: 30px;
+  }
+  .hero h1 em {
+    font-style: italic;
+    font-weight: 400;
+    color: var(--gold);
+  }
+  .lede {
+    font-size: 1.16rem;
+    line-height: 1.66;
+    max-width: 56ch;
+    color: var(--ink);
+  }
+
+  /* ---------- section headings ---------- */
+
+  .head {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 34px;
+  }
+  .head h2 { font-size: 1.62rem; flex: none; }
+  .head .rule {
+    height: 1px;
+    background: var(--gold);
+    opacity: 0.55;
+    flex: 1 1 auto;
+    transform: translateY(-4px);
+  }
+
+  /* ---------- three-up blocks ---------- */
+
+  .three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 2px;
+    background: var(--rule-soft);
+    border: 1px solid var(--rule-soft);
+  }
+  .three > div {
+    background: var(--paper);
+    padding: 26px 24px 30px;
+  }
+  .three h3 {
+    font-size: 1.2rem;
+    margin-bottom: 10px;
+  }
+  .three p {
+    margin: 0;
+    font-size: 0.965rem;
+    color: var(--muted);
+    line-height: 1.58;
+  }
+
+  /* ---------- journey (a real sequence, so numbered) ---------- */
+
+  .journey {
+    background: var(--moss);
+    color: var(--moss-ink);
+  }
+  .journey .head h2 { color: var(--moss-ink); }
+  .journey .head .rule { background: var(--gold-lit); }
+  .journey .intro {
+    color: var(--moss-mute);
+    margin: -14px 0 36px;
+    max-width: 58ch;
+  }
+  ol.stages {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid rgba(201, 162, 74, 0.28);
+  }
+  ol.stages li {
+    display: grid;
+    grid-template-columns: 44px 1fr;
+    gap: 0 22px;
+    padding: 20px 0;
+    border-bottom: 1px solid rgba(201, 162, 74, 0.28);
+  }
+  ol.stages .n {
+    font-family: "Petrona", Georgia, serif;
+    font-size: 1.5rem;
+    color: var(--gold-lit);
+    line-height: 1.25;
+  }
+  ol.stages h3 {
+    font-size: 1.16rem;
+    color: var(--moss-ink);
+    margin-bottom: 3px;
+  }
+  ol.stages p {
+    margin: 0;
+    color: var(--moss-mute);
+    font-size: 0.965rem;
+    max-width: 54ch;
+  }
+
+  /* ---------- solutions ---------- */
+
+  .solutions { display: grid; gap: 30px; }
+  .sol {
+    display: grid;
+    grid-template-columns: 190px 1fr;
+    gap: 24px;
+    padding-bottom: 28px;
+    border-bottom: 1px solid var(--rule-soft);
+  }
+  .sol:last-child { border-bottom: none; padding-bottom: 0; }
+  .sol h3 { font-size: 1.22rem; }
+  .sol .who {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin: 4px 0 0;
+  }
+  .sol ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .sol li {
+    border: 1px solid var(--rule);
+    border-radius: 2px;
+    padding: 5px 11px;
+    font-size: 0.885rem;
+    color: var(--ink);
+    background: var(--paper);
+  }
+  .sol .tail {
+    width: 100%;
+    font-size: 0.885rem;
+    color: var(--muted);
+    border: none;
+    background: none;
+    padding: 5px 0;
+  }
+
+  /* ---------- panel ---------- */
+
+  .panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 12px;
+    margin-bottom: 26px;
+  }
+  .panel span {
+    font-family: "Petrona", Georgia, serif;
+    font-size: 1.24rem;
+    color: var(--ink);
+    border-bottom: 2px solid var(--gold);
+    padding-bottom: 2px;
+    margin-right: 6px;
+  }
+
+  /* ---------- commitments ---------- */
+
+  .commit {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 26px 40px;
+    margin-top: 6px;
+  }
+  .commit div { border-top: 2px solid var(--gold); padding-top: 14px; }
+  .commit h3 { font-size: 1.06rem; margin-bottom: 6px; }
+  .commit p { margin: 0; font-size: 0.95rem; color: var(--muted); }
+
+  /* ---------- closing ---------- */
+
+  footer {
+    background: var(--moss);
+    color: var(--moss-ink);
+    padding: 62px 0 46px;
+  }
+  footer h2 {
+    font-size: clamp(1.6rem, 4vw, 2.15rem);
+    max-width: 20ch;
+    margin-bottom: 18px;
+  }
+  footer p { color: var(--moss-mute); max-width: 52ch; }
+  .contact {
+    margin-top: 30px;
+    padding-top: 22px;
+    border-top: 1px solid rgba(201, 162, 74, 0.3);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 40px;
+    font-size: 0.95rem;
+    color: var(--moss-mute);
+  }
+  .contact b { color: var(--moss-ink); font-weight: 500; }
+  .sig {
+    margin-top: 34px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "Petrona", Georgia, serif;
+    font-size: 1rem;
+    color: var(--moss-mute);
+  }
+  .sig svg { width: 17px; height: 22px; }
+  .sig svg path { fill: var(--gold-lit); }
+
+  @media (max-width: 720px) {
+    body { font-size: 16.5px; }
+    section { padding: 52px 0; }
+    .three { grid-template-columns: 1fr; }
+    .sol { grid-template-columns: 1fr; gap: 14px; }
+    .commit { grid-template-columns: 1fr; }
+    .hero { padding: 34px 0 54px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="masthead">
+    <svg class="mark" viewBox="0 0 24 32" aria-hidden="true">
+      <path d="M12 1.6C13.9 4.6 16.9 5.2 17.4 7.7c2.5 0 3.6 2.5 2.1 4 2 1 2 4 -0.5 4.6 2 1.5 1 4.5 -1.5 4.5 -0.5 3 -3.5 3.4 -5 5.9v4.7h-1v-4.7c-1.5-2.5-4.5-2.9-5-5.9-2.5 0-3.5-3-1.5-4.5-2.5-0.6-2.5-3.6-0.5-4.6-1.5-1.5-0.4-4 2.1-4C7.1 5.2 10.1 4.6 12 1.6Z"/>
+      <line x1="12" y1="6" x2="12" y2="27"/>
+    </svg>
+    <div class="wordmark">GoldOak <span>Agency</span></div>
+  </div>
+
+  <div class="hero">
+    <h1>Understand the risk first. The <em>policy</em> comes after.</h1>
+    <p class="lede">GoldOak is an insurance agency working with individuals,
+      growing businesses and corporate organisations. We start by understanding
+      what a client actually stands to lose, then find, compare and place cover
+      that answers it — and we stay involved long after the policy is issued.</p>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="head"><h2>Who we work with</h2><div class="rule"></div></div>
+    <div class="three">
+      <div>
+        <h3>Individuals</h3>
+        <p>Cover for the things you have worked for and the people who depend
+          on you — your vehicle, your family's health, your home, your income
+          and your travel.</p>
+      </div>
+      <div>
+        <h3>Small &amp; medium businesses</h3>
+        <p>Growing businesses carry exposures that rarely fit a standard
+          package: staff, stock, premises, vehicles, contracts and professional
+          obligations. We build cover around the actual operation.</p>
+      </div>
+      <div>
+        <h3>Corporate organisations</h3>
+        <p>Employee benefits, group schemes, fleets, property and liability
+          programmes, arranged and administered with the review discipline a
+          larger organisation expects.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="journey">
+  <div class="wrap">
+    <div class="head"><h2>How we work</h2><div class="rule"></div></div>
+    <p class="intro">Every client goes through the same seven stages. It is the
+      part of our work that does not change, whether we are placing one motor
+      policy or an entire employee benefits programme.</p>
+
+    <ol class="stages">
+      <li>
+        <div class="n">1</div>
+        <div>
+          <h3>Understand</h3>
+          <p>We look at your circumstances, assets, activities, people and the
+            risks that sit behind them before discussing any product.</p>
+        </div>
+      </li>
+      <li>
+        <div class="n">2</div>
+        <div>
+          <h3>Solve</h3>
+          <p>We identify the insurance solutions that genuinely address what we
+            found, and say plainly where cover is not the right answer.</p>
+        </div>
+      </li>
+      <li>
+        <div class="n">3</div>
+        <div>
+          <h3>Compare</h3>
+          <p>We obtain terms from several insurers where it is useful to do so,
+            and set the options side by side — cover, exclusions, limits and
+            price.</p>
+        </div>
+      </li>
+      <li>
+        <div class="n">4</div>
+        <div>
+          <h3>Implement</h3>
+          <p>Once you choose, we handle documentation, payment, issuance and
+            onboarding so the policy is in force without loose ends.</p>
+        </div>
+      </li>
+      <li>
+        <div class="n">5</div>
+        <div>
+          <h3>Support</h3>
+          <p>We remain available through the policy year for changes,
+            additions, questions and day-to-day service.</p>
+        </div>
+      </li>
+      <li>
+        <div class="n">6</div>
+        <div>
+          <h3>Claims</h3>
+          <p>We guide you through notification, documentation, follow-up and
+            settlement. This is the stage that tests the advice, so we take it
+            seriously.</p>
+        </div>
+      </li>
+      <li>
+        <div class="n">7</div>
+        <div>
+          <h3>Review and renew</h3>
+          <p>We check in during the year and review cover at renewal, because
+            what you were insuring twelve months ago has usually changed.</p>
+        </div>
+      </li>
+    </ol>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head"><h2>What we arrange</h2><div class="rule"></div></div>
+    <div class="solutions">
+
+      <div class="sol">
+        <div>
+          <h3>Personal</h3>
+          <p class="who">For individuals and families</p>
+        </div>
+        <ul>
+          <li>Motor</li><li>Medical</li><li>Life</li>
+          <li>Personal accident</li><li>Travel</li><li>Property and home</li>
+          <li class="tail">and other personal covers suited to the client.</li>
+        </ul>
+      </div>
+
+      <div class="sol">
+        <div>
+          <h3>Business</h3>
+          <p class="who">For SMEs and owner-run companies</p>
+        </div>
+        <ul>
+          <li>Motor and fleet</li><li>Medical</li><li>WIBA</li>
+          <li>Group life</li><li>Property</li><li>Fire</li>
+          <li>Burglary</li><li>Liability</li><li>Professional indemnity</li>
+          <li class="tail">and other commercial covers.</li>
+        </ul>
+      </div>
+
+      <div class="sol">
+        <div>
+          <h3>Corporate</h3>
+          <p class="who">For established organisations</p>
+        </div>
+        <ul>
+          <li>Employee benefits</li><li>Group medical</li><li>Group life</li>
+          <li>WIBA</li><li>Fleet</li><li>Property</li><li>Liability</li>
+          <li>Professional risks</li>
+          <li class="tail">and other corporate solutions.</li>
+        </ul>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head"><h2>Our insurer panel</h2><div class="rule"></div></div>
+    <div class="panel">
+      <span>Jubilee</span><span>APA</span><span>AAR</span><span>AIG</span>
+      <span>Britam</span><span>CIC</span><span>Old Mutual</span>
+      <span>Prudential</span>
+    </div>
+    <p>We are not tied to a single insurer. Access to a panel is what makes
+      comparison meaningful — it lets us match a client to the insurer whose
+      terms, service and claims record actually suit the risk in front of us.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="head"><h2>What you can expect from us</h2><div class="rule"></div></div>
+    <div class="commit">
+      <div>
+        <h3>Advice before product</h3>
+        <p>We recommend cover only after we understand the exposure. If a
+          policy does not earn its premium, we will say so.</p>
+      </div>
+      <div>
+        <h3>Options you can compare</h3>
+        <p>You see the alternatives and the differences between them, and you
+          make the decision. We explain, we do not push.</p>
+      </div>
+      <div>
+        <h3>One point of contact</h3>
+        <p>The same people who arranged your cover handle your changes, your
+          questions and your claim.</p>
+      </div>
+      <div>
+        <h3>A relationship that continues</h3>
+        <p>Cover is reviewed as your circumstances change, not renewed on
+          autopilot each year.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <h2>Start with a conversation about your risk.</h2>
+    <p>Tell us what you own, what you run and who depends on you. We will come
+      back with the options worth considering and the reasoning behind each
+      one.</p>
+
+    <div class="contact">
+      <div><b>Phone</b> &nbsp;[phone number]</div>
+      <div><b>Email</b> &nbsp;[email address]</div>
+      <div><b>Office</b> &nbsp;[physical address]</div>
+    </div>
+
+    <div class="sig">
+      <svg viewBox="0 0 24 32" aria-hidden="true">
+        <path d="M12 1.6C13.9 4.6 16.9 5.2 17.4 7.7c2.5 0 3.6 2.5 2.1 4 2 1 2 4 -0.5 4.6 2 1.5 1 4.5 -1.5 4.5 -0.5 3 -3.5 3.4 -5 5.9v4.7h-1v-4.7c-1.5-2.5-4.5-2.9-5-5.9-2.5 0-3.5-3-1.5-4.5-2.5-0.6-2.5-3.6-0.5-4.6-1.5-1.5-0.4-4 2.1-4C7.1 5.2 10.1 4.6 12 1.6Z"/>
+      </svg>
+      GoldOak Agency — insurance solutions, not just policies.
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

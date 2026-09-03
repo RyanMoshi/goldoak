@@ -1,23 +1,21 @@
 import Hero from '@/components/Hero'
-import AboutSection from '@/components/AboutSection'
-import ServicesSection from '@/components/ServicesSection'
-import ProcessSection from '@/components/ProcessSection'
-import ClaimsSection from '@/components/ClaimsSection'
-import WhyChooseUsSection from '@/components/WhyChooseUsSection'
-import ContactSection from '@/components/ContactSection'
-import FloatingWhatsApp from '@/components/FloatingWhatsApp'
+import WhyGoldOak from '@/components/WhyGoldOak'
+import WhoWeServe from '@/components/WhoWeServe'
+import SolutionsPreview from '@/components/SolutionsPreview'
+import ProcessPreview from '@/components/ProcessPreview'
+import InsurerPanel from '@/components/InsurerPanel'
+import CTASection from '@/components/CTASection'
 
 export default function Home() {
   return (
     <div className="min-h-screen">
       <Hero />
-      <AboutSection />
-      <ServicesSection />
-      <ProcessSection />
-      <ClaimsSection />
-      <WhyChooseUsSection />
-      <ContactSection />
-      <FloatingWhatsApp />
+      <WhyGoldOak />
+      <WhoWeServe />
+      <SolutionsPreview />
+      <ProcessPreview />
+      <InsurerPanel />
+      <CTASection />
     </div>
   )
 }

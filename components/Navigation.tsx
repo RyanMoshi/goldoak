@@ -3,159 +3,177 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Phone, MessageCircle, ChevronDown } from 'lucide-react'
+import { Menu, X, Phone, ChevronDown, ArrowRight } from 'lucide-react'
 import Logo from './Logo'
-import QuoteModal from './QuoteModal'
+import { mainNav } from '@/lib/navigation'
+import { contact } from '@/lib/contact'
 
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [isQuoteModalOpen, setIsQuoteModalOpen] = useState(false)
+  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const pathname = usePathname()
-
-  const navItems = [
-    { name: 'Home', href: '#hero' },
-    { name: 'About', href: '#about' },
-    { name: 'Services', href: '#services' },
-    { name: 'Process', href: '#process' },
-    { name: 'Claims', href: '#claims' },
-    { name: 'Why Choose Us', href: '#why-choose-us' },
-    { name: 'Contact', href: '#contact' },
-  ]
 
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20)
     }
-    window.addEventListener('scroll', handleScroll)
+    window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  const handleNavClick = (href: string) => {
-    if (href.startsWith('#')) {
-      const element = document.querySelector(href)
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' })
-      }
-      setIsOpen(false)
-    }
+  useEffect(() => {
+    setIsOpen(false)
+    setOpenDropdown(null)
+  }, [pathname])
+
+  const isActive = (href: string) => {
+    if (href === '/') return pathname === '/'
+    return pathname.startsWith(href)
   }
 
   return (
-    <nav className={`sticky top-0 z-50 transition-all duration-300 ${
-      isScrolled 
-        ? 'bg-primary shadow-lg' 
-        : 'bg-primary'
-    }`}>
+    <nav
+      className={`sticky top-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? 'bg-primary/95 backdrop-blur-md shadow-lg'
+          : 'bg-primary'
+      }`}
+      role="navigation"
+      aria-label="Main navigation"
+    >
       <div className="container-custom">
         <div className="flex justify-between items-center py-4">
-          {/* Logo */}
-          <Link href="/" className="flex-shrink-0">
+          <Link href="/" className="flex-shrink-0" aria-label="GoldOak - Home">
             <Logo variant="gold" size="lg" showText={false} />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <button
+          <div className="hidden lg:flex items-center space-x-1">
+            {mainNav.map((item) => (
+              <div
                 key={item.name}
-                onClick={() => handleNavClick(item.href)}
-                className="font-medium text-white hover:text-secondary transition-colors duration-200"
+                className="relative"
+                onMouseEnter={() => item.children && setOpenDropdown(item.name)}
+                onMouseLeave={() => setOpenDropdown(null)}
               >
-                {item.name}
-              </button>
+                <Link
+                  href={item.href}
+                  className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                    isActive(item.href)
+                      ? 'text-white bg-white/10'
+                      : 'text-gray-200 hover:text-white hover:bg-white/5'
+                  }`}
+                >
+                  {item.name}
+                  {item.children && (
+                    <ChevronDown className={`w-3 h-3 transition-transform ${openDropdown === item.name ? 'rotate-180' : ''}`} />
+                  )}
+                </Link>
+
+                {item.children && openDropdown === item.name && (
+                  <div className="absolute top-full left-0 pt-2 z-50">
+                    <div className="bg-white rounded-xl shadow-xl border border-gray-100 py-2 min-w-[220px]">
+                      {item.children.map((child) => (
+                        <Link
+                          key={child.name}
+                          href={child.href}
+                          className="block px-4 py-2.5 text-sm text-gray-700 hover:text-primary hover:bg-navy-50 transition-colors"
+                        >
+                          {child.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
 
-          {/* Contact Buttons */}
-          <div className="hidden lg:flex items-center space-x-4">
+          {/* Desktop CTA */}
+          <div className="hidden lg:flex items-center space-x-3">
             <a
-              href="tel:+254729911311"
-              className="flex items-center space-x-2 text-white hover:text-secondary transition-colors group"
+              href={`tel:${contact.phoneRaw}`}
+              className="flex items-center gap-2 text-gray-200 hover:text-white transition-colors text-sm"
             >
-              <Phone className="w-4 h-4 group-hover:scale-110 transition-transform" />
-              <span className="text-sm font-medium">+254 729 911 311</span>
+              <Phone className="w-4 h-4" />
+              <span>{contact.phone}</span>
             </a>
-            <button
-              onClick={() => setIsQuoteModalOpen(true)}
-              className="bg-secondary text-primary px-6 py-2 rounded-lg font-semibold hover:bg-secondary/90 transition-colors text-sm inline-flex items-center group"
+            <Link
+              href="/contact"
+              className="bg-secondary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-gold-500 transition-all duration-300 text-sm inline-flex items-center gap-2 group"
             >
-              <span>Get a Quote</span>
-              <ChevronDown className="w-4 h-4 ml-1 group-hover:translate-y-0.5 transition-transform" />
-            </button>
-            <a
-              href="https://wa.me/254729911311"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white text-primary px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition-colors text-sm inline-flex items-center group"
-            >
-              <MessageCircle className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
-              WhatsApp
-            </a>
+              Start a Risk Review
+              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
           </div>
 
           {/* Mobile Menu Button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="lg:hidden p-3 rounded-xl text-white hover:text-secondary hover:bg-white/10 transition-all duration-300"
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
         {/* Mobile Navigation */}
-        <div className={`lg:hidden transition-all duration-300 overflow-hidden ${
-          isOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
-        }`}>
-          <div className="border-t border-white/20 py-6 space-y-4">
-            {navItems.map((item) => (
-              <button
-                key={item.name}
-                onClick={() => handleNavClick(item.href)}
-                className="block py-3 px-4 rounded-xl font-medium transition-all duration-200 text-white hover:text-secondary hover:bg-white/5 w-full text-left"
-              >
-                {item.name}
-              </button>
+        <div
+          className={`lg:hidden transition-all duration-300 overflow-hidden ${
+            isOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
+          }`}
+          role="menu"
+        >
+          <div className="border-t border-white/20 py-6 space-y-1">
+            {mainNav.map((item) => (
+              <div key={item.name}>
+                <Link
+                  href={item.href}
+                  className={`block py-3 px-4 rounded-xl font-medium transition-all duration-200 text-white hover:text-secondary hover:bg-white/5 ${
+                    isActive(item.href) ? 'bg-white/10 text-secondary' : ''
+                  }`}
+                  role="menuitem"
+                >
+                  {item.name}
+                </Link>
+                {item.children && (
+                  <div className="pl-6 space-y-1">
+                    {item.children.map((child) => (
+                      <Link
+                        key={child.name}
+                        href={child.href}
+                        className="block py-2 px-4 rounded-lg text-sm text-gray-300 hover:text-secondary hover:bg-white/5 transition-colors"
+                        role="menuitem"
+                      >
+                        {child.name}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
             ))}
-            
-            <div className="pt-4 border-t border-white/20 space-y-4">
+
+            <div className="pt-4 border-t border-white/20 space-y-3">
               <a
-                href="tel:+254729911311"
-                className="flex items-center space-x-3 py-3 px-4 text-white hover:bg-white/5 rounded-xl transition-colors"
+                href={`tel:${contact.phoneRaw}`}
+                className="flex items-center gap-3 py-3 px-4 text-white hover:bg-white/5 rounded-xl transition-colors"
               >
                 <Phone className="w-5 h-5" />
-                <span className="font-medium">+254 729 911 311</span>
+                <span className="font-medium">{contact.phone}</span>
               </a>
-              
-              <button
-                onClick={() => {
-                  setIsQuoteModalOpen(true)
-                  setIsOpen(false)
-                }}
-                className="bg-secondary text-primary w-full text-center justify-center py-3 px-4 rounded-xl font-semibold hover:bg-secondary/90 transition-colors"
+              <Link
+                href="/contact"
+                className="bg-secondary text-white w-full text-center justify-center py-3 px-4 rounded-xl font-semibold hover:bg-gold-500 transition-colors inline-flex items-center gap-2"
               >
-                Get a Quote
-              </button>
-              
-              <a
-                href="https://wa.me/254729911311"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-white text-primary w-full text-center justify-center py-3 px-4 rounded-xl font-semibold hover:bg-gray-100 transition-colors inline-flex items-center"
-              >
-                <MessageCircle className="w-4 h-4 mr-2" />
-                WhatsApp
-              </a>
+                Start a Risk Review
+                <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Quote Modal */}
-      <QuoteModal 
-        isOpen={isQuoteModalOpen} 
-        onClose={() => setIsQuoteModalOpen(false)} 
-      />
     </nav>
   )
 }
