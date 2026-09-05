@@ -26,6 +26,7 @@ SMTP_USER=your-email@gmail.com
 SMTP_PASS=your-app-password
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
+sk-5f90e60b133749b6a930ec340438be21
 
 ### Development
 
