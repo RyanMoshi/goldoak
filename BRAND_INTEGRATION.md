@@ -2,6 +2,15 @@
 
 ## Brand Assets
 
+Main Brand Colors: Green - #073423
+                   Gold - #c28d38
+
+                   Phone: +254-729-911-311
+                   Email: info@goldoak.co.ke
+                   Website: www.goldoak.co.ke
+                   GoldOak Insurance Agency Ltd
+
+
 ### Logo Variants
 - **Gold Icon.png** — Primary logo for navigation and favicon
 - **Green icon.png** — Alternative logo variant
@@ -28,9 +37,9 @@
 - Error fallback to "G" circle
 
 ### Color Classes
-- `bg-primary` / `text-primary` — Navy `#004B87`
-- `bg-secondary` / `text-secondary` — Gold `#C19A6B`
+- `bg-primary` / `text-primary` — Navy `#073423`
+- `bg-secondary` / `text-secondary` — Gold `#c28d38`
 - `bg-navy-*` — Navy shade scale
 - `bg-gold-*` — Gold shade scale
 - `bg-section-cream` — `#faf9f6`
-- `bg-section-navy` — `#004B87`
+- `bg-section-navy` — `#073423`
