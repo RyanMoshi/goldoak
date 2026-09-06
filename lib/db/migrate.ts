@@ -5,7 +5,7 @@ import { getSql } from '@/lib/db/client'
 let ensured: Promise<void> | null = null
 
 /**
- * Applies schema.sql (all statements are IF NOT EXISTS). Runs once per server
+ * Applies schema.sql (every statement is IF NOT EXISTS). Runs once per server
  * instance, on first use, so a fresh database works without a manual step.
  */
 export function ensureSchema(): Promise<void> {
@@ -18,7 +18,7 @@ export function ensureSchema(): Promise<void> {
         .map((s) => s.trim())
         .filter((s) => s.length > 0 && !s.startsWith('--'))
       for (const statement of statements) {
-        await sql.query(statement)
+        await sql.unsafe(statement)
       }
     })().catch((error) => {
       ensured = null

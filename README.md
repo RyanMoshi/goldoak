@@ -100,7 +100,7 @@ The GoldOak website is the front door. Clients create an account and follow thei
 
 ### Setup
 
-1. **Database (Neon Postgres via Vercel Marketplace).** `vercel integration add neon --name goldoak-db` then `vercel env pull .env.local`. The schema is applied automatically on first use (`lib/db/schema.sql`).
+1. **Database (Supabase Postgres).** Connect the Supabase project to the Vercel project (Supabase → Integrations → Vercel); it syncs `POSTGRES_URL` to Production. Locally: `vercel env pull .env.local --environment=production`. The schema is applied automatically on first use (`lib/db/schema.sql`).
 2. **Seed demo data.** `npm run db:seed` creates the GoldOak organisation, an agency account and demo clients. Passwords default to `GoldOak2026!` (override with `SEED_PASSWORD`).
 3. **Session secret.** Set `AUTH_SECRET` (32+ random characters) in Vercel and `.env.local`.
 4. **WhatsApp.** In Meta for Developers, add the WhatsApp product, then set `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` and `WHATSAPP_APP_SECRET`. Point the webhook at `https://<your-domain>/api/whatsapp/webhook` with the same verify token and subscribe to `messages`.
@@ -114,7 +114,7 @@ app/(site)/            Marketing site (navigation + footer)
 app/(platform)/        signin, signup, agency/*, portal/*
 components/platform/   Workspace shell, AI command bar, dashboard, clients, portal, auth
 lib/auth/              scrypt passwords, signed session cookie, server actions
-lib/db/                Neon client, schema.sql, migrate, row mappers
+lib/db/                Postgres client (postgres.js), schema.sql, migrate, row mappers
 lib/whatsapp/          Cloud API client and reply builder
 services/              Data access: users, agency dashboard, clients, portal
 scripts/seed.mjs       Demo data

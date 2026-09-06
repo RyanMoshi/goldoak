@@ -1,17 +1,24 @@
 // Seeds the GoldOak database with the organisation, an agency account and
 // demo clients with policies, quotes, claims, tasks and activity.
-// Run: npm run db:seed   (reads DATABASE_URL from .env.local)
+// Run: npm run db:seed   (reads POSTGRES_URL / DATABASE_URL from .env.local)
 
 import { readFileSync } from 'node:fs'
 import { randomBytes, scryptSync } from 'node:crypto'
-import { neon } from '@neondatabase/serverless'
+import postgres from 'postgres'
 
-const url = process.env.DATABASE_URL
+function connectionString() {
+  const direct = [process.env.DATABASE_URL, process.env.POSTGRES_URL, process.env.POSTGRES_PRISMA_URL, process.env.POSTGRES_URL_NON_POOLING].find((v) => v && v.trim())
+  if (direct) return direct.trim()
+  const { POSTGRES_HOST: host, POSTGRES_USER: user, POSTGRES_PASSWORD: password, POSTGRES_DATABASE: database } = process.env
+  if (host && user && password) return `postgresql://${encodeURIComponent(user)}:${encodeURIComponent(password)}@${host}:5432/${database || 'postgres'}`
+  return undefined
+}
+const url = connectionString()
 if (!url) {
-  console.error('DATABASE_URL is not set. Run `vercel env pull .env.local` first.')
+  console.error('No database URL. Set DATABASE_URL in Vercel (pooled Supabase URL), then run `vercel env pull .env.local --environment=production`.')
   process.exit(1)
 }
-const sql = neon(url)
+const sql = postgres(url, { prepare: false, max: 1, ssl: /localhost|127.0.0.1/.test(url) ? false : 'require' })
 
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? 'GoldOak2026!'
 
@@ -33,7 +40,7 @@ function hoursAgo(hours) {
 async function applySchema() {
   const file = readFileSync(new URL('../lib/db/schema.sql', import.meta.url), 'utf8')
   const statements = file.split(/;\s*\n/).map((s) => s.trim()).filter((s) => s && !s.startsWith('--'))
-  for (const statement of statements) await sql.query(statement)
+  for (const statement of statements) await sql.unsafe(statement)
 }
 
 const ORG = 'org_goldoak'
@@ -162,7 +169,10 @@ async function seed() {
   console.log(`Client sign-in:  mwangi@example.com / ${DEMO_PASSWORD}  (also wanjiru@example.com, apex@example.com)`)
 }
 
-seed().catch((error) => {
-  console.error(error)
-  process.exit(1)
-})
+seed()
+  .then(() => sql.end())
+  .catch(async (error) => {
+    console.error(error)
+    await sql.end().catch(() => {})
+    process.exit(1)
+  })
