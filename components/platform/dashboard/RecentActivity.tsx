@@ -1,4 +1,4 @@
-import { Activity, FileCheck2, FileText, RefreshCw, Send, ShieldAlert, UserCheck, UserPlus, type LucideIcon } from 'lucide-react'
+import { Activity, FileCheck2, FileSearch, FileText, MessageCircle, MessageSquare, RefreshCw, Send, ShieldAlert, ShieldCheck, Signpost, UserCheck, UserPlus, type LucideIcon } from 'lucide-react'
 import { Card, CardHeader } from '@/components/platform/ui/Card'
 import { EmptyState } from '@/components/platform/ui/EmptyState'
 import { relativeTime } from '@/lib/format'
@@ -12,6 +12,12 @@ const kindIcon: Record<ActivityKind, LucideIcon> = {
   renewal: RefreshCw,
   claim: ShieldAlert,
   signup: UserPlus,
+  'quote-requested': FileSearch,
+  'claim-reported': ShieldAlert,
+  stage: Signpost,
+  policy: ShieldCheck,
+  message: MessageSquare,
+  whatsapp: MessageCircle,
 }
 
 export function RecentActivity({ items }: { items: ActivityItem[] }) {

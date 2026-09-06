@@ -71,8 +71,11 @@ export function SignUpForm() {
         <Field label="Email" htmlFor="email" error={err('email')}>
           <input id="email" name="email" type="email" autoComplete="email" required className={inputClass} placeholder="you@example.com" aria-invalid={state.field === 'email'} />
         </Field>
-        <Field label="Mobile number (WhatsApp)" htmlFor="phone" error={err('phone')} hint="We use this to recognise you when you message us on WhatsApp.">
-          <input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" className={inputClass} placeholder="0712 345 678" aria-invalid={state.field === 'phone'} />
+        <Field label="WhatsApp number" htmlFor="phone" error={err('phone')} hint="We recognise you by this number on WhatsApp, and send reminders and updates there.">
+          <input id="phone" name="phone" type="tel" inputMode="tel" autoComplete="tel" required className={inputClass} placeholder="0712 345 678 or +255 742 473 493" aria-invalid={state.field === 'phone'} />
+        </Field>
+        <Field label="What would you like to protect?" htmlFor="protect" hint="Optional. A sentence is enough; your adviser starts from here.">
+          <textarea id="protect" name="protect" rows={2} maxLength={500} className={inputClass + ' h-auto py-2.5'} placeholder="e.g. Two delivery vans, a shop in Kariobangi and 6 staff" />
         </Field>
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Password" htmlFor="password" error={err('password')} hint="At least 8 characters.">

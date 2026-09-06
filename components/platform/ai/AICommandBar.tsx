@@ -11,14 +11,14 @@ import { useIsMac } from '@/hooks/useIsMac'
 import { useKeyboardShortcut } from '@/hooks/useKeyboardShortcut'
 import { useRecentCommands } from '@/hooks/useRecentCommands'
 import { cn } from '@/lib/cn'
-import { createCommandHandler } from '@/services/ai/commandHandler'
+import { runCommandAction } from '@/lib/agency/actions'
 
 type Panel = 'closed' | 'suggestions' | 'response'
 
-const PLACEHOLDER = 'Ask or command… “Prepare motor quotes for John Kamau”'
+const PLACEHOLDER = 'Ask your records… “Which quotes are still outstanding?”'
 
 export function AICommandBar({ handler }: { handler?: CommandHandler }) {
-  const commandHandler = useMemo(() => handler ?? createCommandHandler(), [handler])
+  const commandHandler = useMemo<CommandHandler>(() => handler ?? { handle: (command) => runCommandAction(command) }, [handler])
   const { recent, remember, clear } = useRecentCommands()
   const isMac = useIsMac()
 

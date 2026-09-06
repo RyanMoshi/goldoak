@@ -1,60 +1,27 @@
 ---
 name: dev-setup
-description: "First-time setup, install, dev server, and environment commands."
+description: "First-time setup, environment, dev server."
 metadata.type: playbook
 ---
 
-## Phase 1: Install
 ```bash
-cd /path/to/goldoak
+git clone https://github.com/RyanMoshi/goldoak.git && cd goldoak
 npm install
+vercel link --yes --project goldoak          # once
+vercel env pull .env.local --environment=production
 ```
 
-## Phase 2: Environment
+`.env.local` will contain empty values for the sensitive Supabase variables. For local database access add one line with the pooled Supabase URL (password from Supabase → Project Settings → Database):
+```
+DATABASE_URL=postgresql://postgres.zvwapjpnlfavqtdtkffa:<password>@aws-0-eu-central-1.pooler.supabase.com:6543/postgres
+```
+Without it the site runs, and sign-in shows "database not connected".
+
+Also make sure `.env.local` has `AUTH_SECRET` (any long string) and `ADMIN_TOKEN` (same as Vercel, for `npm run db:seed`).
+
 ```bash
-cp env.example .env
-```
-Edit `.env` with your SMTP credentials:
-```
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_FROM="GoldOak Insurance <your-email@gmail.com>"
-ADMIN_EMAIL=info@goldoak.co.ke
+npm run dev                # http://localhost:3000
+npx tsc --noEmit && npx next lint && npm run build
 ```
 
-## Phase 3: Dev Server
-```bash
-npm run dev
-# Opens at http://localhost:3000
-```
-
-## Phase 4: Verify
-1. Open `http://localhost:3000` — homepage loads with hero, sections, footer
-2. Navigate to `/about` — company story renders
-3. Navigate to `/solutions` — 7 categories with filterable tabs
-4. Navigate to `/how-we-work` — 7-stage process page
-5. Navigate to `/claims` — 6-step claims process
-6. Navigate to `/contact` — contact info + Risk Review form renders
-7. Test form submission (requires valid SMTP credentials)
-
-## Verify Recipe (mechanical)
-```bash
-# Dev server starts without errors
-npm run dev 2>&1 | head -20
-# Should see "Ready" or "started server on"
-
-# Build passes
-npm run build 2>&1 | tail -10
-# Should see all routes listed, no errors
-
-# TypeScript clean
-npx tsc --noEmit
-# Should produce no output
-```
-
-## Common Issues
-- **Port 3000 in use:** `npm run dev -- -p 3001`
-- **SMTP errors:** Check `.env` credentials, ensure Gmail App Password (not regular password)
-- **Email not sending:** Verify `ADMIN_EMAIL` is set correctly
+Seed a local database: `SEED_URL=http://localhost:3000 npm run db:seed` (dev server running).

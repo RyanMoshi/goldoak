@@ -10,7 +10,7 @@ export default async function AgencyLayout({ children }: { children: React.React
   const session = await requireSession('agency')
   const [agent, organization] = await Promise.all([getUser(session.uid), getOrganization(session.oid)])
 
-  const safeAgent = agent ?? { id: session.uid, role: 'agency' as const, organizationId: session.oid, name: session.name, email: '', phone: null, title: null }
+  const safeAgent = agent ?? { id: session.uid, role: 'agency' as const, organizationId: session.oid, name: session.name, email: '', phone: null, title: null, active: true, whatsappOptIn: true }
   const safeOrg = organization ?? { id: session.oid, name: 'Agency', shortName: 'Agency', phone: '', email: '', whatsapp: '' }
 
   return (

@@ -57,7 +57,7 @@ const Footer = () => {
               ))}
             </ul>
 
-            <h4 className="font-serif text-lg font-medium text-white pt-4">Client Portal</h4>
+            <h4 className="font-serif text-lg font-medium text-white pt-4">Super Agent</h4>
             <ul className="space-y-3">
               {footerNav.portal.map((item) => (
                 <li key={item.name}>

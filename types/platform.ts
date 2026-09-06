@@ -1,6 +1,6 @@
 /* ---------- Tenancy and identity ---------- */
 
-export type Role = 'agency' | 'client'
+export type Role = 'admin' | 'agency' | 'client'
 
 export interface Organization {
   id: string
@@ -8,7 +8,7 @@ export interface Organization {
   shortName: string
   phone: string
   email: string
-  /** E.164 without plus, e.g. 254729911311 */
+  /** E.164 without plus, e.g. 255742473493. The number clients message. */
   whatsapp: string
 }
 
@@ -20,6 +20,10 @@ export interface PublicUser {
   email: string
   phone: string | null
   title: string | null
+  active: boolean
+  whatsappOptIn: boolean
+  createdAt?: string
+  lastSeenAt?: string | null
 }
 
 /* ---------- Client journey ---------- */
@@ -38,6 +42,26 @@ export const JOURNEY_STAGES: { id: JourneyStage; label: string; description: str
   { id: 'review', label: 'Review', description: 'A review report at least 45 days before renewal.' },
 ]
 
+export const PRODUCT_LINES = [
+  'Motor Comprehensive',
+  'Motor Third Party',
+  'Motor Fleet',
+  'Fire & Allied Perils',
+  'Burglary',
+  'Business Interruption',
+  'Group Medical',
+  'Individual Medical',
+  'WIBA',
+  'Group Personal Accident',
+  'Public Liability',
+  'Professional Indemnity',
+  'Goods in Transit',
+  'Domestic Package',
+  'Travel',
+  'Life',
+  'Other',
+] as const
+
 export interface Client {
   id: string
   organizationId: string
@@ -48,6 +72,7 @@ export interface Client {
   email: string | null
   stage: JourneyStage
   adviserName: string | null
+  notes: string | null
   createdAt: string
 }
 
@@ -93,20 +118,14 @@ export interface QuoteRequest {
   product: string
   stage: QuoteStage
   premiumEstimate: number | null
+  notes: string | null
+  channel: string
   createdAt: string
   updatedAt: string
   submissions: QuoteSubmission[]
 }
 
-export type ClaimStage =
-  | 'notified'
-  | 'registered'
-  | 'documenting'
-  | 'with-insurer'
-  | 'assessed'
-  | 'offer'
-  | 'settled'
-  | 'closed'
+export type ClaimStage = 'notified' | 'registered' | 'documenting' | 'with-insurer' | 'assessed' | 'offer' | 'settled' | 'closed'
 
 export const CLAIM_STAGES: { id: ClaimStage; label: string }[] = [
   { id: 'notified', label: 'Notified' },
@@ -128,21 +147,45 @@ export interface Claim {
   product: string
   stage: ClaimStage
   amount: number | null
+  description: string | null
+  incidentDate: string | null
+  channel: string
   nextUpdateDue: string | null
   notifiedAt: string
   updatedAt: string
 }
 
+/* ---------- Notifications ---------- */
+
+export type NotificationKind =
+  | 'welcome'
+  | 'quote-requested'
+  | 'quote-update'
+  | 'claim-reported'
+  | 'claim-update'
+  | 'renewal-reminder'
+  | 'stage-update'
+  | 'policy-added'
+  | 'message'
+  | 'new-client'
+  | 'task'
+
+export interface Notification {
+  id: string
+  userId: string | null
+  clientId: string | null
+  kind: NotificationKind
+  title: string
+  body: string
+  reference: string | null
+  whatsappStatus: 'skipped' | 'sent' | 'failed'
+  readAt: string | null
+  createdAt: string
+}
+
 /* ---------- Agency work queue and dashboard ---------- */
 
-export type TaskType =
-  | 'lead-contact'
-  | 'quote-follow-up'
-  | 'ai-review'
-  | 'documents-missing'
-  | 'proposal'
-  | 'renewal'
-  | 'claim-update'
+export type TaskType = 'lead-contact' | 'quote-follow-up' | 'ai-review' | 'documents-missing' | 'proposal' | 'renewal' | 'claim-update'
 
 export type SLAStatus = 'on-track' | 'at-risk' | 'overdue' | 'needs-review'
 
@@ -190,7 +233,20 @@ export interface PipelineStage {
   value: number
 }
 
-export type ActivityKind = 'quote-received' | 'risk-profile' | 'proposal-sent' | 'documents-uploaded' | 'renewal' | 'claim' | 'signup'
+export type ActivityKind =
+  | 'quote-received'
+  | 'quote-requested'
+  | 'risk-profile'
+  | 'proposal-sent'
+  | 'documents-uploaded'
+  | 'renewal'
+  | 'claim'
+  | 'claim-reported'
+  | 'signup'
+  | 'stage'
+  | 'policy'
+  | 'message'
+  | 'whatsapp'
 
 export interface ActivityItem {
   id: string
@@ -226,4 +282,14 @@ export interface PortalData {
   policies: Policy[]
   quotes: QuoteRequest[]
   claims: Claim[]
+  notifications: Notification[]
+}
+
+/* ---------- Command bar ---------- */
+
+export interface CommandResult {
+  title: string
+  lines: { text: string; detail?: string }[]
+  actions: { label: string; href: string }[]
+  source: string
 }

@@ -1,56 +1,34 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowRight, ListChecks, MessageCircle, ShieldCheck } from 'lucide-react'
+import { ArrowRight, ListChecks, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react'
 import AnimatedSection from './AnimatedSection'
 import { contact } from '@/lib/contact'
 
 const points = [
-  {
-    icon: ListChecks,
-    title: 'See your progress',
-    text: 'Understand → Solve → Compare → Implement → Support → Review. You always know which stage we are at and what happens next.',
-  },
-  {
-    icon: ShieldCheck,
-    title: 'Every policy in one place',
-    text: 'Insurer, premium, renewal date, what is covered and the exclusions that matter, across all your policies.',
-  },
-  {
-    icon: MessageCircle,
-    title: 'Ask on WhatsApp',
-    text: 'Message us from your registered number with one word: status, policies, quotes or claims. The answer comes straight back.',
-  },
+  { icon: ListChecks, title: 'See your progress', text: 'Understand → Solve → Compare → Implement → Support → Review. You always know which stage we are at.' },
+  { icon: ShieldCheck, title: 'Every policy in one place', text: 'Insurer, premium, renewal date, what is covered and the exclusions that matter.' },
+  { icon: MessageCircle, title: 'Or just use WhatsApp', text: 'STATUS, POLICIES, QUOTES, CLAIMS, QUOTE, CLAIM. One word from your registered number and the answer comes straight back.' },
 ]
 
-/** Homepage section introducing the client portal and the agency workspace. */
+/** Homepage section introducing Super Agent. One door: the Super Agent page. */
 const PortalPreview = () => {
   return (
-    <section className="section-padding bg-white" id="client-portal">
+    <section className="section-padding bg-white" id="super-agent">
       <div className="container-custom">
         <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2 lg:gap-16">
           <AnimatedSection animation="fade-up">
-            <div className="badge-gold mb-6 inline-flex">Your insurance, online</div>
+            <div className="badge-gold mb-6 inline-flex"><Sparkles className="w-4 h-4" /> Super Agent</div>
             <h2 className="font-serif text-heading-1 font-medium text-text-headline mb-4">Follow your cover from the first conversation to the claim.</h2>
             <p className="text-body-lg text-text-body mb-8 max-w-xl">
-              Create a free account and see exactly where things stand: the stage of your risk review, the quotes coming in, the policies in force and any claim in progress. Or just ask on WhatsApp.
+              Super Agent is GoldOak’s insurance operating system. Clients see exactly where things stand and can ask for cover or report a claim in two taps. Reminders come to them. And everything works on WhatsApp too.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row">
-              <Link href="/signup" className="btn-secondary inline-flex items-center justify-center gap-2 group">
-                Create your account
+              <Link href="/super-agent" className="btn-secondary inline-flex items-center justify-center gap-2 group">
+                Open Super Agent
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Link>
-              <Link href="/signin?as=client" className="btn-outline inline-flex items-center justify-center gap-2">
-                Sign in
-              </Link>
             </div>
-            <p className="mt-6 text-sm text-text-body">
-              Already a client? Sign in to see your progress. GoldOak advisers sign in to{' '}
-              <Link href="/signin?as=agency" className="font-semibold text-primary hover:underline">
-                Super Agent
-              </Link>
-              .
-            </p>
           </AnimatedSection>
 
           <div className="grid gap-4">
@@ -72,13 +50,13 @@ const PortalPreview = () => {
             })}
             <AnimatedSection animation="fade-up" delay={400}>
               <a
-                href={`${contact.whatsapp}?text=${encodeURIComponent('status')}`}
+                href={`https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent('STATUS')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between rounded-xl border border-gold-200 bg-gold-50 px-6 py-4 text-sm text-text-headline hover:bg-gold-100 transition-colors"
               >
                 <span>
-                  <span className="font-semibold">Try it:</span> WhatsApp <span className="font-mono">{contact.phone}</span> with the word <span className="font-mono">status</span>
+                  <span className="font-semibold">Try it:</span> WhatsApp <span className="font-mono">{contact.superAgentWhatsAppDisplay}</span> with the word <span className="font-mono">STATUS</span>
                 </span>
                 <ArrowRight className="w-4 h-4 text-secondary" aria-hidden="true" />
               </a>

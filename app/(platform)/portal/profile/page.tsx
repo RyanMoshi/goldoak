@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { PhoneForm } from '@/components/platform/portal/PhoneForm'
 import { Card, CardHeader } from '@/components/platform/ui/Card'
 import { requireSession } from '@/lib/auth/server'
-import { formatPhone } from '@/lib/format'
 import { getPortalData } from '@/services/portal'
 
 export const metadata: Metadata = { title: 'My profile' }
@@ -24,14 +24,17 @@ export default async function ProfilePage() {
         <h1 className="mt-2 font-serif text-[28px] font-medium leading-9 text-forest">{user.name}</h1>
       </div>
       <Card as="section" flush>
-        <div className="px-5 pb-3 pt-5"><CardHeader title="Your details" description="To change anything, message your adviser. We keep a record of every change." /></div>
+        <div className="px-5 pb-3 pt-5"><CardHeader title="Your details" description="To change your name or email, message your adviser." /></div>
         <dl className="divide-y divide-divider border-t border-line text-[14px]">
           <Row label="Email">{user.email}</Row>
-          <Row label="Mobile (WhatsApp)">{user.phone ? <span className="font-mono">{formatPhone(user.phone)}</span> : <span className="text-ink-faint">Not added. Ask your adviser to add it so WhatsApp recognises you.</span>}</Row>
           {client ? <Row label={client.type === 'individual' ? 'Insured as' : 'Business'}>{client.name}</Row> : null}
           <Row label="Adviser">{client?.adviserName ?? `${organization.shortName} advisory team`}</Row>
           <Row label="Agency">{organization.name} · {organization.phone}</Row>
         </dl>
+      </Card>
+      <Card as="section">
+        <CardHeader title="WhatsApp" description="Reminders and updates go to this number, and it is how we recognise you when you message us." />
+        <div className="mt-4"><PhoneForm current={user.phone} /></div>
       </Card>
       <Card as="section">
         <CardHeader title="Your data" description="Held under the Data Protection Act 2019." />

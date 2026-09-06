@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
-import { ArrowRight, CheckCircle2 } from 'lucide-react'
+import { CheckCircle2 } from 'lucide-react'
 import { ClaimList } from '@/components/platform/portal/ClaimList'
 import { JourneyTracker } from '@/components/platform/portal/JourneyTracker'
 import { PolicyList } from '@/components/platform/portal/PolicyList'
+import { PortalActions } from '@/components/platform/portal/PortalActions'
 import { QuoteList } from '@/components/platform/portal/QuoteList'
+import { UpdatesFeed } from '@/components/platform/portal/UpdatesFeed'
 import { WhatsAppCard } from '@/components/platform/portal/WhatsAppCard'
-import { Card } from '@/components/platform/ui/Card'
 import { requireSession } from '@/lib/auth/server'
 import { greetingFor } from '@/lib/format'
 import { getPortalData } from '@/services/portal'
@@ -20,11 +20,9 @@ export default async function PortalPage({ searchParams }: { searchParams: { wel
   const firstName = session.name.split(' ')[0]
   const welcome = searchParams.welcome === '1'
 
-  if (!data) {
-    return <p className="text-ink-muted">We could not load your account. Please sign in again.</p>
-  }
+  if (!data) return <p className="text-ink-muted">We could not load your account. Please sign in again.</p>
 
-  const { client, organization, policies, quotes, claims, user } = data
+  const { client, organization, policies, quotes, claims, user, notifications } = data
   const stage = client ? JOURNEY_STAGES.find((s) => s.id === client.stage) : null
   const stageIndex = client ? JOURNEY_STAGES.findIndex((s) => s.id === client.stage) : -1
 
@@ -34,7 +32,7 @@ export default async function PortalPage({ searchParams }: { searchParams: { wel
         <div role="status" className="flex items-start gap-3 rounded-card border border-success/25 bg-success/10 p-4 text-[14px] text-ink">
           <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-success" aria-hidden="true" />
           <span>
-            <span className="font-semibold">Your account is ready, {firstName}.</span> Your adviser will be in touch within one working day to start your risk review. Everything that happens after that shows up here.
+            <span className="font-semibold">Your account is ready, {firstName}.</span> Your adviser will be in touch within one working day. Everything that happens from here shows up below and on WhatsApp.
           </span>
         </div>
       ) : null}
@@ -60,24 +58,16 @@ export default async function PortalPage({ searchParams }: { searchParams: { wel
 
       <JourneyTracker stage={client?.stage ?? 'understand'} />
 
-      {!client ? (
-        <Card>
-          <p className="font-serif text-[18px] font-semibold text-forest">Want to get started sooner?</p>
-          <p className="mt-1 text-[14px] text-ink-muted">Tell us what you own, what you run and who depends on you, and we will come back with the options worth considering.</p>
-          <Link href="/contact" className="mt-4 inline-flex h-10 items-center gap-2 rounded-control bg-forest px-4 text-sm font-semibold text-white hover:bg-forest-700 focus-ring">
-            Start a risk review <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
-        </Card>
-      ) : null}
-
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-8">
+          <PortalActions policies={policies} hasClient={Boolean(client)} />
           <PolicyList policies={policies} />
           <QuoteList quotes={quotes} />
           <ClaimList claims={claims} />
         </div>
-        <div className="lg:col-span-4">
+        <div className="flex flex-col gap-6 lg:col-span-4">
           <WhatsAppCard organization={organization} adviserName={client?.adviserName ?? null} phoneLinked={Boolean(user.phone)} />
+          <UpdatesFeed items={notifications} />
         </div>
       </div>
     </div>

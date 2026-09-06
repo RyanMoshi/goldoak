@@ -1,47 +1,20 @@
 ---
 name: api
-description: "API endpoints, nodemailer SMTP, file upload, and email templates."
+description: "API endpoints: site forms, health, bootstrap, cron, WhatsApp webhooks."
 metadata.type: fact
 ---
 
-## API Routes
+## Site forms (nodemailer)
+- `POST /api/contact` — risk review and quote request forms; branded HTML email to admin + confirmation to client; attachments.
+- `POST /api/send-form` — insurance application form with files.
+- `POST /api/upload` — saves to `public/uploads/`.
+Env: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `TO_EMAIL`.
 
-### POST /api/contact
-- Handles both JSON and multipart/form-data
-- Two form types: `risk_review` (from contact page) and `quote_request`
-- Sends branded HTML email to admin (info@goldoak.co.ke) with BCC to projectryan9@gmail.com
-- Sends confirmation email to client
-- Attaches uploaded files (ID photo, passport photo, policy docs) to admin email
-- Attaches GoldOak logo as CID embedded image in emails
+## Platform
+- `GET /api/health` — no auth. `{ ok, database: { status: ok|unconfigured|error, users, clients, detail? }, whatsapp: openwa|meta|not configured, cron, auth, time }`.
+- `POST /api/admin/seed` — header `x-admin-token: <ADMIN_TOKEN>`; JSON body optional `{ purgeDemo, adminEmail, adminPassword, adminName, whatsapp }`. Upserts the organisation, creates the admin once. Returns `{ organization, admin, adminEmail, purged }`.
+- `GET /api/cron/daily` — `Authorization: Bearer <CRON_SECRET>` (what Vercel Cron sends) or `x-admin-token`. Returns the automation summary.
+- `POST /api/whatsapp/openwa` — OpenWA `message.received` events; HMAC via `X-OpenWA-Signature`; idempotent via `X-OpenWA-Idempotency-Key`. Echoes `reply` when no gateway is configured.
+- `GET|POST /api/whatsapp/webhook` — Meta Cloud API verification and inbound messages.
 
-### POST /api/send-form
-- Multipart/form-data with file uploads
-- Insurance application form submission
-- Sends admin notification + client confirmation via nodemailer
-- File attachments included in admin email
-
-### POST /api/upload
-- Generic file upload endpoint
-- Saves files to `public/uploads/` with timestamp prefix
-- Returns public URL
-
-## Nodemailer SMTP Config (env vars)
-```
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-SMTP_FROM="GoldOak Insurance <your-email@gmail.com>"
-ADMIN_EMAIL=info@goldoak.co.ke
-```
-
-## Email Templates
-- Both admin and client emails use branded HTML templates
-- Admin email includes: form data, uploaded file attachments, GoldOak logo as CID image
-- Client email includes: confirmation message, GoldOak branding
-
-## File Upload
-- Destination: `public/uploads/`
-- Naming: timestamp prefix on original filename
-- Returns: public URL path
-- Used by: contact form (ID/passport photos), application form (policy docs)
+All platform routes are `runtime = 'nodejs'`, `dynamic = 'force-dynamic'`.

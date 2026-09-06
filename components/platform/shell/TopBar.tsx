@@ -48,7 +48,7 @@ export function TopBar({ dateLabel, onOpenNav, agent }: TopBarProps) {
 
         <div className="hidden items-center gap-2 lg:flex">
           <Link
-            href="/agency/clients"
+            href="/agency/clients/new"
             className="inline-flex h-10 items-center gap-2 rounded-control bg-gold px-4 text-sm font-semibold text-white transition-colors hover:bg-gold-500 focus-ring"
           >
             <Plus className="size-4" aria-hidden="true" strokeWidth={2.25} />

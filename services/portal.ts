@@ -1,10 +1,10 @@
 import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
-import { toClaim, toClient, toOrganization, toPolicy, toPublicUser, toQuoteRequest, toSubmission } from '@/lib/db/mappers'
+import { toClaim, toClient, toNotification, toOrganization, toPolicy, toPublicUser, toQuoteRequest, toSubmission } from '@/lib/db/mappers'
 import { DEFAULT_ORGANIZATION_ID } from '@/services/users'
 import type { PortalData } from '@/types/platform'
 
-/** Everything a client sees: their journey stage, policies, open quotes and claims. */
+/** Everything a client sees: journey stage, policies, open quotes, claims and updates. */
 export async function getPortalData(userId: string): Promise<PortalData | null> {
   await ensureSchema()
   const sql = getSql()
@@ -17,11 +17,12 @@ export async function getPortalData(userId: string): Promise<PortalData | null> 
   if (!orgRows[0]) return null
   const organization = toOrganization(orgRows[0])
 
+  const notificationRows = await sql`SELECT * FROM notifications WHERE user_id = ${userId} ORDER BY created_at DESC LIMIT 15`
+  const notifications = notificationRows.map(toNotification)
+
   const clientRows = await sql`SELECT * FROM clients WHERE user_id = ${userId} LIMIT 1`
   const client = clientRows[0] ? toClient(clientRows[0]) : null
-  if (!client) {
-    return { user, organization, client: null, policies: [], quotes: [], claims: [] }
-  }
+  if (!client) return { user, organization, client: null, policies: [], quotes: [], claims: [], notifications }
 
   const [policyRows, quoteRows, submissionRows, claimRows] = await Promise.all([
     sql`SELECT * FROM policies WHERE client_id = ${client.id} AND status <> 'cancelled' ORDER BY expiry_date ASC`,
@@ -43,5 +44,6 @@ export async function getPortalData(userId: string): Promise<PortalData | null> 
     policies: policyRows.map(toPolicy),
     quotes: quoteRows.map((row) => toQuoteRequest(row, subs.get(String(row.id)) ?? [])),
     claims: claimRows.map(toClaim),
+    notifications,
   }
 }

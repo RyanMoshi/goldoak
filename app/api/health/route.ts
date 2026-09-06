@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSql, hasDatabase } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
-import { whatsappConfigured } from '@/lib/whatsapp/client'
+import { getProvider } from '@/lib/whatsapp/provider'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -26,7 +26,8 @@ export async function GET() {
     {
       ok: database.status === 'ok',
       database,
-      whatsapp: whatsappConfigured() ? 'configured' : 'not configured',
+      whatsapp: getProvider()?.name ?? 'not configured',
+      cron: process.env.CRON_SECRET ? 'configured' : 'missing',
       auth: process.env.AUTH_SECRET ? 'configured' : 'missing',
       time: new Date().toISOString(),
     },

@@ -40,9 +40,9 @@ export const footerNav = {
     { name: 'Corporate', href: '/about#who-we-serve' },
   ],
   portal: [
-    { name: 'Client sign in', href: '/signin?as=client' },
-    { name: 'Create an account', href: '/signup' },
-    { name: 'Agency sign in (Super Agent)', href: '/signin?as=agency' },
+    { name: 'Super Agent', href: '/super-agent' },
+    { name: 'For clients: track your cover', href: '/super-agent#clients' },
+    { name: 'For agencies: the workspace', href: '/super-agent#agencies' },
   ],
   legal: [
     { name: 'Privacy Policy', href: '/privacy' },

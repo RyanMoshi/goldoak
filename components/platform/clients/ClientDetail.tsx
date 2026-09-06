@@ -1,6 +1,7 @@
 import { ArrowLeft, Mail, MessageCircle, Phone } from 'lucide-react'
 import Link from 'next/link'
 import { stageBadge } from '@/components/platform/clients/ClientsTable'
+import { ClientWorkbench } from '@/components/platform/clients/ClientWorkbench'
 import { JourneyTracker } from '@/components/platform/portal/JourneyTracker'
 import { ClaimList } from '@/components/platform/portal/ClaimList'
 import { PolicyList } from '@/components/platform/portal/PolicyList'
@@ -12,7 +13,7 @@ import type { ClientDetail as Detail } from '@/services/agency/clients'
 
 const typeLabel = { individual: 'Individual', sme: 'SME', corporate: 'Corporate' } as const
 
-/** Client 360 for the agency: stage, contacts, policies, quotes, claims, open tasks and history. */
+/** Client 360 for the agency: stage, contacts, policies, quotes, claims, tasks, history, and the controls to move things. */
 export function ClientDetail({ detail }: { detail: Detail }) {
   const { client, policies, quotes, claims, tasks, activity } = detail
   const stage = stageBadge(client.stage)
@@ -32,7 +33,11 @@ export function ClientDetail({ detail }: { detail: Detail }) {
             {client.userId ? <Badge tone="forest">Portal account</Badge> : <Badge tone="neutral">No portal account</Badge>}
           </div>
           <h2 className="mt-2 font-serif text-[28px] font-medium leading-9 text-forest sm:text-[32px]">{client.name}</h2>
-          <p className="mt-1 text-[13px] text-ink-muted">Client since {relativeTime(client.createdAt)}{client.adviserName ? ` · Adviser ${client.adviserName}` : ''}</p>
+          <p className="mt-1 text-[13px] text-ink-muted">
+            Client since {relativeTime(client.createdAt)}
+            {client.adviserName ? ` · Adviser ${client.adviserName}` : ''}
+          </p>
+          {client.notes ? <p className="mt-2 max-w-prose text-[13.5px] text-ink"><span className="font-semibold">Wants to protect:</span> {client.notes}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
           {client.phone ? (
@@ -58,14 +63,17 @@ export function ClientDetail({ detail }: { detail: Detail }) {
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="flex flex-col gap-6 lg:col-span-8">
+        <div className="flex flex-col gap-6 lg:col-span-7">
+          <ClientWorkbench client={client} quotes={quotes.filter((q) => q.stage !== 'placed' && q.stage !== 'declined')} claims={claims} />
           <PolicyList policies={policies} heading="Policies" />
           <QuoteList quotes={quotes} heading="Quotes" />
           <ClaimList claims={claims} heading="Claims" />
         </div>
-        <div className="flex flex-col gap-6 lg:col-span-4">
+        <div className="flex flex-col gap-6 lg:col-span-5">
           <Card as="section" flush>
-            <div className="px-5 pb-3 pt-5"><CardHeader title="Open tasks" description={tasks.length ? `${tasks.length} on the queue` : 'Nothing outstanding'} /></div>
+            <div className="px-5 pb-3 pt-5">
+              <CardHeader title="Open tasks" description={tasks.length ? `${tasks.length} on the queue` : 'Nothing outstanding'} />
+            </div>
             {tasks.length ? (
               <ul className="divide-y divide-divider border-t border-line">
                 {tasks.map((t) => (
@@ -79,7 +87,9 @@ export function ClientDetail({ detail }: { detail: Detail }) {
             ) : null}
           </Card>
           <Card as="section" flush>
-            <div className="px-5 pb-3 pt-5"><CardHeader title="History" /></div>
+            <div className="px-5 pb-3 pt-5">
+              <CardHeader title="History" />
+            </div>
             {activity.length ? (
               <ol className="divide-y divide-divider border-t border-line">
                 {activity.map((a) => (

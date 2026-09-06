@@ -1,15 +1,13 @@
 /**
- * Stateless signed session tokens. Uses Web Crypto only, so the same code
- * runs in the edge middleware and in Node server components.
+ * Stateless signed session tokens. Web Crypto only, so the same code runs in
+ * the edge middleware and in Node server components.
  */
 
-export type Role = 'agency' | 'client'
+export type Role = 'admin' | 'agency' | 'client'
 
 export interface SessionPayload {
-  /** user id */
   uid: string
   role: Role
-  /** organisation id (agency users; clients carry their agency's org) */
   oid: string
   name: string
   /** unix seconds */
@@ -24,9 +22,7 @@ const encoder = new TextEncoder()
 function secret(): string {
   const value = process.env.AUTH_SECRET
   if (value && value.length >= 16) return value
-  if (process.env.NODE_ENV === 'production') {
-    throw new Error('AUTH_SECRET must be set in production (at least 16 characters).')
-  }
+  if (process.env.NODE_ENV === 'production') throw new Error('AUTH_SECRET must be set in production (at least 16 characters).')
   return 'goldoak-development-secret-do-not-use-in-production'
 }
 
@@ -46,10 +42,7 @@ function fromBase64Url(value: string): Uint8Array<ArrayBuffer> {
 }
 
 async function key(): Promise<CryptoKey> {
-  return crypto.subtle.importKey('raw', encoder.encode(secret()), { name: 'HMAC', hash: 'SHA-256' }, false, [
-    'sign',
-    'verify',
-  ])
+  return crypto.subtle.importKey('raw', encoder.encode(secret()), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign', 'verify'])
 }
 
 export async function signSession(payload: Omit<SessionPayload, 'exp'>): Promise<string> {
@@ -68,7 +61,7 @@ export async function verifySession(token: string | undefined | null): Promise<S
     if (!valid) return null
     const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(body))) as SessionPayload
     if (typeof payload.exp !== 'number' || payload.exp < Math.floor(Date.now() / 1000)) return null
-    if (payload.role !== 'agency' && payload.role !== 'client') return null
+    if (payload.role !== 'admin' && payload.role !== 'agency' && payload.role !== 'client') return null
     return payload
   } catch {
     return null
@@ -76,5 +69,13 @@ export async function verifySession(token: string | undefined | null): Promise<S
 }
 
 export function homeFor(role: Role): string {
-  return role === 'agency' ? '/agency/today' : '/portal'
+  if (role === 'admin') return '/admin'
+  if (role === 'agency') return '/agency/today'
+  return '/portal'
+}
+
+/** Whether a session role may enter an area. Admin may also use the agency workspace. */
+export function canAccess(role: Role, area: Role): boolean {
+  if (role === area) return true
+  return role === 'admin' && area === 'agency'
 }

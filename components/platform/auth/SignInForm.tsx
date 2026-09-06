@@ -29,7 +29,7 @@ export function SignInForm({ initialRole, next }: { initialRole: Role; next: str
 
       <div role="radiogroup" aria-label="I am signing in as" className="mt-6 grid grid-cols-2 gap-2 rounded-card border border-line bg-surface p-1">
         <RoleTab active={role === 'client'} onClick={() => setRole('client')} icon={UserRound} label="Client" hint="See my progress" />
-        <RoleTab active={role === 'agency'} onClick={() => setRole('agency')} icon={Building2} label="Agency" hint="Manage clients" />
+        <RoleTab active={role === 'agency'} onClick={() => setRole('agency')} icon={Building2} label="Agency" hint="Agencies and admin" />
       </div>
 
       <form action={submit} className="mt-6 space-y-5" noValidate>
@@ -64,7 +64,7 @@ export function SignInForm({ initialRole, next }: { initialRole: Role; next: str
             </Link>
           </p>
         ) : (
-          <p>Agency accounts are set up by GoldOak. Ask your principal if you need one.</p>
+          <p>Agency accounts are created by the GoldOak platform admin. Ask your principal for your username and password.</p>
         )}
         <p>
           Forgot your password? Message us on{' '}

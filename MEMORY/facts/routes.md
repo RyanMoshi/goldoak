@@ -1,39 +1,42 @@
 ---
 name: routes
-description: "All 6 routes with URL paths and descriptions."
+description: "Every URL (site, platform, API) and which file renders it."
 metadata.type: fact
 ---
 
-## Public Routes (no auth — entire site is public)
+## Site (public) — `app/(site)/`, Navigation + Footer
 | URL | File | Description |
 |-----|------|-------------|
-| `/` | `app/page.tsx` | Homepage: Hero, WhyGoldOak, WhoWeServe, SolutionsPreview, ProcessPreview, InsurerPanel, CTASection |
-| `/about` | `app/about/page.tsx` | Company story, philosophy (4 principles), who we serve (3 segments) |
-| `/solutions` | `app/solutions/page.tsx` | 7 insurance solution categories with filterable tabs |
-| `/how-we-work` | `app/how-we-work/page.tsx` | 7-stage GoldOak process with outputs + 4 principles |
-| `/claims` | `app/claims/page.tsx` | 6-step claims process with timeframes |
-| `/contact` | `app/contact/page.tsx` | Contact info + Risk Review form (react-hook-form) |
+| `/` | `app/(site)/page.tsx` | Homepage; includes `PortalPreview` (Super Agent section) |
+| `/super-agent` | `app/(site)/super-agent/page.tsx` | Super Agent landing: for clients (sign up / sign in / WhatsApp), for agencies (sign in / ask for access) |
+| `/about`, `/solutions`, `/how-we-work`, `/claims`, `/contact` | `app/(site)/<name>/page.tsx` | Marketing pages |
 
-## API Routes
-| Method | URL | File | Description |
-|--------|-----|------|-------------|
-| `POST` | `/api/contact` | `app/api/contact/route.ts` | Contact form + quote requests (nodemailer) |
-| `POST` | `/api/send-form` | `app/api/send-form/route.ts` | Insurance application form (nodemailer + file attachments) |
-| `POST` | `/api/upload` | `app/api/upload/route.ts` | File upload to `public/uploads/` |
+The navigation shows **Super Agent** (no Sign in / Sign up buttons). Footer "Super Agent" column links to `/super-agent`.
 
-## Missing Routes (linked in footer but no page exists)
-- `/privacy` — Privacy Policy (no file)
-- `/terms` — Terms of Service (no file)
+## Platform — `app/(platform)/`
+| URL | Who | File |
+|-----|-----|------|
+| `/signin?as=client|agency&next=` | public | `signin/page.tsx` → `SignInForm` |
+| `/signup` | public (clients only) | `signup/page.tsx` → `SignUpForm` |
+| `/admin` | admin | `admin/page.tsx` (accounts + health tiles), `admin/layout.tsx` |
+| `/agency/today` | agency, admin | `agency/today/page.tsx` (+ `loading.tsx`) |
+| `/agency/clients` | agency, admin | `agency/clients/page.tsx` |
+| `/agency/clients/new` | agency, admin | `agency/clients/new/page.tsx` |
+| `/agency/clients/[id]` | agency, admin | `agency/clients/[id]/page.tsx` → `ClientDetail` + `ClientWorkbench` |
+| `/agency/{pipeline,quotes,renewals,claims,insurers,reports,settings}` | agency, admin | `agency/[section]/page.tsx` → `ComingNext` (planned workspaces) |
+| `/portal` | client | `portal/page.tsx` |
+| `/portal/profile` | client | `portal/profile/page.tsx` |
 
-## Layout Pattern
-- `app/layout.tsx` renders Navigation + Footer + Toaster globally
-- All pages are `'use client'` except root layout and `not-found.tsx`
-- Additional pages: `error.tsx`, `global-error.tsx`, `not-found.tsx`, `robots.ts`, `sitemap.ts`
+Layouts: `agency/layout.tsx` (AppShell), `portal/layout.tsx` (PortalShell), `admin/layout.tsx`. Errors: `app/(workspace)`-style `error.tsx` lives at `app/(platform)/error.tsx`? No: use `app/error.tsx` at root.
 
-## Component Composition Pattern
-Pages compose from reusable components:
-- `PageHero` — page header (navy gradient or cream bg)
-- `AnimatedSection` — IntersectionObserver scroll animations
-- `SectionHeader` — heading with gold accent lines + "GoldOak" label
-- `CTASection` — call-to-action with phone/WhatsApp/email links
-- `Breadcrumbs` — navigation breadcrumbs (server component)
+## API — `app/api/`
+| Method | URL | Auth | Purpose |
+|--------|-----|------|---------|
+| POST | `/api/contact`, `/api/send-form`, `/api/upload` | none | Site forms (nodemailer) and uploads |
+| GET | `/api/health` | none | DB/schema/WhatsApp/cron/auth status, user and client counts |
+| POST | `/api/admin/seed` | `x-admin-token` | Bootstrap org + admin; `{ purgeDemo: true }` removes old demo rows |
+| GET | `/api/cron/daily` | `Bearer CRON_SECRET` or `x-admin-token` | Daily automation |
+| POST | `/api/whatsapp/openwa` | `X-OpenWA-Signature` | OpenWA inbound messages |
+| GET/POST | `/api/whatsapp/webhook` | verify token / `X-Hub-Signature-256` | Meta Cloud API inbound |
+
+Also `manifest.webmanifest`, `robots.txt`, `sitemap.xml`.

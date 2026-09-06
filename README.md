@@ -87,38 +87,40 @@ npm start
 
 ## Super Agent platform (inside this site)
 
-The GoldOak website is the front door. Clients create an account and follow their cover; GoldOak advisers sign in to the **Super Agent** workspace. Everything runs in this one Next.js app.
+The GoldOak website is the front door: the navigation shows **Super Agent**, and `/super-agent` is where clients create an account or sign in, and agencies sign in. Everything runs in this one Next.js app on a Supabase Postgres database.
 
 | Route | Who | What |
 |---|---|---|
-| `/signup` | Clients only | Create a free account. Agency accounts are provisioned by GoldOak. |
-| `/signin` | Client or Agency | One page, two tabs. |
-| `/portal` | Clients | Progress through the six GoldOak stages, policies, quotes, claims, adviser contact. |
-| `/agency/today` | Agency | Priorities, work queue with SLAs, pipeline, insurer activity, AI command bar. |
-| `/agency/clients` | Agency | Client register and client 360. |
-| `/api/whatsapp/webhook` | Meta | WhatsApp Cloud API webhook: registered clients get status, policies, quotes, claims by message. |
+| `/super-agent` | Everyone | The platform page: for clients, for agencies, the WhatsApp line |
+| `/signup` | Clients only | Create a free account with the WhatsApp number they message from |
+| `/signin` | Client or Agency tab | Admin signs in on the Agency tab |
+| `/portal` | Clients | Six-stage progress, ask for cover, report a claim, policies, quotes, claims, updates |
+| `/agency/today`, `/agency/clients` | Agencies | Work queue with SLAs, pipeline, client register, client 360 with stage/quote/claim/policy controls, command bar answered from your records |
+| `/admin` | Platform admin | Invite agency users (username + password), reset, deactivate; platform health |
+| `/api/whatsapp/openwa` | OpenWA | WhatsApp webhook. STATUS · POLICIES · QUOTES · CLAIMS · QUOTE · CLAIM · UPDATES · ADVISER |
+| `/api/cron/daily` | Vercel Cron | Renewal reminders (30/14/7/1 days), quote chasers, weekly claim updates |
+
+WhatsApp and the site are equivalent: every action goes through `services/journey.ts`, every message through `services/notifications.ts` (stored for the portal, sent on WhatsApp via the self-hosted [OpenWA](https://github.com/rmyndharis/OpenWA) gateway on **+255 742 473 493**).
 
 ### Setup
-
-1. **Database (Supabase Postgres).** Connect the Supabase project to the Vercel project (Supabase → Integrations → Vercel); it syncs `POSTGRES_URL` to Production. Locally: `vercel env pull .env.local --environment=production`. The schema is applied automatically on first use (`lib/db/schema.sql`).
-2. **Seed demo data.** Set `ADMIN_TOKEN` (random, 32+ chars) in Vercel and `.env.local`, deploy, then `npm run db:seed`. It calls `/api/admin/seed` inside the deployment, which applies the schema and creates the GoldOak organisation, an agency account and demo clients. Passwords default to `GoldOak2026!` (override with `SEED_PASSWORD` in Vercel). Health: `/api/health`.
-3. **Session secret.** Set `AUTH_SECRET` (32+ random characters) in Vercel and `.env.local`.
-4. **WhatsApp.** In Meta for Developers, add the WhatsApp product, then set `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` and `WHATSAPP_APP_SECRET`. Point the webhook at `https://<your-domain>/api/whatsapp/webhook` with the same verify token and subscribe to `messages`.
-
-Clients are recognised on WhatsApp by the mobile number on their account, so ask them to sign up with the number they message from.
+1. **Database:** connect the Supabase project to the Vercel project (Supabase → Integrations → Vercel). It syncs `POSTGRES_URL` to Production.
+2. **Secrets on Vercel:** `AUTH_SECRET`, `ADMIN_TOKEN`, `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `CRON_SECRET`, `WHATSAPP_BOT_NUMBER` (see `env.example`).
+3. **Bootstrap:** `npm run db:seed` (uses `ADMIN_TOKEN` from `.env.local`) creates the GoldOak organisation and the platform admin. No demo data.
+4. **WhatsApp:** host OpenWA, pair the number, register the webhook, set `OPENWA_*` on Vercel. Full steps in `MEMORY/playbooks/whatsapp-openwa.md`.
+5. **Health:** `GET /api/health`.
 
 ### Code map
-
 ```
-app/(site)/            Marketing site (navigation + footer)
-app/(platform)/        signin, signup, agency/*, portal/*
-components/platform/   Workspace shell, AI command bar, dashboard, clients, portal, auth
-lib/auth/              scrypt passwords, signed session cookie, server actions
-lib/db/                Postgres client (postgres.js), schema.sql, migrate, row mappers
-lib/whatsapp/          Cloud API client and reply builder
-services/              Data access: users, agency dashboard, clients, portal
-scripts/seed.mjs       Demo data
-middleware.ts          Role gate for /agency and /portal
+app/(site)/            Marketing site + /super-agent
+app/(platform)/        signin, signup, admin, agency/*, portal/*
+components/platform/   Shell, command bar, dashboard, clients, portal, admin, auth, ui
+lib/auth/              scrypt passwords, signed session cookie, sign-in/up actions
+lib/{admin,agency,portal}/actions.ts   Server actions per area
+lib/db/                Postgres client, schema.sql (auto-applied), mappers, bootstrap
+lib/whatsapp/          provider selection, OpenWA + Meta adapters, the bot
+services/              users, journey (client/agency actions), notifications, automation, agency dashboard/clients/commands, portal
+middleware.ts          Role gate for /admin, /agency, /portal
+MEMORY/                Project memory for AI sessions (start at MEMORY/masterplan.md)
 ```
 
 ## Brand Identity

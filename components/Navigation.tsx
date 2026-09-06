@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Phone, ChevronDown, ArrowRight, LogIn } from 'lucide-react'
+import { Menu, X, Phone, ChevronDown, ArrowRight, Sparkles } from 'lucide-react'
 import Logo from './Logo'
 import { mainNav } from '@/lib/navigation'
 import { contact } from '@/lib/contact'
@@ -100,11 +100,13 @@ const Navigation = () => {
               <span>{contact.phone}</span>
             </a>
             <Link
-              href="/signin"
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-gray-200 hover:text-white hover:bg-white/5 transition-colors"
+              href="/super-agent"
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                isActive('/super-agent') ? 'text-white bg-white/10' : 'text-secondary hover:text-white hover:bg-white/5'
+              }`}
             >
-              <LogIn className="w-4 h-4" />
-              Sign in
+              <Sparkles className="w-4 h-4" />
+              Super Agent
             </Link>
             <Link
               href="/contact"
@@ -164,20 +166,12 @@ const Navigation = () => {
 
             <div className="pt-4 border-t border-white/20 space-y-3">
               <Link
-                href="/signin"
-                className="flex items-center gap-3 py-3 px-4 text-white hover:bg-white/5 rounded-xl transition-colors"
-                role="menuitem"
-              >
-                <LogIn className="w-5 h-5" />
-                <span className="font-medium">Sign in</span>
-              </Link>
-              <Link
-                href="/signup"
+                href="/super-agent"
                 className="flex items-center gap-3 py-3 px-4 text-secondary hover:bg-white/5 rounded-xl transition-colors"
                 role="menuitem"
               >
-                <ArrowRight className="w-5 h-5" />
-                <span className="font-medium">Create a client account</span>
+                <Sparkles className="w-5 h-5" />
+                <span className="font-semibold">Super Agent</span>
               </Link>
               <a
                 href={`tel:${contact.phoneRaw}`}
