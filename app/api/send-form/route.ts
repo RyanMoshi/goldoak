@@ -64,13 +64,13 @@ export async function POST(request: NextRequest) {
     // Prepare email content
     const htmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #004B87; padding: 30px; text-align: center;">
+        <div style="background: #073423; padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">New Insurance Quote Request</h1>
           <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">From GoldOak Insurance Website</p>
         </div>
         
         <div style="padding: 30px; background: #f8f9fa;">
-          <h2 style="color: #004B87; margin-top: 0;">Personal Information</h2>
+          <h2 style="color: #073423; margin-top: 0;">Personal Information</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Full Name:</td>
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
             </tr>
           </table>
           
-          <h2 style="color: #004B87; margin-top: 30px;">Insurance Details</h2>
+          <h2 style="color: #073423; margin-top: 30px;">Insurance Details</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Insurance Types:</td>
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
             </tr>
           </table>
           
-          <h2 style="color: #004B87; margin-top: 30px;">Additional Information</h2>
+          <h2 style="color: #073423; margin-top: 30px;">Additional Information</h2>
           <table style="width: 100%; border-collapse: collapse;">
             <tr>
               <td style="padding: 8px 0; border-bottom: 1px solid #eee; font-weight: bold; width: 150px;">Current Insurance:</td>
@@ -143,13 +143,13 @@ export async function POST(request: NextRequest) {
           </table>
           
           ${notes ? `
-          <h2 style="color: #004B87; margin-top: 30px;">Notes / Special Requests</h2>
-          <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #C19A6B; margin: 20px 0;">
+          <h2 style="color: #073423; margin-top: 30px;">Notes / Special Requests</h2>
+          <div style="background: #f8f9fa; padding: 15px; border-left: 4px solid #c28d38; margin: 20px 0;">
             <p style="margin: 0; color: #333;">${notes}</p>
           </div>
           ` : ''}
           
-          <div style="background: #004B87; color: white; padding: 20px; margin-top: 30px; border-radius: 8px;">
+          <div style="background: #073423; color: white; padding: 20px; margin-top: 30px; border-radius: 8px;">
             <h3 style="margin: 0 0 10px 0;">Next Steps</h3>
             <ul style="margin: 0; padding-left: 20px;">
               <li>Contact the client within 2 hours</li>
@@ -185,19 +185,19 @@ export async function POST(request: NextRequest) {
     // Send confirmation email to client
     const clientHtmlContent = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <div style="background: #004B87; padding: 30px; text-align: center;">
+        <div style="background: #073423; padding: 30px; text-align: center;">
           <h1 style="color: white; margin: 0; font-size: 24px;">Thank You – We've Received Your Insurance Application</h1>
           <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">GoldOak Insurance Agency</p>
         </div>
         
         <div style="padding: 30px; background: #f8f9fa;">
-          <h2 style="color: #004B87; margin-top: 0;">Thank you, ${fullName}!</h2>
+          <h2 style="color: #073423; margin-top: 0;">Thank you, ${fullName}!</h2>
           <p style="color: #333; font-size: 16px; line-height: 1.6;">
             We've received your insurance application and one of our advisors will be in touch shortly.
           </p>
           
           <div style="background: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
-            <h3 style="color: #004B87; margin-top: 0;">Application Summary</h3>
+            <h3 style="color: #073423; margin-top: 0;">Application Summary</h3>
             <ul style="color: #333; line-height: 1.6; margin: 0; padding-left: 20px;">
               <li><strong>Submitted:</strong> ${new Date().toLocaleDateString()}</li>
               <li><strong>Insurance Type:</strong> ${insuranceType.join(', ')}</li>
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
             If you have any urgent questions, you can reach us directly on:
           </p>
           
-          <div style="background: #C19A6B; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
+          <div style="background: #c28d38; color: white; padding: 20px; border-radius: 8px; margin: 20px 0;">
             <p style="margin: 0; font-size: 14px;">
               📞 <a href="tel:+254729911311" style="color: white; text-decoration: none;">+254729911311</a><br />
               💬 <a href="https://wa.me/254729911311" style="color: white; text-decoration: none;">Chat on WhatsApp</a><br />

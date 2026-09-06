@@ -36,7 +36,7 @@
   }
 
   ::selection {
-    background-color: #004B87;
+    background-color: #073423;
     color: #fff;
   }
 }
@@ -103,7 +103,7 @@
   }
 
   .bg-section-navy {
-    background-color: #004B87;
+    background-color: #073423;
   }
 
   /* Cards */
@@ -186,15 +186,15 @@
 
   /* Hero gradient overlays */
   .hero-gradient-navy {
-    background: linear-gradient(135deg, #004B87 0%, #002e54 100%);
+    background: linear-gradient(135deg, #073423 0%, #052519 100%);
   }
 
   .hero-gradient-gold {
-    background: linear-gradient(135deg, #C19A6B 0%, #9a7040 100%);
+    background: linear-gradient(135deg, #c28d38 0%, #a8752b 100%);
   }
 
   .hero-gradient-mixed {
-    background: linear-gradient(135deg, #004B87 0%, #003d6f 50%, #C19A6B 100%);
+    background: linear-gradient(135deg, #073423 0%, #0f4d34 50%, #c28d38 100%);
   }
 
   /* Scrollbar */
@@ -235,4 +235,36 @@
   a {
     text-decoration: underline;
   }
+}
+
+/* ---------- Super Agent platform utilities ---------- */
+@layer utilities {
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    outline: 2px solid #073423;
+    outline-offset: 2px;
+  }
+  .label-caps {
+    font-size: 11px;
+    line-height: 14px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+.font-mono,
+[data-numeric] {
+  font-variant-numeric: tabular-nums;
 }

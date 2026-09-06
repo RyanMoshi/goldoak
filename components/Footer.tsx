@@ -57,6 +57,21 @@ const Footer = () => {
               ))}
             </ul>
 
+            <h4 className="font-serif text-lg font-medium text-white pt-4">Client Portal</h4>
+            <ul className="space-y-3">
+              {footerNav.portal.map((item) => (
+                <li key={item.name}>
+                  <Link
+                    href={item.href}
+                    className="text-gray-300 hover:text-secondary transition-colors text-sm flex items-center gap-2 group"
+                  >
+                    <span className="w-1 h-1 bg-secondary rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    {item.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
             <h4 className="font-serif text-lg font-medium text-white pt-4">Legal</h4>
             <ul className="space-y-3">
               {footerNav.legal.map((item) => (

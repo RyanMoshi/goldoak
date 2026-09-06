@@ -87,21 +87,21 @@ export async function POST(request: NextRequest) {
       <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: 'Inter', Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #004B87 0%, #003d6f 100%); padding: 40px 30px; text-align: center; position: relative;">
+          <div style="background: linear-gradient(135deg, #073423 0%, #0f4d34 100%); padding: 40px 30px; text-align: center; position: relative;">
             <div style="margin: 0 auto 20px; text-align: center;">
               <img src="cid:goldoaklogo" alt="GoldOak Insurance Logo" style="height: 60px; width: auto; max-width: 60px;" />
             </div>
             <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">${isQuoteRequest ? 'New Insurance Quote Request' : 'New Contact Form Submission'}</h1>
             <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">GoldOak Insurance Agency</p>
-            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #C19A6B;"></div>
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #c28d38;"></div>
           </div>
           
           <!-- Content -->
           <div style="padding: 40px 30px;">
             <!-- Contact Information Section -->
             <div style="background: #ffffff; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #e5e7eb;">
-              <h2 style="color: #004B87; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
+              <h2 style="color: #073423; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
+                <span style="background: #c28d38; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
                 Contact Information
               </h2>
               <table style="width: 100%; border-collapse: collapse;">
@@ -146,8 +146,8 @@ export async function POST(request: NextRequest) {
             ${isQuoteRequest ? `
             <!-- Insurance Details Section -->
             <div style="background: #ffffff; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #e5e7eb;">
-              <h2 style="color: #004B87; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
+              <h2 style="color: #073423; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
+                <span style="background: #c28d38; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
                 Insurance Details
               </h2>
               <table style="width: 100%; border-collapse: collapse;">
@@ -190,8 +190,8 @@ export async function POST(request: NextRequest) {
             ${isQuoteRequest && (idPhotoUrl || passportPhotoUrl || existingPolicyDocsUrls) ? `
             <!-- File Attachments Section -->
             <div style="background: #ffffff; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #e5e7eb;">
-              <h2 style="color: #004B87; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
+              <h2 style="color: #073423; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
+                <span style="background: #c28d38; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
                 Uploaded Documents
               </h2>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -199,23 +199,23 @@ export async function POST(request: NextRequest) {
                 <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e5e7eb;">
                   <div style="font-size: 24px; margin-bottom: 10px;">🆔</div>
                   <p style="margin: 0; font-weight: 600; color: #111827; margin-bottom: 10px;">ID Photo</p>
-                  <a href="${idPhotoUrl}" target="_blank" style="color: #004B87; text-decoration: none; font-size: 14px; background: #C19A6B; color: white; padding: 8px 16px; border-radius: 4px; display: inline-block;">View Document</a>
+                  <a href="${idPhotoUrl}" target="_blank" style="color: #073423; text-decoration: none; font-size: 14px; background: #c28d38; color: white; padding: 8px 16px; border-radius: 4px; display: inline-block;">View Document</a>
                 </div>
                 ` : ''}
                 ${passportPhotoUrl ? `
                 <div style="text-align: center; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e5e7eb;">
                   <div style="font-size: 24px; margin-bottom: 10px;">📄</div>
                   <p style="margin: 0; font-weight: 600; color: #111827; margin-bottom: 10px;">Passport Photo</p>
-                  <a href="${passportPhotoUrl}" target="_blank" style="color: #004B87; text-decoration: none; font-size: 14px; background: #C19A6B; color: white; padding: 8px 16px; border-radius: 4px; display: inline-block;">View Document</a>
+                  <a href="${passportPhotoUrl}" target="_blank" style="color: #073423; text-decoration: none; font-size: 14px; background: #c28d38; color: white; padding: 8px 16px; border-radius: 4px; display: inline-block;">View Document</a>
                 </div>
                 ` : ''}
               </div>
               ${existingPolicyDocsUrls && existingPolicyDocsUrls.length > 0 ? `
               <div style="margin-top: 20px;">
-                <h3 style="color: #004B87; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Existing Policy Documents</h3>
+                <h3 style="color: #073423; margin: 0 0 15px 0; font-size: 16px; font-weight: 600;">Existing Policy Documents</h3>
                 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
                   ${existingPolicyDocsUrls.map((url: string, index: number) => `
-                  <a href="${url}" target="_blank" style="color: #004B87; text-decoration: none; font-size: 14px; background: #f8fafc; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 4px; display: inline-block;">Document ${index + 1}</a>
+                  <a href="${url}" target="_blank" style="color: #073423; text-decoration: none; font-size: 14px; background: #f8fafc; border: 1px solid #e5e7eb; padding: 8px 16px; border-radius: 4px; display: inline-block;">Document ${index + 1}</a>
                   `).join('')}
                 </div>
               </div>
@@ -225,19 +225,19 @@ export async function POST(request: NextRequest) {
             
             <!-- Message Section -->
             <div style="background: #ffffff; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #e5e7eb;">
-              <h2 style="color: #004B87; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
+              <h2 style="color: #073423; margin: 0 0 20px 0; font-size: 20px; font-weight: 600; display: flex; align-items: center;">
+                <span style="background: #c28d38; width: 4px; height: 20px; margin-right: 12px; border-radius: 2px;"></span>
                 ${isQuoteRequest ? 'Additional Information' : 'Message'}
               </h2>
-              <div style="background: #f8fafc; padding: 20px; border-left: 4px solid #C19A6B; border-radius: 0 8px 8px 0;">
+              <div style="background: #f8fafc; padding: 20px; border-left: 4px solid #c28d38; border-radius: 0 8px 8px 0;">
                 <p style="margin: 0; color: #374151; line-height: 1.6; font-size: 15px;">${finalMessage}</p>
               </div>
             </div>
             
             <!-- Next Steps Section -->
-            <div style="background: linear-gradient(135deg, #004B87 0%, #003d6f 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #073423 0%, #0f4d34 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
               <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
+                <span style="background: #c28d38; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
                 Next Steps
               </h3>
               <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
           <!-- Footer -->
           <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
             <div style="margin-bottom: 20px;">
-              <div style="background: #004B87; color: white; padding: 15px 30px; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
+              <div style="background: #073423; color: white; padding: 15px 30px; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
                 GoldOak Insurance Agency
               </div>
             </div>
@@ -372,13 +372,13 @@ export async function POST(request: NextRequest) {
       <body style="margin: 0; padding: 0; background-color: #f8f9fa; font-family: 'Inter', Arial, sans-serif;">
         <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
-          <div style="background: linear-gradient(135deg, #004B87 0%, #003d6f 100%); padding: 40px 30px; text-align: center; position: relative;">
+          <div style="background: linear-gradient(135deg, #073423 0%, #0f4d34 100%); padding: 40px 30px; text-align: center; position: relative;">
             <div style="margin: 0 auto 20px; text-align: center;">
               <img src="cid:goldoaklogo" alt="GoldOak Insurance Logo" style="height: 60px; width: auto; max-width: 60px;" />
             </div>
             <h1 style="color: white; margin: 0; font-size: 28px; font-weight: 600; letter-spacing: -0.5px;">${isQuoteRequest ? 'Thank You – GoldOak Insurance' : 'Thank You for Contacting Us!'}</h1>
             <p style="color: rgba(255, 255, 255, 0.9); margin: 10px 0 0 0; font-size: 16px;">GoldOak Insurance Agency</p>
-            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #C19A6B;"></div>
+            <div style="position: absolute; bottom: 0; left: 0; right: 0; height: 4px; background: #c28d38;"></div>
           </div>
           
           <!-- Content -->
@@ -399,19 +399,19 @@ export async function POST(request: NextRequest) {
             
             <!-- Request Summary -->
             <div style="background: #ffffff; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #e5e7eb;">
-              <h3 style="color: #004B87; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
+              <h3 style="color: #073423; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
+                <span style="background: #c28d38; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
                 ${isQuoteRequest ? 'Your Quote Request Summary' : 'Your Message'}
               </h3>
-              <div style="background: #f8fafc; padding: 20px; border-left: 4px solid #C19A6B; border-radius: 0 8px 8px 0;">
+              <div style="background: #f8fafc; padding: 20px; border-left: 4px solid #c28d38; border-radius: 0 8px 8px 0;">
                 <p style="margin: 0; color: #374151; line-height: 1.6; font-size: 15px;">${finalMessage}</p>
               </div>
             </div>
             
             <!-- What Happens Next -->
-            <div style="background: linear-gradient(135deg, #004B87 0%, #003d6f 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
+            <div style="background: linear-gradient(135deg, #073423 0%, #0f4d34 100%); color: white; padding: 30px; border-radius: 12px; margin-bottom: 30px;">
               <h3 style="margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
+                <span style="background: #c28d38; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
                 What Happens Next?
               </h3>
               <ul style="margin: 0; padding-left: 20px; line-height: 1.8;">
@@ -424,8 +424,8 @@ export async function POST(request: NextRequest) {
             
             <!-- Contact Information -->
             <div style="background: #ffffff; border-radius: 12px; padding: 30px; margin-bottom: 30px; border: 1px solid #e5e7eb;">
-              <h3 style="color: #004B87; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
-                <span style="background: #C19A6B; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
+              <h3 style="color: #073423; margin: 0 0 20px 0; font-size: 18px; font-weight: 600; display: flex; align-items: center;">
+                <span style="background: #c28d38; width: 4px; height: 18px; margin-right: 12px; border-radius: 2px;"></span>
                 Need Immediate Assistance?
               </h3>
               <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
@@ -440,7 +440,7 @@ export async function POST(request: NextRequest) {
                   <p style="margin: 5px 0 0 0; font-size: 14px; color: #6b7280;">Chat with us</p>
                 </div>
               </div>
-              <div style="text-align: center; margin-top: 20px; padding: 15px; background: #C19A6B; color: white; border-radius: 8px;">
+              <div style="text-align: center; margin-top: 20px; padding: 15px; background: #c28d38; color: white; border-radius: 8px;">
                 <p style="margin: 0; font-weight: 600;">📧 info@goldoak.co.ke</p>
               </div>
             </div>
@@ -449,7 +449,7 @@ export async function POST(request: NextRequest) {
             <div style="text-align: center; padding: 20px 0;">
               <p style="color: #374151; font-size: 16px; line-height: 1.6; margin: 0;">
                 Best regards,<br>
-                <strong style="color: #004B87; font-size: 18px;">GoldOak Insurance Agency Team</strong>
+                <strong style="color: #073423; font-size: 18px;">GoldOak Insurance Agency Team</strong>
               </p>
             </div>
           </div>
@@ -457,7 +457,7 @@ export async function POST(request: NextRequest) {
           <!-- Footer -->
           <div style="background: #f8f9fa; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
             <div style="margin-bottom: 20px;">
-              <div style="background: #004B87; color: white; padding: 15px 30px; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
+              <div style="background: #073423; color: white; padding: 15px 30px; border-radius: 8px; display: inline-block; font-weight: 600; font-size: 16px;">
                 GoldOak Insurance Agency
               </div>
             </div>

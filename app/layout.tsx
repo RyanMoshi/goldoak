@@ -1,8 +1,6 @@
-import type { Metadata } from 'next'
-import { Petrona, Karla } from 'next/font/google'
+import type { Metadata, Viewport } from 'next'
+import { Petrona, Karla, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
-import Navigation from '@/components/Navigation'
-import Footer from '@/components/Footer'
 import { Toaster } from 'react-hot-toast'
 
 const petrona = Petrona({
@@ -16,6 +14,13 @@ const karla = Karla({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600', '700'],
   variable: '--font-karla',
+  display: 'swap',
+})
+
+const jetbrains = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-jetbrains',
   display: 'swap',
 })
 
@@ -38,6 +43,8 @@ export const metadata: Metadata = {
   ],
   authors: [{ name: 'GoldOak Insurance Solutions' }],
   creator: 'GoldOak Insurance Solutions',
+  applicationName: 'GoldOak',
+  appleWebApp: { capable: true, title: 'GoldOak', statusBarStyle: 'default' },
   icons: {
     icon: '/assets/Gold Icon.png',
     shortcut: '/assets/Gold Icon.png',
@@ -79,23 +86,23 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export const viewport: Viewport = {
+  themeColor: '#073423',
+  width: 'device-width',
+  initialScale: 1,
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${petrona.variable} ${karla.variable}`}>
+    <html lang="en" className={`${petrona.variable} ${karla.variable} ${jetbrains.variable}`}>
       <body className="font-sans antialiased">
-        <Navigation />
-        <main id="main-content">{children}</main>
-        <Footer />
+        {children}
         <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
             style: {
-              background: '#004B87',
+              background: '#073423',
               color: '#fff',
               fontFamily: 'Karla, sans-serif',
             },

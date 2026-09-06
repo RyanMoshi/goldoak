@@ -32,7 +32,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   const doc = new jsPDF()
   
   // Add logo placeholder (circular with G)
-  doc.setFillColor(190, 134, 43) // #C19A6B
+  doc.setFillColor(190, 134, 43) // #c28d38
   doc.circle(35, 25, 8, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(16)
@@ -40,11 +40,11 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   doc.text('G', 31, 29)
   
   // Header with brand colors
-  doc.setFillColor(0, 75, 135) // #004B87
+  doc.setFillColor(0, 75, 135) // #073423
   doc.rect(0, 0, 210, 50, 'F')
   
   // Add title
-  doc.setTextColor(190, 134, 43) // #C19A6B
+  doc.setTextColor(190, 134, 43) // #c28d38
   doc.setFontSize(20)
   doc.setFont('helvetica', 'bold')
   doc.text('GOLDOAK INSURANCE AGENCY', 60, 25)
@@ -65,7 +65,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   let yPosition = 70
   
   // Application Details Section
-  doc.setFillColor(190, 134, 43) // #C19A6B
+  doc.setFillColor(190, 134, 43) // #c28d38
   doc.rect(15, yPosition - 5, 180, 8, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFontSize(14)
@@ -75,7 +75,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   yPosition += 15
   
   // Personal Information
-  doc.setTextColor(0, 75, 135) // #004B87
+  doc.setTextColor(0, 75, 135) // #073423
   doc.setFontSize(12)
   doc.setFont('helvetica', 'bold')
   doc.text('Personal Information:', 20, yPosition)
@@ -103,7 +103,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   yPosition += 10
   
   // Insurance Details
-  doc.setTextColor(0, 75, 135) // #004B87
+  doc.setTextColor(0, 75, 135) // #073423
   doc.setFont('helvetica', 'bold')
   doc.text('Insurance Details:', 20, yPosition)
   yPosition += 8
@@ -150,7 +150,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   yPosition += 10
   
   // Additional Information
-  doc.setTextColor(0, 75, 135) // #004B87
+  doc.setTextColor(0, 75, 135) // #073423
   doc.setFont('helvetica', 'bold')
   doc.text('Additional Information:', 20, yPosition)
   yPosition += 8
@@ -174,7 +174,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   }
   
   // Preferences
-  doc.setTextColor(0, 75, 135) // #004B87
+  doc.setTextColor(0, 75, 135) // #073423
   doc.setFont('helvetica', 'bold')
   doc.text('Preferences:', 20, yPosition)
   yPosition += 8
@@ -191,7 +191,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   yPosition += 15
   
   // Uploaded Documents Section
-  doc.setTextColor(0, 75, 135) // #004B87
+  doc.setTextColor(0, 75, 135) // #073423
   doc.setFont('helvetica', 'bold')
   doc.text('Uploaded Documents:', 20, yPosition)
   yPosition += 8
@@ -221,7 +221,7 @@ export const generateInsurancePDF = (data: FormData): jsPDF => {
   
   // Footer
   yPosition = Math.max(yPosition + 20, 280)
-  doc.setFillColor(0, 75, 135) // #004B87
+  doc.setFillColor(0, 75, 135) // #073423
   doc.rect(0, yPosition, 210, 25, 'F')
   
   doc.setTextColor(255, 255, 255)

@@ -85,10 +85,46 @@ npm start
 └── Assets/                 # Source brand files
 ```
 
+## Super Agent platform (inside this site)
+
+The GoldOak website is the front door. Clients create an account and follow their cover; GoldOak advisers sign in to the **Super Agent** workspace. Everything runs in this one Next.js app.
+
+| Route | Who | What |
+|---|---|---|
+| `/signup` | Clients only | Create a free account. Agency accounts are provisioned by GoldOak. |
+| `/signin` | Client or Agency | One page, two tabs. |
+| `/portal` | Clients | Progress through the six GoldOak stages, policies, quotes, claims, adviser contact. |
+| `/agency/today` | Agency | Priorities, work queue with SLAs, pipeline, insurer activity, AI command bar. |
+| `/agency/clients` | Agency | Client register and client 360. |
+| `/api/whatsapp/webhook` | Meta | WhatsApp Cloud API webhook: registered clients get status, policies, quotes, claims by message. |
+
+### Setup
+
+1. **Database (Neon Postgres via Vercel Marketplace).** `vercel integration add neon --name goldoak-db` then `vercel env pull .env.local`. The schema is applied automatically on first use (`lib/db/schema.sql`).
+2. **Seed demo data.** `npm run db:seed` creates the GoldOak organisation, an agency account and demo clients. Passwords default to `GoldOak2026!` (override with `SEED_PASSWORD`).
+3. **Session secret.** Set `AUTH_SECRET` (32+ random characters) in Vercel and `.env.local`.
+4. **WhatsApp.** In Meta for Developers, add the WhatsApp product, then set `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN` and `WHATSAPP_APP_SECRET`. Point the webhook at `https://<your-domain>/api/whatsapp/webhook` with the same verify token and subscribe to `messages`.
+
+Clients are recognised on WhatsApp by the mobile number on their account, so ask them to sign up with the number they message from.
+
+### Code map
+
+```
+app/(site)/            Marketing site (navigation + footer)
+app/(platform)/        signin, signup, agency/*, portal/*
+components/platform/   Workspace shell, AI command bar, dashboard, clients, portal, auth
+lib/auth/              scrypt passwords, signed session cookie, server actions
+lib/db/                Neon client, schema.sql, migrate, row mappers
+lib/whatsapp/          Cloud API client and reply builder
+services/              Data access: users, agency dashboard, clients, portal
+scripts/seed.mjs       Demo data
+middleware.ts          Role gate for /agency and /portal
+```
+
 ## Brand Identity
 
-- **Primary Navy:** `#004B87`
-- **Secondary Gold:** `#C19A6B`
+- **Primary Forest Green:** `#073423`
+- **Secondary Gold:** `#c28d38`
 - **Typography:** Petrona (headings) + Karla (body)
 - **Logo variants:** Gold/Green, Icon/SideName/DownName
 
