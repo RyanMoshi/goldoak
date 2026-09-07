@@ -32,7 +32,9 @@ function safeNext(value: FormDataEntryValue | null, role: Role): string {
 
 function friendly(error: unknown): AuthState {
   if (error instanceof DatabaseNotConfiguredError) return { error: 'Accounts are not available yet: the database has not been connected. Please try again shortly.' }
-  console.error('auth action failed', error instanceof Error ? error.message : error)
+  const detail = error instanceof Error ? error.message : String(error)
+  console.error('auth action failed', detail)
+  if (process.env.DEBUG_AUTH_ERRORS === '1') return { error: `Something went wrong on our side: ${detail.slice(0, 300)}` }
   return { error: 'Something went wrong on our side. Please try again.' }
 }
 
