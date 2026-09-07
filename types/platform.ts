@@ -1,6 +1,9 @@
 /* ---------- Tenancy and identity ---------- */
 
-export type Role = 'admin' | 'agency' | 'client'
+/** admin = platform super admin; agency_admin = runs an agency; agency = agency staff; client = end user. */
+export type Role = 'admin' | 'agency_admin' | 'agency' | 'client'
+
+export const ROLE_LABELS: Record<Role, string> = { admin: 'Super admin', agency_admin: 'Agency admin', agency: 'Agency staff', client: 'Client' }
 
 export interface Organization {
   id: string
@@ -10,6 +13,18 @@ export interface Organization {
   email: string
   /** E.164 without plus, e.g. 255742473493. The number clients message. */
   whatsapp: string
+  /** Short join code clients send on WhatsApp (JOIN GOLDOAK) to be routed to this agency. */
+  code: string | null
+  active: boolean
+  /** First line the assistant sends to a new contact of this agency. */
+  greeting: string | null
+  licenceLabel: string | null
+}
+
+export interface OrganizationSummary extends Organization {
+  staffCount: number
+  clientCount: number
+  openConversations: number
 }
 
 export interface PublicUser {
@@ -292,4 +307,68 @@ export interface CommandResult {
   lines: { text: string; detail?: string }[]
   actions: { label: string; href: string }[]
   source: string
+}
+
+/* ---------- Conversations (WhatsApp and web chat) ---------- */
+
+export type ContactMode = 'ai' | 'human'
+
+export interface WhatsAppContact {
+  phone: string
+  organizationId: string | null
+  userId: string | null
+  displayName: string | null
+  mode: ContactMode
+  assignedUserId: string | null
+  workflow: string | null
+  step: number | null
+  data: Record<string, unknown>
+  lastInboundAt: string | null
+  handoffAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ConversationMessage {
+  id: string
+  phone: string
+  organizationId: string | null
+  userId: string | null
+  direction: 'in' | 'out'
+  role: 'user' | 'assistant' | 'agent' | 'system'
+  body: string
+  at: string
+}
+
+export interface ConversationRow extends WhatsAppContact {
+  userName: string | null
+  clientId: string | null
+  clientName: string | null
+  assignedName: string | null
+  organizationName: string | null
+  lastMessage: string | null
+  lastMessageAt: string | null
+  inboundCount: number
+}
+
+export interface Consultation {
+  id: string
+  organizationId: string | null
+  userId: string | null
+  phone: string | null
+  channel: string
+  question: string
+  answer: string
+  source: string
+  at: string
+}
+
+export interface AuditEntry {
+  id: string
+  organizationId: string | null
+  actorUserId: string | null
+  action: string
+  target: string | null
+  detail: Record<string, unknown> | null
+  at: string
 }

@@ -1,4 +1,4 @@
-import { BarChart3, Building2, FileText, KanbanSquare, RefreshCw, Settings, ShieldAlert, type LucideIcon } from 'lucide-react'
+import { BarChart3, Building2, FileText, KanbanSquare, RefreshCw, ShieldAlert, type LucideIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ComingNext } from '@/components/platform/dashboard/ComingNext'
@@ -11,7 +11,6 @@ const icons: Record<string, LucideIcon> = {
   claims: ShieldAlert,
   insurers: Building2,
   reports: BarChart3,
-  settings: Settings,
 }
 
 export function generateMetadata({ params }: { params: { section: string } }): Metadata {

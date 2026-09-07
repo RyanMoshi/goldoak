@@ -3,7 +3,9 @@
  * the edge middleware and in Node server components.
  */
 
-export type Role = 'admin' | 'agency' | 'client'
+export type Role = 'admin' | 'agency_admin' | 'agency' | 'client'
+
+export type Area = 'admin' | 'agency' | 'client'
 
 export interface SessionPayload {
   uid: string
@@ -61,7 +63,7 @@ export async function verifySession(token: string | undefined | null): Promise<S
     if (!valid) return null
     const payload = JSON.parse(new TextDecoder().decode(fromBase64Url(body))) as SessionPayload
     if (typeof payload.exp !== 'number' || payload.exp < Math.floor(Date.now() / 1000)) return null
-    if (payload.role !== 'admin' && payload.role !== 'agency' && payload.role !== 'client') return null
+    if (!['admin', 'agency_admin', 'agency', 'client'].includes(payload.role)) return null
     return payload
   } catch {
     return null
@@ -70,12 +72,23 @@ export async function verifySession(token: string | undefined | null): Promise<S
 
 export function homeFor(role: Role): string {
   if (role === 'admin') return '/admin'
-  if (role === 'agency') return '/agency/today'
+  if (role === 'agency_admin' || role === 'agency') return '/agency/today'
   return '/portal'
 }
 
-/** Whether a session role may enter an area. Admin may also use the agency workspace. */
-export function canAccess(role: Role, area: Role): boolean {
-  if (role === area) return true
-  return role === 'admin' && area === 'agency'
+/** Whether a session role may enter an area. The super admin may also use the agency workspace. */
+export function canAccess(role: Role, area: Area): boolean {
+  if (area === 'admin') return role === 'admin'
+  if (area === 'agency') return role === 'admin' || role === 'agency_admin' || role === 'agency'
+  return role === 'client'
+}
+
+/** Agency-side roles (anyone who works inside an agency workspace). */
+export function isStaffRole(role: Role): boolean {
+  return role === 'admin' || role === 'agency_admin' || role === 'agency'
+}
+
+/** May manage the agency's team and settings. */
+export function isAgencyAdmin(role: Role): boolean {
+  return role === 'admin' || role === 'agency_admin'
 }

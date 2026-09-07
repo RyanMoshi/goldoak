@@ -7,16 +7,18 @@ import { Avatar } from '@/components/platform/ui/Avatar'
 import { useClickOutside } from '@/hooks/useClickOutside'
 import { signOutAction } from '@/lib/auth/actions'
 import { cn } from '@/lib/cn'
-import type { PublicUser } from '@/types/platform'
+import { ROLE_LABELS, type PublicUser } from '@/types/platform'
 
 interface AgentProfileProps {
   agent: PublicUser
   compact?: boolean
   placement?: 'above' | 'below'
+  /** Surface the trigger sits on. */
+  on?: 'light' | 'forest'
 }
 
 /** The signed-in agent, with a restrained menu. */
-export function AgentProfile({ agent, compact = false, placement = 'above' }: AgentProfileProps) {
+export function AgentProfile({ agent, compact = false, placement = 'above', on = 'light' }: AgentProfileProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const menuId = useId()
@@ -43,17 +45,17 @@ export function AgentProfile({ agent, compact = false, placement = 'above' }: Ag
         onClick={() => setOpen((v) => !v)}
         className={cn(
           'flex items-center gap-3 rounded-control text-left transition-colors focus-ring',
-          compact ? 'size-9 justify-center hover:bg-surface-2' : 'w-full border border-line bg-surface-3 px-2.5 py-2 hover:border-line-strong hover:bg-surface',
+          compact ? 'size-9 justify-center hover:bg-surface-2' : on === 'forest' ? 'w-full border border-white/15 bg-white/5 px-2.5 py-2 hover:bg-white/10' : 'w-full border border-line bg-surface-3 px-2.5 py-2 hover:border-line-strong hover:bg-surface',
         )}
       >
         <Avatar name={agent.name} size={compact ? 'sm' : 'md'} />
         {compact ? null : (
           <>
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-[13px] font-bold text-ink">{agent.name}</span>
-              <span className="block truncate text-[11.5px] text-ink-muted">{agent.title ?? 'Agent'}</span>
+              <span className={cn('block truncate text-[13px] font-bold', on === 'forest' ? 'text-white' : 'text-ink')}>{agent.name}</span>
+              <span className={cn('block truncate text-[11.5px]', on === 'forest' ? 'text-white/60' : 'text-ink-muted')}>{agent.title ?? ROLE_LABELS[agent.role]}</span>
             </span>
-            <MoreHorizontal className="size-4 shrink-0 text-ink-faint" aria-hidden="true" />
+            <MoreHorizontal className={cn('size-4 shrink-0', on === 'forest' ? 'text-white/50' : 'text-ink-faint')} aria-hidden="true" />
           </>
         )}
       </button>
@@ -73,15 +75,19 @@ export function AgentProfile({ agent, compact = false, placement = 'above' }: Ag
             <p className="truncate font-mono text-[11px] text-ink-muted">{agent.email}</p>
           </div>
           <div className="my-1 h-px bg-divider" />
-          <MenuLink href="/agency/settings" icon={UserRound} onSelect={close}>
-            My profile
-          </MenuLink>
           <MenuLink href="/agency/settings" icon={Building2} onSelect={close}>
-            Organisation
+            Agency settings
           </MenuLink>
-          <MenuLink href="/agency/settings" icon={Settings} onSelect={close}>
-            Settings
-          </MenuLink>
+          {agent.role === 'admin' || agent.role === 'agency_admin' ? (
+            <MenuLink href="/agency/team" icon={UserRound} onSelect={close}>
+              Team
+            </MenuLink>
+          ) : null}
+          {agent.role === 'admin' ? (
+            <MenuLink href="/admin" icon={Settings} onSelect={close}>
+              Platform admin
+            </MenuLink>
+          ) : null}
           <div className="my-1 h-px bg-divider" />
           <form action={signOutAction}>
             <button

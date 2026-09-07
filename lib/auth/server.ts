@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { SESSION_COOKIE, canAccess, homeFor, verifySession, type Role, type SessionPayload } from '@/lib/auth/session'
+import { SESSION_COOKIE, canAccess, homeFor, isAgencyAdmin, verifySession, type Area, type SessionPayload } from '@/lib/auth/session'
 
 /** Current session from the request cookie, or null. Server components and actions only. */
 export async function getSession(): Promise<SessionPayload | null> {
@@ -8,9 +8,16 @@ export async function getSession(): Promise<SessionPayload | null> {
 }
 
 /** Redirects to sign-in when absent, or to the right home when the role may not enter this area. */
-export async function requireSession(area: Role): Promise<SessionPayload> {
+export async function requireSession(area: Area): Promise<SessionPayload> {
   const session = await getSession()
   if (!session) redirect(`/signin?as=${area === 'client' ? 'client' : 'agency'}`)
   if (!canAccess(session.role, area)) redirect(homeFor(session.role))
+  return session
+}
+
+/** Agency admin or super admin only (team, settings). Others are sent to their home. */
+export async function requireAgencyAdmin(): Promise<SessionPayload> {
+  const session = await requireSession('agency')
+  if (!isAgencyAdmin(session.role)) redirect('/agency/today')
   return session
 }

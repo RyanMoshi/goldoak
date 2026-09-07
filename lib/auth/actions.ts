@@ -7,7 +7,7 @@ import { SESSION_COOKIE, SESSION_DAYS, homeFor, signSession, type Role } from '@
 import { DatabaseNotConfiguredError } from '@/lib/db/client'
 import { normalizePhone } from '@/lib/format'
 import { onClientSignedUp } from '@/services/automation'
-import { createClientUser, emailOrPhoneTaken, findUserForSignIn, touchLastSeen, DEFAULT_ORGANIZATION_ID } from '@/services/users'
+import { createClientUser, emailOrPhoneTaken, findUserForSignIn, getOrganizationByCode, touchLastSeen, DEFAULT_ORGANIZATION_ID } from '@/services/users'
 
 export interface AuthState {
   error?: string
@@ -26,7 +26,7 @@ function setSessionCookie(token: string) {
 
 function safeNext(value: FormDataEntryValue | null, role: Role): string {
   const next = typeof value === 'string' ? value : ''
-  const prefixes = role === 'admin' ? ['/admin', '/agency'] : role === 'agency' ? ['/agency'] : ['/portal']
+  const prefixes = role === 'admin' ? ['/admin', '/agency'] : role === 'agency' || role === 'agency_admin' ? ['/agency'] : ['/portal']
   return prefixes.some((p) => next.startsWith(p)) ? next : homeFor(role)
 }
 
@@ -81,6 +81,7 @@ export async function signUpAction(formData: FormData): Promise<AuthState> {
   const clientTypeRaw = String(formData.get('clientType') ?? 'individual')
   const clientType = clientTypeRaw === 'sme' || clientTypeRaw === 'corporate' ? clientTypeRaw : 'individual'
   const protect = String(formData.get('protect') ?? '').trim().slice(0, 500) || null
+  const agencyCode = String(formData.get('agency') ?? '').trim()
 
   if (name.length < 2) return { error: 'Enter your full name.', field: 'name' }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: 'Enter a valid email address.', field: 'email' }
@@ -97,7 +98,8 @@ export async function signUpAction(formData: FormData): Promise<AuthState> {
     if (taken === 'phone') return { error: 'That phone number is already registered. Sign in instead.', field: 'phone' }
 
     const passwordHash = await hashPassword(password)
-    const { user, clientId } = await createClientUser({ name, email, phone, passwordHash, businessName, clientType, notes: protect })
+    const agency = agencyCode ? await getOrganizationByCode(agencyCode) : null
+    const { user, clientId } = await createClientUser({ organizationId: agency?.id, name, email, phone, passwordHash, businessName, clientType, notes: protect })
     token = await signSession({ uid: user.id, role: 'client', oid: user.organizationId ?? DEFAULT_ORGANIZATION_ID, name: user.name })
     await onClientSignedUp({ user, clientId, clientName: businessName ?? name, protect })
   } catch (error) {

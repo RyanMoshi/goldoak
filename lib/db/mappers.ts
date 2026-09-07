@@ -1,10 +1,17 @@
 import type {
   ActivityItem,
+  AuditEntry,
   Claim,
   Client,
   ClientListRow,
+  Consultation,
+  ConversationMessage,
+  ConversationRow,
   Notification,
   Organization,
+  OrganizationSummary,
+  Role,
+  WhatsAppContact,
   Policy,
   PublicUser,
   QuoteRequest,
@@ -22,11 +29,83 @@ const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : str(v
 const isoOrNull = (v: unknown): string | null => (v == null ? null : iso(v))
 
 export function toOrganization(r: Row): Organization {
-  return { id: str(r.id), name: str(r.name), shortName: str(r.short_name), phone: str(r.phone), email: str(r.email), whatsapp: str(r.whatsapp) }
+  return {
+    id: str(r.id),
+    name: str(r.name),
+    shortName: str(r.short_name),
+    phone: str(r.phone),
+    email: str(r.email),
+    whatsapp: str(r.whatsapp),
+    code: strOrNull(r.code),
+    active: r.active === undefined ? true : Boolean(r.active),
+    greeting: strOrNull(r.greeting),
+    licenceLabel: strOrNull(r.licence_label),
+  }
+}
+
+export function toOrganizationSummary(r: Row): OrganizationSummary {
+  return { ...toOrganization(r), staffCount: num(r.staff_count), clientCount: num(r.client_count), openConversations: num(r.open_conversations) }
+}
+
+export function toRole(v: unknown): Role {
+  return v === 'admin' || v === 'agency_admin' || v === 'agency' ? v : 'client'
+}
+
+export function toContact(r: Row): WhatsAppContact {
+  return {
+    phone: str(r.phone),
+    organizationId: strOrNull(r.organization_id),
+    userId: strOrNull(r.user_id),
+    displayName: strOrNull(r.display_name),
+    mode: r.mode === 'human' ? 'human' : 'ai',
+    assignedUserId: strOrNull(r.assigned_user_id),
+    workflow: strOrNull(r.workflow),
+    step: r.step == null ? null : Number(r.step),
+    data: (r.data as Record<string, unknown>) ?? {},
+    lastInboundAt: isoOrNull(r.last_inbound_at),
+    handoffAt: isoOrNull(r.handoff_at),
+    createdAt: iso(r.created_at),
+    updatedAt: iso(r.updated_at),
+  }
+}
+
+export function toConversationRow(r: Row): ConversationRow {
+  return {
+    ...toContact(r),
+    userName: strOrNull(r.user_name),
+    clientId: strOrNull(r.client_id),
+    clientName: strOrNull(r.client_name),
+    assignedName: strOrNull(r.assigned_name),
+    organizationName: strOrNull(r.organization_name),
+    lastMessage: strOrNull(r.last_message),
+    lastMessageAt: isoOrNull(r.last_message_at),
+    inboundCount: num(r.inbound_count),
+  }
+}
+
+export function toConversationMessage(r: Row): ConversationMessage {
+  return {
+    id: str(r.id),
+    phone: str(r.phone),
+    organizationId: strOrNull(r.organization_id),
+    userId: strOrNull(r.user_id),
+    direction: r.direction === 'in' ? 'in' : 'out',
+    role: (r.role as ConversationMessage['role']) ?? 'assistant',
+    body: str(r.body),
+    at: iso(r.at),
+  }
+}
+
+export function toConsultation(r: Row): Consultation {
+  return { id: str(r.id), organizationId: strOrNull(r.organization_id), userId: strOrNull(r.user_id), phone: strOrNull(r.phone), channel: str(r.channel), question: str(r.question), answer: str(r.answer), source: str(r.source), at: iso(r.at) }
+}
+
+export function toAuditEntry(r: Row): AuditEntry {
+  return { id: str(r.id), organizationId: strOrNull(r.organization_id), actorUserId: strOrNull(r.actor_user_id), action: str(r.action), target: strOrNull(r.target), detail: (r.detail as Record<string, unknown>) ?? null, at: iso(r.at) }
 }
 
 export function toPublicUser(r: Row): PublicUser {
-  const role = r.role === 'admin' ? 'admin' : r.role === 'agency' ? 'agency' : 'client'
+  const role = toRole(r.role)
   return {
     id: str(r.id),
     role,

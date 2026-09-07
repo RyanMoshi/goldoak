@@ -52,6 +52,9 @@ interface OpenWAEvent {
     isGroup?: boolean
     kind?: string
     senderPhone?: string | null
+    pushName?: string | null
+    notifyName?: string | null
+    senderName?: string | null
   }
 }
 
@@ -67,5 +70,6 @@ export function parseOpenWAEvent(payload: unknown): { key: string | null; messag
   const phone = from.replace(/@.*$/, '').replace(/\D/g, '')
   const text = (d.body ?? '').trim()
   if (!phone || !text || from.endsWith('@lid')) return { key, message: null }
-  return { key, message: { phone, text, messageId: String(d.id ?? key ?? '') } }
+  const name = d.pushName ?? d.notifyName ?? d.senderName ?? null
+  return { key, message: { phone, text, messageId: String(d.id ?? key ?? ''), name: name ? String(name).slice(0, 80) : null } }
 }

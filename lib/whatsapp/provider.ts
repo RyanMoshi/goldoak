@@ -16,6 +16,8 @@ export interface InboundMessage {
   text: string
   /** Provider message id, for read receipts and de-duplication. */
   messageId: string
+  /** WhatsApp profile name of the sender, when the provider gives it. */
+  name?: string | null
 }
 
 export interface WhatsAppProvider {

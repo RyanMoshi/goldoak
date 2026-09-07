@@ -2,8 +2,14 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { requireSession } from '@/lib/auth/server'
+import { hashPassword } from '@/lib/auth/password'
+import { requireAgencyAdmin, requireSession } from '@/lib/auth/server'
+import { generatePassword } from '@/lib/conversation/flows'
 import { normalizePhone } from '@/lib/format'
+import { audit } from '@/services/audit'
+import { getContact, setMode } from '@/services/conversations'
+import { agentReply, resumeAssistant } from '@/services/handoff'
+import { codeTaken, createStaffUser, emailOrPhoneTaken, setUserActive, setUserPassword, setUserRole, updateOrganization, userInOrganization } from '@/services/users'
 import { runAgencyCommand } from '@/services/agency/commands'
 import { completeTask } from '@/services/agency/dashboard'
 import { addPolicy, createClient, messageClient, updateClaimStage, updateClientStage, updateQuoteStage } from '@/services/journey'
@@ -132,4 +138,158 @@ export async function createClientAction(formData: FormData): Promise<ActionStat
   }
   revalidatePath('/agency/clients')
   redirect(`/agency/clients/${clientId}`)
+}
+
+/* ---------- Conversations (WhatsApp handoff) ---------- */
+
+export async function replyConversationAction(phone: string, body: string): Promise<ActionState> {
+  const session = await requireSession('agency')
+  const text = body.trim().slice(0, 2000)
+  if (text.length < 1) return { error: 'Write a message first.' }
+  try {
+    const result = await agentReply(session.oid, { id: session.uid, name: session.name }, phone.replace(/\D/g, ''), text)
+    revalidatePath(`/agency/conversations/${phone}`)
+    if (result === 'forbidden') return { error: 'This conversation does not belong to your agency.' }
+    return result === 'sent' ? { success: 'Sent on WhatsApp.' } : { error: 'WhatsApp did not accept the message. It is saved here; try again in a moment.' }
+  } catch (error) {
+    console.error('replyConversation failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not send the reply.' }
+  }
+}
+
+export async function resumeAssistantAction(phone: string): Promise<ActionState> {
+  const session = await requireSession('agency')
+  try {
+    const ok = await resumeAssistant(session.oid, session.uid, phone.replace(/\D/g, ''))
+    revalidatePath(`/agency/conversations/${phone}`)
+    revalidatePath('/agency/conversations')
+    return ok ? { success: 'The assistant is back on this chat.' } : { error: 'This conversation does not belong to your agency.' }
+  } catch (error) {
+    console.error('resumeAssistant failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not hand the chat back.' }
+  }
+}
+
+export async function takeOverConversationAction(phone: string): Promise<ActionState> {
+  const session = await requireSession('agency')
+  try {
+    const digits = phone.replace(/\D/g, '')
+    const contact = await getContact(digits)
+    if (!contact || contact.organizationId !== session.oid) return { error: 'This conversation does not belong to your agency.' }
+    await setMode(digits, 'human', session.uid)
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'conversation.take-over', target: digits })
+    revalidatePath(`/agency/conversations/${phone}`)
+    return { success: 'You have this chat. The assistant stays quiet until you hand it back.' }
+  } catch (error) {
+    console.error('takeOver failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not take over the chat.' }
+  }
+}
+
+/* ---------- Team (agency admins) ---------- */
+
+export interface TeamActionState extends ActionState {
+  field?: 'name' | 'email' | 'phone' | 'password'
+}
+
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+export async function inviteStaffAction(formData: FormData): Promise<TeamActionState> {
+  const session = await requireAgencyAdmin()
+  const name = String(formData.get('name') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  const phoneInput = String(formData.get('phone') ?? '').trim()
+  const title = String(formData.get('title') ?? '').trim() || null
+  const role = formData.get('role') === 'agency_admin' ? 'agency_admin' : 'agency'
+  let password = String(formData.get('password') ?? '').trim()
+  if (name.length < 2) return { error: 'Enter the full name.', field: 'name' }
+  if (!EMAIL.test(email)) return { error: 'Enter a valid email address.', field: 'email' }
+  const phone = phoneInput ? normalizePhone(phoneInput) : null
+  if (phoneInput && !phone) return { error: 'Enter a valid mobile number.', field: 'phone' }
+  if (password && password.length < 8) return { error: 'Passwords need at least 8 characters, or leave blank to generate one.', field: 'password' }
+  if (!password) password = generatePassword()
+  try {
+    const taken = await emailOrPhoneTaken(email, phone)
+    if (taken === 'email') return { error: 'An account with that email already exists.', field: 'email' }
+    if (taken === 'phone') return { error: 'That phone number is already on another account.', field: 'phone' }
+    const user = await createStaffUser({ role, organizationId: session.oid, name, email, phone, title, passwordHash: await hashPassword(password), createdBy: session.uid })
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'user.created', target: user.id, detail: { role } })
+    revalidatePath('/agency/team')
+    return { success: `${user.name} can sign in on the Agency tab with ${user.email} and the password ${password}. Share it privately.` }
+  } catch (error) {
+    console.error('inviteStaff failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not create the account.' }
+  }
+}
+
+export async function resetStaffPasswordAction(userId: string): Promise<TeamActionState> {
+  const session = await requireAgencyAdmin()
+  if (!(await userInOrganization(userId, session.oid))) return { error: 'That person is not in your agency.' }
+  const password = generatePassword()
+  try {
+    await setUserPassword(userId, await hashPassword(password))
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'user.password-reset', target: userId })
+    revalidatePath('/agency/team')
+    return { success: `New password: ${password}. Share it privately.` }
+  } catch (error) {
+    console.error('resetStaffPassword failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not reset the password.' }
+  }
+}
+
+export async function setStaffActiveAction(userId: string, active: boolean): Promise<TeamActionState> {
+  const session = await requireAgencyAdmin()
+  if (userId === session.uid && !active) return { error: 'You cannot deactivate your own account.' }
+  if (!(await userInOrganization(userId, session.oid))) return { error: 'That person is not in your agency.' }
+  try {
+    await setUserActive(userId, active)
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: active ? 'user.activated' : 'user.deactivated', target: userId })
+    revalidatePath('/agency/team')
+    return { success: active ? 'Account reactivated.' : 'Account deactivated.' }
+  } catch (error) {
+    console.error('setStaffActive failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not update the account.' }
+  }
+}
+
+export async function setStaffRoleAction(userId: string, role: 'agency' | 'agency_admin'): Promise<TeamActionState> {
+  const session = await requireAgencyAdmin()
+  if (userId === session.uid) return { error: 'Ask another admin to change your own role.' }
+  if (!(await userInOrganization(userId, session.oid))) return { error: 'That person is not in your agency.' }
+  try {
+    await setUserRole(userId, role)
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'user.role-changed', target: userId, detail: { role } })
+    revalidatePath('/agency/team')
+    return { success: role === 'agency_admin' ? 'Now an agency admin.' : 'Now agency staff.' }
+  } catch (error) {
+    console.error('setStaffRole failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not change the role.' }
+  }
+}
+
+/* ---------- Settings (agency admins) ---------- */
+
+export async function updateOrganizationSettingsAction(formData: FormData): Promise<ActionState> {
+  const session = await requireAgencyAdmin()
+  const name = String(formData.get('name') ?? '').trim()
+  const shortName = String(formData.get('shortName') ?? '').trim()
+  const code = String(formData.get('code') ?? '').trim().toUpperCase().replace(/[^A-Z0-9-]/g, '')
+  const phone = String(formData.get('phone') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  const greeting = String(formData.get('greeting') ?? '').trim().slice(0, 300) || null
+  const licenceLabel = String(formData.get('licenceLabel') ?? '').trim().slice(0, 80) || null
+  if (name.length < 2 || shortName.length < 2) return { error: 'Enter the agency name and a short name.' }
+  if (code.length < 3 || code.length > 12) return { error: 'The join code needs 3 to 12 letters or digits.' }
+  if (!EMAIL.test(email)) return { error: 'Enter a valid contact email.' }
+  try {
+    if (await codeTaken(code, session.oid)) return { error: 'That join code is used by another agency.' }
+    await updateOrganization(session.oid, { name, shortName, code, phone, email, greeting, licenceLabel })
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'organization.updated', target: session.oid })
+    revalidatePath('/agency/settings')
+    revalidatePath('/agency', 'layout')
+    return { success: 'Settings saved.' }
+  } catch (error) {
+    console.error('updateOrganizationSettings failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not save the settings.' }
+  }
 }

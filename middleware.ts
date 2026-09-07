@@ -1,12 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { SESSION_COOKIE, canAccess, homeFor, verifySession, type Role } from '@/lib/auth/session'
+import { SESSION_COOKIE, canAccess, homeFor, verifySession, type Area } from '@/lib/auth/session'
 
 /** Gate the platform routes by role. Signed cookie, verified with Web Crypto; no database call on the edge. */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value)
 
-  const area: Role | null = pathname.startsWith('/admin') ? 'admin' : pathname.startsWith('/agency') ? 'agency' : pathname.startsWith('/portal') ? 'client' : null
+  const area: Area | null = pathname.startsWith('/admin') ? 'admin' : pathname.startsWith('/agency') ? 'agency' : pathname.startsWith('/portal') ? 'client' : null
 
   if (area) {
     if (!session) return redirectToSignIn(request, area === 'client' ? 'client' : 'agency')

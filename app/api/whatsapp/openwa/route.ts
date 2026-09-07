@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSql, hasDatabase } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
-import { handleInbound, logMessage } from '@/lib/whatsapp/bot'
+import { handleInbound } from '@/lib/whatsapp/bot'
 import { sendWhatsApp, whatsappConfigured } from '@/lib/whatsapp/provider'
 import { parseOpenWAEvent, verifyOpenWASignature } from '@/lib/whatsapp/providers/openwa'
 
@@ -40,12 +40,13 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { reply, userId } = await handleInbound(message.phone, message.text)
-    await logMessage(message.phone, userId, 'in', message.text)
-    const sent = await sendWhatsApp(message.phone, reply)
-    await logMessage(message.phone, userId, 'out', reply)
+    const result = await handleInbound(message.phone, message.text, message.name ?? null)
+    let sent = true
+    for (const reply of result.replies) {
+      if (!(await sendWhatsApp(message.phone, reply))) sent = false
+    }
     // Until a gateway is configured, echo the reply so the conversation can be tested end to end.
-    return NextResponse.json(whatsappConfigured() ? { ok: true, sent } : { ok: true, sent, reply })
+    return NextResponse.json(whatsappConfigured() ? { ok: true, sent, answered: result.answered } : { ok: true, sent, answered: result.answered, reply: result.replies.join('\n\n') })
   } catch (error) {
     console.error('openwa webhook failed', error instanceof Error ? error.message : error)
     return NextResponse.json({ ok: false }, { status: 500 })

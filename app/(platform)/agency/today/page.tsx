@@ -3,7 +3,7 @@ import { Dashboard } from '@/components/platform/dashboard/Dashboard'
 import { requireSession } from '@/lib/auth/server'
 import { greetingFor } from '@/lib/format'
 import { getDashboardData } from '@/services/agency/dashboard'
-import { getOrganization, getUser } from '@/services/users'
+import { getOrganization, getUser, placeholderOrganization } from '@/services/users'
 
 export const metadata: Metadata = { title: 'Today' }
 
@@ -14,7 +14,7 @@ export default async function TodayPage() {
     <Dashboard
       data={data}
       agent={agent ?? { id: session.uid, role: 'agency', organizationId: session.oid, name: session.name, email: '', phone: null, title: null, active: true, whatsappOptIn: true }}
-      organization={organization ?? { id: session.oid, name: 'Agency', shortName: 'Agency', phone: '', email: '', whatsapp: '' }}
+      organization={organization ?? placeholderOrganization(session.oid)}
       greeting={greetingFor(new Date())}
     />
   )

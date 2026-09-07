@@ -49,10 +49,4 @@ export const agencyRoadmap: Record<string, RoadmapEntry> = {
     description: 'Premium, commission, conversion and retention by insurer, class, adviser and month.',
     capabilities: ['Premium and commission ledger', 'Lead-to-placement conversion', 'Renewal retention by segment', 'Insurer concentration'],
   },
-  settings: {
-    step: 'Later · Organisation settings',
-    title: 'Settings',
-    description: 'Organisation, users and roles, templates and the disclosure texts that appear on every proposal.',
-    capabilities: ['Organisation profile and licence details', 'Users, roles and approvals', 'Proposal and document templates', 'Consent and disclosure texts'],
-  },
 }

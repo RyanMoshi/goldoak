@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useState, type ReactNode } from 'react'
-import { MobileNav } from '@/components/platform/shell/MobileNav'
+import { MobileNav, MobileTabBar } from '@/components/platform/shell/MobileNav'
 import { Sidebar } from '@/components/platform/shell/Sidebar'
 import { TopBar } from '@/components/platform/shell/TopBar'
 import type { Organization, PublicUser } from '@/types/platform'
@@ -10,11 +10,13 @@ interface AppShellProps {
   organization: Organization
   agent: PublicUser
   dateLabel: string
+  /** WhatsApp chats waiting for a person; shown as a badge on Conversations. */
+  waiting?: number
   children: ReactNode
 }
 
-/** Desktop: fixed 240px rail and top bar. Mobile: the rail becomes a drawer. */
-export function AppShell({ organization, agent, dateLabel, children }: AppShellProps) {
+/** Desktop: fixed 240px forest rail and top bar. Mobile: drawer plus a bottom tab bar. */
+export function AppShell({ organization, agent, dateLabel, waiting = 0, children }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const openNav = useCallback(() => setMobileNavOpen(true), [])
   const closeNav = useCallback(() => setMobileNavOpen(false), [])
@@ -27,14 +29,15 @@ export function AppShell({ organization, agent, dateLabel, children }: AppShellP
       >
         Skip to content
       </a>
-      <Sidebar organization={organization} agent={agent} />
-      <MobileNav open={mobileNavOpen} onClose={closeNav} organization={organization} agent={agent} />
+      <Sidebar organization={organization} agent={agent} waiting={waiting} />
+      <MobileNav open={mobileNavOpen} onClose={closeNav} organization={organization} agent={agent} waiting={waiting} />
       <div className="flex min-h-dvh flex-col lg:pl-60">
         <TopBar dateLabel={dateLabel} onOpenNav={openNav} agent={agent} />
-        <main id="workspace" className="flex-1 pb-8">
+        <main id="workspace" className="flex-1 pb-24 lg:pb-8">
           <div className="mx-auto w-full max-w-[1400px] px-4 pt-5 sm:px-6 lg:px-8 lg:pt-8">{children}</div>
         </main>
       </div>
+      <MobileTabBar waiting={waiting} />
     </div>
   )
 }

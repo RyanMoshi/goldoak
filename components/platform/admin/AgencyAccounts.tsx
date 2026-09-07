@@ -8,10 +8,11 @@ import { Card, CardHeader } from '@/components/platform/ui/Card'
 import { createAgencyAccountAction, resetAgencyPasswordAction, setAgencyActiveAction, type AdminActionState } from '@/lib/admin/actions'
 import { cn } from '@/lib/cn'
 import { formatPhone, relativeTime } from '@/lib/format'
-import type { PublicUser } from '@/types/platform'
+import { ROLE_LABELS, type Organization, type PublicUser } from '@/types/platform'
 
 /** Admin creates agency logins (name, email, password) and manages them. Agencies never self-register. */
-export function AgencyAccounts({ users, currentUserId }: { users: PublicUser[]; currentUserId: string }) {
+export function AgencyAccounts({ users, currentUserId, organizations }: { users: PublicUser[]; currentUserId: string; organizations: Organization[] }) {
+  const orgName = (id: string | null) => organizations.find((o) => o.id === id)?.shortName ?? '—'
   const [state, setState] = useState<AdminActionState>({})
   const [pending, startTransition] = useTransition()
   const [formKey, setFormKey] = useState(0)
@@ -39,8 +40,17 @@ export function AgencyAccounts({ users, currentUserId }: { users: PublicUser[]; 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
       <Card as="section" className="lg:col-span-5">
-        <CardHeader title="Invite an agency user" description="Create their username and password. Share both privately." />
+        <CardHeader title="Invite a user into any agency" description="Create their username and password. Share both privately." />
         <form key={formKey} action={submit} className="mt-5 space-y-4" noValidate>
+          <Field label="Agency" htmlFor="adm-org" error={state.field === 'organization' ? state.error : undefined}>
+            <select id="adm-org" name="organizationId" required className={inputClass} defaultValue={organizations[0]?.id ?? ''}>
+              {organizations.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Full name" htmlFor="adm-name" error={state.field === 'name' ? state.error : undefined}>
             <input id="adm-name" name="name" required className={inputClass} placeholder="e.g. Terry Wanjiku" />
           </Field>
@@ -61,8 +71,9 @@ export function AgencyAccounts({ users, currentUserId }: { users: PublicUser[]; 
             </Field>
             <Field label="Role" htmlFor="adm-role">
               <select id="adm-role" name="role" className={inputClass} defaultValue="agency">
-                <option value="agency">Agency user</option>
-                <option value="admin">Platform admin</option>
+                <option value="agency">Agency staff</option>
+                <option value="agency_admin">Agency admin</option>
+                <option value="admin">Platform super admin</option>
               </select>
             </Field>
           </div>
@@ -84,7 +95,7 @@ export function AgencyAccounts({ users, currentUserId }: { users: PublicUser[]; 
 
       <Card as="section" flush className="lg:col-span-7">
         <div className="px-5 pb-3 pt-5">
-          <CardHeader title="Agency and admin accounts" description={`${users.filter((u) => u.active).length} active`} />
+          <CardHeader title="Every staff account" description={`${users.filter((u) => u.active).length} active`} />
         </div>
         <ul className="divide-y divide-divider border-t border-line">
           {users.map((u) => (
@@ -92,7 +103,8 @@ export function AgencyAccounts({ users, currentUserId }: { users: PublicUser[]; 
               <div className="min-w-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[14px] font-bold text-ink">{u.name}</span>
-                  <Badge tone={u.role === 'admin' ? 'gold' : 'forest'}>{u.role}</Badge>
+                  <Badge tone={u.role === 'admin' ? 'gold' : u.role === 'agency_admin' ? 'info' : 'forest'}>{ROLE_LABELS[u.role]}</Badge>
+                  <Badge>{orgName(u.organizationId)}</Badge>
                   {!u.active ? <Badge tone="error">Deactivated</Badge> : null}
                   {u.id === currentUserId ? <Badge>You</Badge> : null}
                 </div>

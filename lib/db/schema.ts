@@ -194,4 +194,87 @@ CREATE TABLE IF NOT EXISTS processed_webhooks (
   key          text PRIMARY KEY,
   received_at  timestamptz NOT NULL DEFAULT now()
 );
+-- ---------- Multi-tenancy, conversations, RBAC (v2) ----------
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS code text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS active boolean NOT NULL DEFAULT true;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS greeting text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS licence_label text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+CREATE UNIQUE INDEX IF NOT EXISTS organizations_code_idx ON organizations (lower(code)) WHERE code IS NOT NULL;
+UPDATE organizations SET code = 'GOLDOAK' WHERE id = 'org_goldoak' AND code IS NULL;
+
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
+ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'agency_admin', 'agency', 'client'));
+
+-- One row per WhatsApp number: which organisation it talks to, the current workflow, and whether a person has taken over.
+CREATE TABLE IF NOT EXISTS whatsapp_contacts (
+  phone             text PRIMARY KEY,
+  organization_id   text REFERENCES organizations(id),
+  user_id           text REFERENCES users(id) ON DELETE SET NULL,
+  display_name      text,
+  mode              text NOT NULL DEFAULT 'ai' CHECK (mode IN ('ai', 'human')),
+  assigned_user_id  text REFERENCES users(id) ON DELETE SET NULL,
+  workflow          text,
+  step              integer,
+  data              jsonb NOT NULL DEFAULT '{}'::jsonb,
+  last_inbound_at   timestamptz,
+  handoff_at        timestamptz,
+  created_at        timestamptz NOT NULL DEFAULT now(),
+  updated_at        timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS whatsapp_contacts_org_idx ON whatsapp_contacts(organization_id, updated_at DESC);
+
+-- Every message in and out, per contact. The agency reads these; the AI reads a window of them.
+CREATE TABLE IF NOT EXISTS conversation_messages (
+  id               text PRIMARY KEY,
+  phone            text NOT NULL,
+  organization_id  text REFERENCES organizations(id),
+  user_id          text REFERENCES users(id) ON DELETE SET NULL,
+  direction        text NOT NULL CHECK (direction IN ('in', 'out')),
+  role             text NOT NULL CHECK (role IN ('user', 'assistant', 'agent', 'system')),
+  body             text NOT NULL,
+  at               timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS conversation_messages_phone_idx ON conversation_messages(phone, at DESC);
+CREATE INDEX IF NOT EXISTS conversation_messages_org_idx ON conversation_messages(organization_id, at DESC);
+
+-- Questions answered by the consultation assistant (web or WhatsApp), kept so answers improve and can be reviewed.
+CREATE TABLE IF NOT EXISTS consultations (
+  id               text PRIMARY KEY,
+  organization_id  text REFERENCES organizations(id),
+  user_id          text REFERENCES users(id) ON DELETE SET NULL,
+  phone            text,
+  channel          text NOT NULL DEFAULT 'whatsapp',
+  question         text NOT NULL,
+  answer           text NOT NULL,
+  source           text NOT NULL DEFAULT 'catalogue',
+  at               timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS consultations_org_idx ON consultations(organization_id, at DESC);
+
+-- Generated documents (PDFs) so numbers are stable and downloads can be audited.
+CREATE TABLE IF NOT EXISTS documents (
+  id               text PRIMARY KEY,
+  organization_id  text NOT NULL REFERENCES organizations(id),
+  client_id        text REFERENCES clients(id) ON DELETE CASCADE,
+  user_id          text REFERENCES users(id) ON DELETE SET NULL,
+  type             text NOT NULL,
+  number           text NOT NULL,
+  title            text NOT NULL,
+  subject_id       text,
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS documents_number_idx ON documents(number);
+
+-- Who did what. Sensitive operations write here.
+CREATE TABLE IF NOT EXISTS audit_log (
+  id               text PRIMARY KEY,
+  organization_id  text,
+  actor_user_id    text,
+  action           text NOT NULL,
+  target           text,
+  detail           jsonb,
+  at               timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS audit_log_org_idx ON audit_log(organization_id, at DESC);
 `

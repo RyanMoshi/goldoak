@@ -15,7 +15,7 @@ const types: { id: ClientType; label: string; hint: string }[] = [
 ]
 
 /** Clients only. Agency accounts are provisioned by GoldOak. */
-export function SignUpForm() {
+export function SignUpForm({ agencyCode = null, agencyName = null }: { agencyCode?: string | null; agencyName?: string | null }) {
   const [clientType, setClientType] = useState<ClientType>('individual')
   const [state, setState] = useState<AuthState>({})
   const [pending, startTransition] = useTransition()
@@ -34,10 +34,11 @@ export function SignUpForm() {
     <div className="animate-fade-up">
       <p className="label-caps text-gold-700">Create account</p>
       <h2 className="mt-2 font-serif text-[28px] font-medium leading-tight text-forest">Tell us what you want to protect.</h2>
-      <p className="mt-2 text-[14px] text-ink-muted">Free. Your adviser books a short risk conversation, then you can follow every step here or on WhatsApp.</p>
+      <p className="mt-2 text-[14px] text-ink-muted">{agencyName ? `Free. You are joining ${agencyName}. Your adviser books a short risk conversation, then you can follow every step here or on WhatsApp.` : 'Free. Your adviser books a short risk conversation, then you can follow every step here or on WhatsApp.'}</p>
 
       <form action={submit} className="mt-6 space-y-5" noValidate>
         <input type="hidden" name="clientType" value={clientType} />
+        {agencyCode ? <input type="hidden" name="agency" value={agencyCode} /> : null}
         <div role="radiogroup" aria-label="I am insuring" className="grid gap-2">
           {types.map((t) => (
             <button
