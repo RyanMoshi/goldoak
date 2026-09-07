@@ -39,3 +39,7 @@ openwa-qr.*
 
 # stray downloads
 *.exe
+
+# user uploads and local logs
+/public/uploads
+.next-dev.log

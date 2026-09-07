@@ -8,7 +8,7 @@ import { contact } from '@/lib/contact'
 const points = [
   { icon: ListChecks, title: 'See your progress', text: 'Understand → Solve → Compare → Implement → Support → Review. You always know which stage we are at.' },
   { icon: ShieldCheck, title: 'Every policy in one place', text: 'Insurer, premium, renewal date, what is covered and the exclusions that matter.' },
-  { icon: MessageCircle, title: 'Or just use WhatsApp', text: 'STATUS, POLICIES, QUOTES, CLAIMS, QUOTE, CLAIM. One word from your registered number and the answer comes straight back.' },
+  { icon: MessageCircle, title: 'Or just use WhatsApp', text: 'Message Super Agent, reply with a number. Sign up, ask for cover, report a claim, ask a question or reach an adviser, all from your phone.' },
 ]
 
 /** Homepage section introducing Super Agent. One door: the Super Agent page. */
@@ -50,13 +50,13 @@ const PortalPreview = () => {
             })}
             <AnimatedSection animation="fade-up" delay={400}>
               <a
-                href={`https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent('STATUS')}`}
+                href={`https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent('MENU')}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between rounded-xl border border-gold-200 bg-gold-50 px-6 py-4 text-sm text-text-headline hover:bg-gold-100 transition-colors"
               >
                 <span>
-                  <span className="font-semibold">Try it:</span> WhatsApp <span className="font-mono">{contact.superAgentWhatsAppDisplay}</span> with the word <span className="font-mono">STATUS</span>
+                  <span className="font-semibold">Try it:</span> WhatsApp <span className="font-mono">{contact.superAgentWhatsAppDisplay}</span> with the word <span className="font-mono">MENU</span>
                 </span>
                 <ArrowRight className="w-4 h-4 text-secondary" aria-hidden="true" />
               </a>

@@ -15,6 +15,7 @@ export interface BootstrapSummary {
   admin: 'created' | 'exists' | 'skipped'
   adminEmail: string
   purged?: number
+  createdOrganization?: { id: string; code: string; adminUserId: string }
 }
 
 interface BootstrapInput {
@@ -25,6 +26,10 @@ interface BootstrapInput {
   purgeDemo?: boolean
   /** Remove accounts created for testing (emails ending in @example.com). */
   purgeExampleAccounts?: boolean
+  /** Remove organisations whose join code starts with TEST, with everything under them. */
+  purgeTestOrganizations?: boolean
+  /** Create an agency (tenant) and its first agency admin in one call. */
+  organization?: { name: string; shortName?: string; code: string; phone?: string; email?: string; greeting?: string; adminName: string; adminEmail: string; adminPassword: string; adminPhone?: string }
 }
 
 const DEMO_IDS = {
@@ -75,5 +80,41 @@ export async function bootstrap(input: BootstrapInput = {}): Promise<BootstrapSu
     }
   }
 
-  return { organization, admin, adminEmail, purged: input.purgeDemo || input.purgeExampleAccounts ? purged : undefined }
+  if (input.purgeTestOrganizations) {
+    const orgs = await sql`SELECT id FROM organizations WHERE code LIKE 'TEST%'`
+    for (const o of orgs) {
+      const id = String(o.id)
+      await sql`DELETE FROM conversation_messages WHERE organization_id = ${id}`
+      await sql`DELETE FROM whatsapp_contacts WHERE organization_id = ${id}`
+      await sql`DELETE FROM consultations WHERE organization_id = ${id}`
+      await sql`DELETE FROM documents WHERE organization_id = ${id}`
+      await sql`DELETE FROM notifications WHERE organization_id = ${id}`
+      await sql`DELETE FROM tasks WHERE organization_id = ${id}`
+      await sql`DELETE FROM activity WHERE organization_id = ${id}`
+      await sql`DELETE FROM clients WHERE organization_id = ${id}`
+      await sql`DELETE FROM users WHERE organization_id = ${id}`
+      await sql`DELETE FROM audit_log WHERE organization_id = ${id}`
+      await sql`DELETE FROM organizations WHERE id = ${id}`
+      purged++
+    }
+    await sql`DELETE FROM whatsapp_contacts WHERE organization_id IS NULL AND phone LIKE '2557000%'`
+    await sql`DELETE FROM conversation_messages WHERE phone LIKE '2557000%'`
+  }
+
+  let createdOrganization: BootstrapSummary['createdOrganization']
+  if (input.organization) {
+    const o = input.organization
+    const code = o.code.toUpperCase().replace(/[^A-Z0-9-]/g, '')
+    const existing = await sql`SELECT id FROM organizations WHERE lower(code) = lower(${code}) LIMIT 1`
+    if (existing.length) throw new Error(`Organisation code ${code} already exists`)
+    const orgId = newId('org')
+    await sql`INSERT INTO organizations (id, name, short_name, phone, email, whatsapp, code, greeting)
+      VALUES (${orgId}, ${o.name}, ${o.shortName ?? o.name.split(' ')[0]}, ${o.phone ?? ''}, ${o.email ?? ''}, ${whatsapp}, ${code}, ${o.greeting ?? null})`
+    const userId = newId('usr')
+    await sql`INSERT INTO users (id, role, organization_id, name, email, phone, password_hash, title)
+      VALUES (${userId}, 'agency_admin', ${orgId}, ${o.adminName}, ${o.adminEmail.toLowerCase()}, ${o.adminPhone ?? null}, ${await hashPassword(o.adminPassword)}, 'Agency admin')`
+    createdOrganization = { id: orgId, code, adminUserId: userId }
+  }
+
+  return { organization, admin, adminEmail, purged: input.purgeDemo || input.purgeExampleAccounts || input.purgeTestOrganizations ? purged : undefined, createdOrganization }
 }

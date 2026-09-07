@@ -30,6 +30,8 @@ export async function POST(request: Request) {
     const summary = await bootstrap({
       purgeDemo: body.purgeDemo === true,
       purgeExampleAccounts: body.purgeExampleAccounts === true,
+      purgeTestOrganizations: body.purgeTestOrganizations === true,
+      organization: body.organization && typeof body.organization === 'object' ? (body.organization as NonNullable<Parameters<typeof bootstrap>[0]>['organization']) : undefined,
       adminEmail: typeof body.adminEmail === 'string' ? body.adminEmail : undefined,
       adminPassword: typeof body.adminPassword === 'string' ? body.adminPassword : undefined,
       adminName: typeof body.adminName === 'string' ? body.adminName : undefined,

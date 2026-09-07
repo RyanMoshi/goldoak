@@ -171,23 +171,9 @@ CREATE TABLE IF NOT EXISTS notifications (
 CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications(user_id, created_at DESC);
 CREATE UNIQUE INDEX IF NOT EXISTS notifications_reference_idx ON notifications(reference) WHERE reference IS NOT NULL;
 
--- Multi-step WhatsApp conversations (report a claim, request a quote).
-CREATE TABLE IF NOT EXISTS whatsapp_sessions (
-  phone        text PRIMARY KEY,
-  flow         text,
-  step         text,
-  data         jsonb NOT NULL DEFAULT '{}'::jsonb,
-  updated_at   timestamptz NOT NULL DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS whatsapp_messages (
-  id           text PRIMARY KEY,
-  phone        text NOT NULL,
-  user_id      text REFERENCES users(id),
-  direction    text NOT NULL CHECK (direction IN ('in', 'out')),
-  body         text NOT NULL,
-  at           timestamptz NOT NULL DEFAULT now()
-);
+-- Legacy bot tables, replaced by whatsapp_contacts and conversation_messages (v2).
+DROP TABLE IF EXISTS whatsapp_sessions;
+DROP TABLE IF EXISTS whatsapp_messages;
 
 -- Webhook idempotency (OpenWA delivers at least once).
 CREATE TABLE IF NOT EXISTS processed_webhooks (
