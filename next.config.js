@@ -9,9 +9,12 @@ const nextConfig = {
     ],
   },
   experimental: {
-    // pdfkit reads its standard font metrics from disk at runtime; make sure they ship with the function.
+    // pdfkit reads its standard font metrics from disk at runtime (relative to its own __dirname), so it must
+    // stay an external package and its data files must be traced into the documents function.
+    serverComponentsExternalPackages: ['pdfkit'],
     outputFileTracingIncludes: {
       '/api/documents/[type]': ['./node_modules/pdfkit/js/data/**'],
+      '/api/documents/[type]/route': ['./node_modules/pdfkit/js/data/**'],
     },
   },
 }

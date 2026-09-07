@@ -93,7 +93,7 @@ export const signupFlow: Flow = {
     await linkContact(ctx.phone, { userId: user.id, organizationId: org.id })
     await onClientSignedUp({ user, clientId, clientName: businessName ?? name, protect })
     return success(`Welcome to ${org.shortName}, ${name.split(' ')[0]}`, [
-      `Your account is ready and linked to ${formatIntl(ctx.phone)}. A ${org.shortName} adviser will contact you within one working day to start your risk review.`,
+      `Your account is ready and linked to ${formatIntl(ctx.phone)}. Your adviser at ${org.shortName} will contact you within one working day to start your risk review.`,
       '',
       bold('Your website login'),
       `${SITE}/signin`,

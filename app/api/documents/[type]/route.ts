@@ -48,8 +48,11 @@ export async function GET(request: Request, { params }: { params: { type: string
       },
     })
   } catch (error) {
-    console.error('document failed', error instanceof Error ? error.message : error)
-    return NextResponse.json({ error: 'Could not generate the document.' }, { status: 500 })
+    const detail = error instanceof Error ? `${error.message} ${(error.stack ?? '').split(/\r?\n/).slice(1, 3).join(' | ')}` : String(error)
+    console.error('document failed', detail)
+    const adminToken = process.env.ADMIN_TOKEN
+    const diag = adminToken && adminToken.length >= 16 && request.headers.get('x-admin-token') === adminToken
+    return NextResponse.json(diag ? { error: 'Could not generate the document.', detail } : { error: 'Could not generate the document.' }, { status: 500 })
   }
 }
 
