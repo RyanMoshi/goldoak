@@ -14,7 +14,10 @@ metadata.type: fact
 |---------|---------|
 | `postgres` | Supabase Postgres client (postgres.js), `lib/db/client.ts` |
 | `@anthropic-ai/sdk` | Consultation assistant (`services/consult.ts`, model `claude-opus-5`, adaptive thinking); optional, needs `ANTHROPIC_API_KEY` |
-| `pdfkit` (+ `@types/pdfkit`) | Server-side PDFs (`lib/pdf/document.ts`); `next.config.js` traces `pdfkit/js/data/**` into the documents function |
+| `pdfkit` (+ `@types/pdfkit`) | Server-side PDFs (`lib/pdf/document.ts`); external package, `pdfkit/js/**` traced into the documents function |
+| `pdf-parse` | Text from uploaded PDFs before extraction (`services/uploads.ts`) |
+| `@vercel/functions` | `waitUntil` so webhooks answer instantly and keep working in the background (`lib/background.ts`) |
+| NVIDIA NIM (no SDK, `fetch`) | Chat, vision and OCR models through `lib/ai/provider.ts` |
 | `lucide-react` | Icons (site and platform) |
 | `nodemailer` | SMTP email for the site's contact/application forms |
 | `react-hook-form`, `react-hot-toast` | Site forms and toasts |

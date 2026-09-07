@@ -36,9 +36,15 @@ Add a renderer in `services/documents.ts` using the helpers in `lib/pdf/document
 ## A sensitive action
 Call `audit({ organizationId, actorUserId, action, target, detail })` from `services/audit.ts` after it succeeds.
 
+## A background job
+Add the type to `JobType` in `services/jobs.ts`, register a handler in `services/jobs/handlers.ts`, and `enqueue({ type, payload, organizationId, idempotencyKey })`. Jobs run after the next webhook/upload, from `/api/cron/jobs`, or from `/admin/system`. Handlers must be idempotent (they retry).
+
+## An intent the assistant should understand
+Add it to `Intent` and to the model prompt in `services/memory.ts` (`understand()`), add a regex to `KEYWORDS` for the obvious phrasings, then handle it in `dispatch()` in `lib/whatsapp/bot.ts`. If it should be a menu number, update `menuIntent()` and `GUEST_MENU` / `CLIENT_MENU` in `lib/conversation/messages.ts` together.
+
 ## A WhatsApp flow or command
 - **A new step-based flow:** add a `Flow` in `lib/conversation/flows.ts` (steps with `parse`, optional `skip`, `optional`; `onComplete` calls a service), register it in `FLOWS`, and start it from `dispatch()` in `lib/whatsapp/bot.ts` with `startFlow` + `setWorkflow`. BACK/CANCEL/RESTART/HELP/MENU, progress and confirmation come free from the engine.
-- **A stateless client reply:** extend `clientIntent()` and the `switch` in `dispatch()`; keep the numbered menu in `mainMenu()` in step.
+- **A stateless client reply:** add a case to `dispatch()`; keep `GUEST_MENU` / `CLIENT_MENU` and `menuIntent()` in step.
 - **Staff commands:** extend `detect()` in `services/agency/commands.ts` (also powers the dashboard command bar).
 - **Message wording:** use the helpers in `lib/conversation/messages.ts` so every message shares one voice.
 - **Test:** run the live test (`playbooks/bootstrap-admin.md`) or call the webhook in dry-run mode with `x-admin-token` (+ `x-debug: 1` for error details).

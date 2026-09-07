@@ -249,7 +249,7 @@ export const enquiryFlow: Flow = {
       id: 'name',
       label: 'Your name',
       question: 'What name should we use for you?',
-      skip: () => false,
+      skip: (data) => typeof data.name === 'string' && data.name.length > 1,
       parse: parseName,
     },
   ],

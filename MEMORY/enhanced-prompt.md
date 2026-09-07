@@ -9,14 +9,15 @@ metadata.type: prompt
 You are working on **GoldOak**, an insurance agency website that also contains **Super Agent**, a multi-tenant insurance operating system (client portal, agency workspace, super admin, WhatsApp assistant on one shared number, PDFs, automation). Before writing any code, read `MEMORY/masterplan.md`.
 
 ## Quick Facts
-- **Stack:** Next.js 14 (App Router), TypeScript strict, Tailwind CSS 3.4, `postgres` (postgres.js) on Supabase Postgres, Lucide React, nodemailer (site forms), `@anthropic-ai/sdk` (optional AI), `pdfkit` (PDFs)
+- **Stack:** Next.js 14 (App Router), TypeScript strict, Tailwind CSS 3.4, `postgres` (postgres.js) on Supabase Postgres + Supabase Storage, Lucide React, nodemailer, `pdfkit`, `pdf-parse`, `@vercel/functions`. AI via `lib/ai/provider.ts`: NVIDIA NIM (`NVIDIA_API_KEY`) or Anthropic (`ANTHROPIC_API_KEY`), catalogue fallback.
 - **Deployed:** `https://goldoak.vercel.app/` — Vercel project `goldoak`, GitHub `RyanMoshi/goldoak`, branch `main`. Push to `main` deploys.
 - **One repo, one app.** Site in `app/(site)`, platform in `app/(platform)`. Never create a separate Super Agent project.
-- **Tenancy and roles:** every agency is an `organizations` row with a join code; every record has `organization_id`. `admin` (super admin) creates agencies and their first `agency_admin`; agency admins invite `agency` staff; `client` signs up at `/signup` (optional `?agency=CODE`) or on WhatsApp. Sign-in tabs: Client, Agency (all staff roles).
+- **Tenancy and roles:** every agency is an `organizations` row with a join code and a `status` (pending → active after admin approval); every record has `organization_id`. Agencies register at `/agencies/signup` or are created by the `admin`; agency admins invite `agency` staff; `client` signs up at `/signup` (optional `?agency=CODE`) or on WhatsApp. Sign-in tabs: Client, Agency.
 - **Landing page:** the nav shows **Super Agent** → `/super-agent`. Hero CTAs: Get started, Talk to the AI, Sign in, For agencies. Public assistant box on `/super-agent#ask` (`/api/consult`).
 - **Channels:** site and WhatsApp are equivalent. Every action goes through `services/journey.ts` and every message through `services/notifications.ts` (stored for the portal, sent on WhatsApp when a phone exists).
-- **WhatsApp line:** +255 742 473 493 (profile "Super Agent") via OpenWA; Meta Cloud API fallback. Bot `lib/whatsapp/bot.ts` = tenant routing + step engine (`lib/conversation/engine.ts`, flows in `lib/conversation/flows.ts`) + consultation (`services/consult.ts`) + human handoff (`services/handoff.ts`). State in `whatsapp_contacts`, log in `conversation_messages`.
-- **No fake data.** Dashboards read real records. Bootstrap creates only the organisation and the admin.
+- **WhatsApp line:** the number is never displayed (links via `superAgentLink()`); OpenWA gateway, Meta fallback. Bot `lib/whatsapp/bot.ts` = fast-ack webhook + background processing, tenant routing, step engine + flows, intents and memory (`services/memory.ts`), consultation, media/OCR (`services/uploads.ts`), handoff. Jobs in `services/jobs.ts`.
+- **No fake data.** Dashboards read real records. Bootstrap creates only the organisation and the admin. `purgeAllData` on the seed endpoint starts afresh.
+- **Production must not depend on the laptop.** Only the OpenWA gateway is laptop-bound today; everything else is on Vercel/Supabase/NVIDIA. Never add a dependency on a local process.
 - **Theme:** Forest `#073423`, Gold `#c28d38`, cream `#f7f4ec`. Petrona (headings), Karla (body), JetBrains Mono (figures). Controls 6px, cards 10px, tables 0px.
 - **Secrets:** Vercel marks Supabase values sensitive; `vercel env pull` writes them empty. Never try to seed from a local machine; use `npm run db:seed` (calls `/api/admin/seed` inside the deployment with `ADMIN_TOKEN`).
 

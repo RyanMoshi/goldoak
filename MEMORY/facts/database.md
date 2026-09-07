@@ -15,7 +15,7 @@ metadata.type: fact
 
 | Table | Holds |
 |-------|-------|
-| `organizations` | tenant: name, short_name, phone, email, `whatsapp` (shared bot number), `code` (join code, unique, case-insensitive), `active`, `greeting`, `licence_label` |
+| `organizations` | tenant: name, short_name, phone, email, `whatsapp` (shared bot number), `code` (join code, unique, case-insensitive), `active`, `status` pending/active/suspended, `type`, `address`, `description`, `logo_path`, `contact_name`, `approved_at`, `greeting`, `licence_label` |
 | `users` | `admin` / `agency_admin` / `agency` / `client`; `organization_id`; `phone` unique = WhatsApp identity; `active`; `whatsapp_opt_in` |
 | `clients` | one per legal person; `user_id` links a portal account; `stage` (six stages); `notes` = what they want to protect |
 | `policies` | insurer, product, number, sums, premium, dates, status, `key_exclusions` |
@@ -25,7 +25,13 @@ metadata.type: fact
 | `tasks` | agency work queue with SLA, priority, `reference` (idempotent automation) |
 | `activity` | timeline per client |
 | `notifications` | every message to a person; `whatsapp_status` skipped/sent/failed (failed ones retried daily); unique `reference` |
-| `whatsapp_contacts` | one row per phone: `organization_id` (tenant routing), `user_id`, `display_name`, `mode` ai/human, `assigned_user_id`, `workflow`/`step`/`data` (engine state), `handoff_at` |
+| `whatsapp_contacts` | one row per phone: `organization_id` (tenant routing), `user_id`, `display_name`, `mode` ai/human, `assigned_user_id`, `workflow`/`step`/`data` (engine state), `memory` jsonb (facts, summary), `consented_at`, `inbound_count`, `summarised_at`, `handoff_at` |
+| `businesses` | businesses an agency serves; `client_id` once claimed and approved; `verified` |
+| `business_claims` | a person asking to be linked to a business: reference `BIZ-…`, relationship, verification, status pending/approved/rejected, review note |
+| `uploads` | files sent on WhatsApp or the web: private `storage_path`, kind, `ocr_status`, `ocr_text`, `extracted` jsonb, `confirmed_at`/`confirmed_data`, reviewer |
+| `enquiries` | reference `ENQ-…`, subject, body, status open/answered/closed, answer |
+| `jobs` | background queue: type, payload, status queued/running/done/failed/dead, attempts, `run_after`, `last_error`, unique `idempotency_key` |
+| `password_resets` | hashed one-hour tokens |
 | `conversation_messages` | every inbound/outbound message: phone, organization_id, direction, role (user/assistant/agent/system), body |
 | `consultations` | questions and answers from the assistant (web or WhatsApp), `source` claude/catalogue |
 | `documents` | generated PDFs: type, unique `number`, subject_id (re-used per subject) |
@@ -35,7 +41,7 @@ metadata.type: fact
 Retired: `whatsapp_sessions`, `whatsapp_messages` (dropped by the schema).
 
 ## Bootstrap
-`lib/db/seed.ts` → `bootstrap()`: upserts the GoldOak organisation (code `GOLDOAK`, `WHATSAPP_BOT_NUMBER`), creates the admin once (`ADMIN_EMAIL`, `ADMIN_PASSWORD`), optionally purges demo rows / `@example.com` accounts / `TEST*` organisations, and can create an agency with its first agency admin (`organization`). Exposed at `POST /api/admin/seed` (header `x-admin-token`). From a laptop: `npm run db:seed`.
+`lib/db/seed.ts` → `bootstrap()`: upserts the GoldOak organisation (code `GOLDOAK`, `WHATSAPP_BOT_NUMBER`), creates the admin once (`ADMIN_EMAIL`, `ADMIN_PASSWORD`), optionally purges demo rows / `@example.com` accounts / `TEST*` organisations / **all customer data** (`purgeAllData`), and can create an agency with its first agency admin (`organization`). Exposed at `POST /api/admin/seed` (header `x-admin-token`). From a laptop: `npm run db:seed`.
 
 ## Health
 `GET /api/health` → `{ database: { status, users, clients, organizations, waitingForHuman, failedWhatsApp24h }, whatsapp, ai, version, cron, auth }`. Use it after every deploy.
