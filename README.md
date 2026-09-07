@@ -116,7 +116,7 @@ app/(platform)/        signin, signup, admin, agency/*, portal/*
 components/platform/   Shell, command bar, dashboard, clients, portal, admin, auth, ui
 lib/auth/              scrypt passwords, signed session cookie, sign-in/up actions
 lib/{admin,agency,portal}/actions.ts   Server actions per area
-lib/db/                Postgres client, schema.sql (auto-applied), mappers, bootstrap
+lib/db/                Postgres client, schema.ts (embedded SQL string) (auto-applied), mappers, bootstrap
 lib/whatsapp/          provider selection, OpenWA + Meta adapters, the bot
 services/              users, journey (client/agency actions), notifications, automation, agency dashboard/clients/commands, portal
 middleware.ts          Role gate for /admin, /agency, /portal

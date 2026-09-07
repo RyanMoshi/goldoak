@@ -1,3 +1,9 @@
+/**
+ * GoldOak / Super Agent schema. Embedded as a string (not read from disk) so it
+ * ships inside every serverless bundle, including server actions.
+ * Idempotent: every statement is CREATE ... IF NOT EXISTS or an additive ALTER.
+ */
+export const SCHEMA_SQL = `
 -- GoldOak / Super Agent schema. Idempotent: safe to run repeatedly.
 -- Every statement is CREATE ... IF NOT EXISTS or an additive ALTER.
 
@@ -188,3 +194,4 @@ CREATE TABLE IF NOT EXISTS processed_webhooks (
   key          text PRIMARY KEY,
   received_at  timestamptz NOT NULL DEFAULT now()
 );
+`

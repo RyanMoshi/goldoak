@@ -29,6 +29,7 @@ export async function POST(request: Request) {
   try {
     const summary = await bootstrap({
       purgeDemo: body.purgeDemo === true,
+      purgeExampleAccounts: body.purgeExampleAccounts === true,
       adminEmail: typeof body.adminEmail === 'string' ? body.adminEmail : undefined,
       adminPassword: typeof body.adminPassword === 'string' ? body.adminPassword : undefined,
       adminName: typeof body.adminName === 'string' ? body.adminName : undefined,

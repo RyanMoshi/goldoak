@@ -28,7 +28,7 @@ Client side: `startTransition(async () => setState(await doThingAction(fd)))`.
 Call `notify({ organizationId, userId: client.userId, clientId, kind, title, body, reference })` from the service. It lands in the portal Updates and on WhatsApp. Use `reference` to make it idempotent.
 
 ## A table or column
-Append to `lib/db/schema.sql` using `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. It applies on the next request. Add a mapper in `lib/db/mappers.ts` and a type in `types/platform.ts`.
+Append to `lib/db/schema.ts` using `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. It applies on the next request. Add a mapper in `lib/db/mappers.ts` and a type in `types/platform.ts`.
 
 ## A WhatsApp command
 Client commands: extend `clientIntent()` and `clientReply()` in `lib/whatsapp/bot.ts`; multi-step flows use `saveState/loadState`. Agency commands: extend `detect()` in `services/agency/commands.ts` (this also powers the dashboard command bar).

@@ -11,7 +11,7 @@ metadata.type: fact
 - The Supabase → Vercel integration syncs `POSTGRES_*` and `SUPABASE_*` to **Production only** as **sensitive** values. `vercel env pull` writes sensitive values as empty strings. This is expected; the deployment has them. Never seed from a local machine.
 
 ## Schema
-`lib/db/schema.sql`, applied by `ensureSchema()` (`lib/db/migrate.ts`) on first use per server instance. Every statement is `IF NOT EXISTS` or additive `ALTER`. Comment lines are stripped before splitting on `;\n`.
+`lib/db/schema.ts`, applied by `ensureSchema()` (`lib/db/migrate.ts`) on first use per server instance. Every statement is `IF NOT EXISTS` or additive `ALTER`. Comment lines are stripped before splitting on `;\n`.
 
 | Table | Holds |
 |-------|-------|

@@ -1,6 +1,5 @@
-import { readFileSync } from 'node:fs'
-import { join } from 'node:path'
 import { getSql } from '@/lib/db/client'
+import { SCHEMA_SQL } from '@/lib/db/schema'
 
 let ensured: Promise<void> | null = null
 
@@ -16,15 +15,14 @@ export function schemaStatements(file: string): string[] {
 }
 
 /**
- * Applies schema.sql (every statement is IF NOT EXISTS). Runs once per server
+ * Applies the embedded schema (every statement is IF NOT EXISTS). Runs once per server
  * instance, on first use, so a fresh database works without a manual step.
  */
 export function ensureSchema(): Promise<void> {
   if (!ensured) {
     ensured = (async () => {
       const sql = getSql()
-      const file = readFileSync(join(process.cwd(), 'lib', 'db', 'schema.sql'), 'utf8')
-      for (const statement of schemaStatements(file)) {
+      for (const statement of schemaStatements(SCHEMA_SQL)) {
         await sql.unsafe(statement)
       }
     })().catch((error) => {

@@ -27,7 +27,7 @@ You are working on **GoldOak**, an insurance agency website that also contains *
 4. Run `npx tsc --noEmit`, `npx next lint` and `npm run build` after every change.
 5. Data access lives in `services/`; server actions in `lib/*/actions.ts`; UI never queries the database directly.
 6. Any change a client should know about must call `notify()` so it reaches both the portal and WhatsApp.
-7. Schema changes go in `lib/db/schema.sql` as `IF NOT EXISTS` / additive `ALTER ... IF NOT EXISTS`; they apply automatically on first use.
+7. Schema changes go in `lib/db/schema.ts` as `IF NOT EXISTS` / additive `ALTER ... IF NOT EXISTS`; they apply automatically on first use.
 8. Light mode only. Use Tailwind tokens (`forest`, `gold`, `ink`, `canvas`, `line`…), never hardcoded hex in components.
 9. Every page must work at 320px. Tables become cards on phones.
 10. Commit with descriptive messages and push to `main`; verify `https://goldoak.vercel.app/api/health` after deploy.

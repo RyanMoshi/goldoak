@@ -23,6 +23,8 @@ interface BootstrapInput {
   adminName?: string
   whatsapp?: string
   purgeDemo?: boolean
+  /** Remove accounts created for testing (emails ending in @example.com). */
+  purgeExampleAccounts?: boolean
 }
 
 const DEMO_IDS = {
@@ -50,6 +52,13 @@ export async function bootstrap(input: BootstrapInput = {}): Promise<BootstrapSu
     purged = c.length + u.length
   }
 
+  if (input.purgeExampleAccounts) {
+    const c = await sql`DELETE FROM clients WHERE email LIKE '%@example.com' OR user_id IN (SELECT id FROM users WHERE email LIKE '%@example.com') RETURNING id`
+    const u = await sql`DELETE FROM users WHERE role = 'client' AND email LIKE '%@example.com' RETURNING id`
+    await sql`DELETE FROM notifications WHERE user_id IS NULL AND client_id IS NULL AND created_at > now() - interval '1 day' AND kind IN ('new-client')`
+    purged += c.length + u.length
+  }
+
   const adminEmail = (input.adminEmail ?? process.env.ADMIN_EMAIL ?? 'admin@goldoak.co.ke').toLowerCase()
   const adminPassword = input.adminPassword ?? process.env.ADMIN_PASSWORD
   const existing = await sql`SELECT id FROM users WHERE role = 'admin' AND lower(email) = ${adminEmail} LIMIT 1`
@@ -66,5 +75,5 @@ export async function bootstrap(input: BootstrapInput = {}): Promise<BootstrapSu
     }
   }
 
-  return { organization, admin, adminEmail, purged: input.purgeDemo ? purged : undefined }
+  return { organization, admin, adminEmail, purged: input.purgeDemo || input.purgeExampleAccounts ? purged : undefined }
 }
