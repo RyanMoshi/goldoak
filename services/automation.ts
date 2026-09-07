@@ -3,7 +3,7 @@ import { ensureSchema } from '@/lib/db/migrate'
 import { toPolicy } from '@/lib/db/mappers'
 import { daysUntil, formatShortDate } from '@/lib/format'
 import { newId } from '@/lib/ids'
-import { botNumber } from '@/lib/whatsapp/provider'
+import { botNumber, sendWhatsApp } from '@/lib/whatsapp/provider'
 import { notify, notifyOrganization } from '@/services/notifications'
 import { getOrganization } from '@/services/users'
 import type { PublicUser } from '@/types/platform'
@@ -68,6 +68,8 @@ export interface AutomationSummary {
   quoteChasers: number
   claimReminders: number
   policiesMarkedDue: number
+  whatsappRetried: number
+  whatsappRecovered: number
 }
 
 const RENEWAL_WINDOWS = [30, 14, 7, 1] as const
@@ -76,7 +78,7 @@ const RENEWAL_WINDOWS = [30, 14, 7, 1] as const
 export async function runDailyAutomation(): Promise<AutomationSummary> {
   await ensureSchema()
   const sql = getSql()
-  const summary: AutomationSummary = { renewalReminders: 0, renewalTasks: 0, quoteChasers: 0, claimReminders: 0, policiesMarkedDue: 0 }
+  const summary: AutomationSummary = { renewalReminders: 0, renewalTasks: 0, quoteChasers: 0, claimReminders: 0, policiesMarkedDue: 0, whatsappRetried: 0, whatsappRecovered: 0 }
 
   // 1. Policies entering the renewal window.
   const marked = await sql`UPDATE policies SET status = 'renewal-due' WHERE status = 'live' AND expiry_date <= current_date + 30 RETURNING id`
@@ -146,6 +148,18 @@ export async function runDailyAutomation(): Promise<AutomationSummary> {
       VALUES (${newId('tsk')}, ${String(row.organization_id)}, ${String(row.client_id)}, ${String(row.client_name)}, 'claim-update', ${String(row.insurer)}, ${String(row.product)},
         ${`Weekly client update due on ${String(row.reference)}. Tell the client where the claim stands, even if nothing changed.`}, 'Update due today', 'at-risk', 90, true, ${row.amount ?? null}, ${ref}, 'update-client', 'Update client')`
     summary.claimReminders++
+  }
+
+  // 4. Outbox: retry WhatsApp deliveries that failed in the last 3 days (gateway offline, tunnel changed).
+  const failed = await sql`SELECT n.id, n.title, n.body, u.phone FROM notifications n JOIN users u ON u.id = n.user_id
+    WHERE n.whatsapp_status = 'failed' AND n.created_at > now() - interval '3 days' AND u.phone IS NOT NULL AND u.active AND u.whatsapp_opt_in ORDER BY n.created_at ASC LIMIT 50`
+  for (const row of failed) {
+    summary.whatsappRetried++
+    const ok = await sendWhatsApp(String(row.phone), `${String(row.title)}\n\n${String(row.body)}`)
+    if (ok) {
+      await sql`UPDATE notifications SET whatsapp_status = 'sent' WHERE id = ${String(row.id)}`
+      summary.whatsappRecovered++
+    }
   }
 
   return summary

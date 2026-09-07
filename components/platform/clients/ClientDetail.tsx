@@ -65,6 +65,23 @@ export function ClientDetail({ detail }: { detail: Detail }) {
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-12">
         <div className="flex flex-col gap-6 lg:col-span-7">
           <ClientWorkbench client={client} quotes={quotes.filter((q) => q.stage !== 'placed' && q.stage !== 'declined')} claims={claims} />
+          <Card as="section">
+            <CardHeader title="Documents" description="Branded PDFs, numbered and audited." />
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {[
+                { label: 'Registration confirmation', href: `/api/documents/registration?id=${client.id}` },
+                { label: 'Cover summary', href: `/api/documents/client-summary?id=${client.id}` },
+                ...quotes.filter((q) => q.stage !== 'declined').map((q) => ({ label: `Quote ${q.reference}`, href: `/api/documents/quote?id=${q.id}` })),
+                ...claims.map((c) => ({ label: `Claim ${c.reference}`, href: `/api/documents/claim?id=${c.id}` })),
+              ].map((doc) => (
+                <li key={doc.href}>
+                  <a href={doc.href} target="_blank" rel="noopener" className="inline-flex h-8 items-center rounded-control border border-line bg-surface px-2.5 text-[12.5px] font-semibold text-ink hover:border-forest focus-ring">
+                    {doc.label} · PDF
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </Card>
           <PolicyList policies={policies} heading="Policies" />
           <QuoteList quotes={quotes} heading="Quotes" />
           <ClaimList claims={claims} heading="Claims" />

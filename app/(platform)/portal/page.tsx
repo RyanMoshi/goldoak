@@ -1,6 +1,9 @@
 import type { Metadata } from 'next'
 import { CheckCircle2 } from 'lucide-react'
+import Link from 'next/link'
+import { Bot } from 'lucide-react'
 import { ClaimList } from '@/components/platform/portal/ClaimList'
+import { DocumentsCard } from '@/components/platform/portal/DocumentsCard'
 import { JourneyTracker } from '@/components/platform/portal/JourneyTracker'
 import { PolicyList } from '@/components/platform/portal/PolicyList'
 import { PortalActions } from '@/components/platform/portal/PortalActions'
@@ -67,7 +70,17 @@ export default async function PortalPage({ searchParams }: { searchParams: { wel
         </div>
         <div className="flex flex-col gap-6 lg:col-span-4">
           <WhatsAppCard organization={organization} adviserName={client?.adviserName ?? null} phoneLinked={Boolean(user.phone)} />
+          <Link href="/portal/ask" className="flex items-center gap-3 rounded-card border border-line bg-surface p-4 transition-colors hover:border-forest focus-ring">
+            <span className="inline-flex size-10 shrink-0 items-center justify-center rounded-full bg-forest text-gold">
+              <Bot className="size-5" aria-hidden="true" strokeWidth={1.75} />
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[14px] font-bold text-ink">Ask the assistant</span>
+              <span className="block text-[12.5px] text-ink-muted">Insurance questions, answered with your own cover in mind.</span>
+            </span>
+          </Link>
           <UpdatesFeed items={notifications} />
+          <DocumentsCard hasClient={Boolean(client)} quotes={quotes} claims={claims} />
         </div>
       </div>
     </div>

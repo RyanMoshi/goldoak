@@ -3,9 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { requireSession } from '@/lib/auth/server'
 import { normalizePhone } from '@/lib/format'
+import { consult, listConsultationsForUser } from '@/services/consult'
+import { requestHandoff } from '@/services/handoff'
 import { clientForUser, policiesForClient, reportClaim, requestQuote } from '@/services/journey'
 import { markAllRead } from '@/services/notifications'
-import { emailOrPhoneTaken, setUserPhone } from '@/services/users'
+import { emailOrPhoneTaken, getOrganization, getUser, setUserPhone } from '@/services/users'
 import { PRODUCT_LINES } from '@/types/platform'
 
 export interface PortalActionState {
@@ -80,5 +82,37 @@ export async function updatePhoneAction(formData: FormData): Promise<PortalActio
   } catch (error) {
     console.error('updatePhone failed', error instanceof Error ? error.message : error)
     return { error: 'Could not save the number.' }
+  }
+}
+
+export interface AskState {
+  answer?: string
+  handoff?: boolean
+  error?: string
+}
+
+/** Web consultation: same assistant as WhatsApp, with the client's own profile and recent questions as memory. */
+export async function askAssistantAction(question: string): Promise<AskState> {
+  const session = await requireSession('client')
+  const q = question.trim().slice(0, 2000)
+  if (q.length < 3) return { error: 'Ask a fuller question.' }
+  try {
+    const [user, organization, client, previous] = await Promise.all([getUser(session.uid), getOrganization(session.oid), clientForUser(session.uid), listConsultationsForUser(session.uid, 6)])
+    const policies = client ? await policiesForClient(client.id) : []
+    const history = previous
+      .slice()
+      .reverse()
+      .flatMap((c) => [
+        { id: `${c.id}-q`, phone: '', organizationId: c.organizationId, userId: c.userId, direction: 'in' as const, role: 'user' as const, body: c.question, at: c.at },
+        { id: `${c.id}-a`, phone: '', organizationId: c.organizationId, userId: c.userId, direction: 'out' as const, role: 'assistant' as const, body: c.answer, at: c.at },
+      ])
+    const result = await consult({ question: q, organization, user, client, policies, history, phone: user?.phone ?? null, channel: 'web' })
+    if (result.escalate && organization && user?.phone) {
+      await requestHandoff({ phone: user.phone, organization, user, client, reason: `Assistant escalated a web question: "${q.slice(0, 120)}"` })
+    }
+    return { answer: result.answer, handoff: result.escalate }
+  } catch (error) {
+    console.error('askAssistant failed', error instanceof Error ? error.message : error)
+    return { error: 'The assistant could not answer right now. Please try again, or message us on WhatsApp.' }
   }
 }
