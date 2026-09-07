@@ -1,12 +1,12 @@
 'use client'
 
-import { Building2, Power } from 'lucide-react'
+import { Building2, Check, Power } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { Field, inputClass } from '@/components/platform/auth/AuthShell'
 import { Badge } from '@/components/platform/ui/Badge'
 import { Card, CardHeader } from '@/components/platform/ui/Card'
 import { StatusLine } from '@/components/platform/ui/PageHeader'
-import { createOrganizationAction, setOrganizationActiveAction, type AdminActionState } from '@/lib/admin/actions'
+import { approveOrganizationAction, createOrganizationAction, setOrganizationActiveAction, type AdminActionState } from '@/lib/admin/actions'
 import type { OrganizationSummary } from '@/types/platform'
 
 /** Super admin: create agencies (tenants) with their first admin, and switch them on or off. */
@@ -22,6 +22,11 @@ export function Organizations({ organizations, currentOrgId }: { organizations: 
       setState(result)
       if (result.success) setFormKey((k) => k + 1)
     })
+  }
+
+  function approve(org: OrganizationSummary) {
+    if (!window.confirm(`Approve ${org.name}? It goes live on the shared WhatsApp number.`)) return
+    startTransition(async () => setState(await approveOrganizationAction(org.id)))
   }
 
   function toggle(org: OrganizationSummary) {
@@ -95,7 +100,7 @@ export function Organizations({ organizations, currentOrgId }: { organizations: 
                   <Badge tone="gold" mono>
                     {o.code ?? 'no code'}
                   </Badge>
-                  {!o.active ? <Badge tone="error">Inactive</Badge> : null}
+                  {o.status === 'pending' ? <Badge tone="warning" dot>Awaiting approval</Badge> : !o.active ? <Badge tone="error">Inactive</Badge> : null}
                   {o.id === currentOrgId ? <Badge>Home</Badge> : null}
                 </div>
                 <p className="truncate font-mono text-[12px] text-ink-muted">
@@ -104,9 +109,16 @@ export function Organizations({ organizations, currentOrgId }: { organizations: 
                 </p>
                 <p className="text-[12px] text-ink-faint">
                   {o.staffCount} staff · {o.clientCount} clients · {o.openConversations} waiting on WhatsApp
+                  {o.type ? ` · ${o.type}` : ''}
+                  {o.contactName ? ` · contact ${o.contactName}` : ''}
                 </p>
+                {o.description ? <p className="mt-0.5 text-[12px] text-ink-muted">{o.description}</p> : null}
               </div>
-              {o.id !== currentOrgId ? (
+              {o.status === 'pending' ? (
+                <button type="button" onClick={() => approve(o)} disabled={pending} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control bg-forest px-3 text-[12.5px] font-semibold text-white hover:bg-forest-700 focus-ring disabled:opacity-60">
+                  <Check className="size-3.5" aria-hidden="true" /> Approve
+                </button>
+              ) : o.id !== currentOrgId ? (
                 <button type="button" onClick={() => toggle(o)} disabled={pending} className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-control border border-line bg-surface px-2.5 text-[12.5px] font-semibold text-ink-muted hover:border-ink-muted hover:text-ink focus-ring disabled:opacity-60">
                   <Power className="size-3.5" aria-hidden="true" /> {o.active ? 'Deactivate' : 'Reactivate'}
                 </button>

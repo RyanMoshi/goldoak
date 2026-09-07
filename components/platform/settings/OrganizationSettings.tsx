@@ -6,7 +6,6 @@ import { Field, inputClass } from '@/components/platform/auth/AuthShell'
 import { Card, CardHeader } from '@/components/platform/ui/Card'
 import { StatusLine } from '@/components/platform/ui/PageHeader'
 import { updateOrganizationSettingsAction, type ActionState } from '@/lib/agency/actions'
-import { formatPhone } from '@/lib/format'
 import type { Organization } from '@/types/platform'
 
 interface Props {
@@ -87,7 +86,7 @@ export function OrganizationSettings({ organization, botNumber, canEdit, siteUrl
       <div className="space-y-6 lg:col-span-5">
         <Card as="section" className="border-forest bg-forest text-white">
           <p className="label-caps text-gold">Your WhatsApp front door</p>
-          <p className="mt-1 font-serif text-[20px] font-semibold">Super Agent · {botNumber ? formatPhone(botNumber) : 'not connected'}</p>
+          <p className="mt-1 font-serif text-[20px] font-semibold">Super Agent on WhatsApp{botNumber ? '' : ' (not connected)'}</p>
           <p className="mt-1 text-[13px] text-white/75">One number serves every agency. Anyone who opens this link, or sends your code, is routed to {organization.shortName} and nobody else.</p>
           <dl className="mt-4 space-y-3 text-[13px]">
             <div>

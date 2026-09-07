@@ -72,7 +72,7 @@ export async function updatePhoneAction(formData: FormData): Promise<PortalActio
   const session = await requireSession('client')
   const input = String(formData.get('phone') ?? '').trim()
   const phone = input ? normalizePhone(input) : null
-  if (!phone) return { error: 'Enter a valid mobile number, e.g. 0712 345 678 or +255 742 473 493.' }
+  if (!phone) return { error: 'Enter a valid mobile number, e.g. 0712 345 678 or +255 7xx xxx xxx.' }
   try {
     const taken = await emailOrPhoneTaken('nobody@invalid.example', phone)
     if (taken === 'phone') return { error: 'That number is already on another account.' }

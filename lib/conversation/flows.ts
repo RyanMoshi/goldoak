@@ -1,17 +1,19 @@
 import { hashPassword } from '@/lib/auth/password'
 import { choice, parseDate, parseEmail, parseName, parseText, type Flow, type FlowContext, type FlowData } from '@/lib/conversation/engine'
 import { bold, formatIntl, success } from '@/lib/conversation/messages'
-import { formatShortDate } from '@/lib/format'
+import { formatShortDate, normalizePhone } from '@/lib/format'
 import { onClientSignedUp } from '@/services/automation'
+import { searchBusinesses, submitBusinessClaim } from '@/services/businesses'
 import { linkContact } from '@/services/conversations'
+import { createEnquiry } from '@/services/enquiries'
 import { policiesForClient, reportClaim, requestQuote } from '@/services/journey'
-import { createClientUser, emailOrPhoneTaken, listOrganizations } from '@/services/users'
-import { PRODUCT_LINES, type Organization } from '@/types/platform'
+import { createClientUser, emailOrPhoneTaken, findUserByPhone, listOrganizations, updateUserName } from '@/services/users'
+import { PRODUCT_LINES, type Business, type Organization } from '@/types/platform'
 
 /**
  * The WhatsApp workflows, built on the step engine. Each `onComplete` calls the
- * same service the website uses, so a sign-up or a claim from WhatsApp is
- * indistinguishable from one made on the site.
+ * same service the website uses, so a registration, a business claim or a
+ * claim from WhatsApp is indistinguishable from one made on the site.
  */
 
 const SITE = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://goldoak.vercel.app'
@@ -25,37 +27,25 @@ export function generatePassword(): string {
   return `${out.slice(0, 4)}-${out.slice(4, 8)}-${out.slice(8)}`
 }
 
-/* ---------- Sign-up ---------- */
+/* ---------- Registration ---------- */
 
-const KINDS = ['Myself or my family', 'My business', 'An organisation or group'] as const
+const KINDS = ['Individual', 'Business', 'Agency'] as const
 
-export const signupFlow: Flow = {
+export const registrationFlow: Flow = {
   id: 'signup',
-  title: 'Create your account',
-  intro: (ctx) => `Great, let's set you up with ${ctx.organization?.shortName ?? 'us'}. It takes about a minute.`,
+  title: "Let's get you registered",
+  intro: (ctx) => `Great, let's set you up with ${ctx.organization?.shortName ?? 'us'}. This takes about two minutes.`,
   steps: [
-    { id: 'name', label: 'Full name', question: 'What is your full name?', parse: parseName },
     {
-      id: 'kind',
-      label: 'Cover for',
-      question: 'Who is the insurance for?',
-      choices: [...KINDS],
-      parse: (input) => {
-        const value = choice(KINDS, input, { 'My business': /business|company|shop|biashara/, 'Myself or my family': /me|myself|family|personal/, 'An organisation or group': /organi|group|sacco|church|school|ngo/ })
-        return value ? { ok: true, value: value === KINDS[0] ? 'individual' : value === KINDS[1] ? 'sme' : 'corporate', display: value } : { ok: false, error: 'Reply 1, 2 or 3.' }
-      },
-    },
-    {
-      id: 'businessName',
-      label: 'Business name',
-      question: 'What is the name of the business or organisation?',
-      skip: (data) => data.kind === 'individual',
-      parse: parseText(2, 120, 'Please send the registered or trading name.'),
+      id: 'name',
+      label: 'Full name',
+      question: 'What is your full name?',
+      parse: parseName,
     },
     {
       id: 'email',
       label: 'Email',
-      question: 'What is your email address? We use it as your username on the website.',
+      question: 'What is your email address? It becomes your username on the website.',
       parse: async (input) => {
         const parsed = parseEmail(input)
         if (!parsed.ok) return parsed
@@ -65,35 +55,53 @@ export const signupFlow: Flow = {
       },
     },
     {
-      id: 'protect',
-      label: 'What to protect',
-      question: 'In a few words, what would you like to protect? (for example "my car and my shop stock")',
-      optional: true,
-      parse: parseText(2, 500, 'A few words is enough, or reply SKIP.'),
+      id: 'kind',
+      label: 'Customer type',
+      question: 'What type of customer are you?',
+      choices: [...KINDS],
+      parse: (input) => {
+        const value = choice(KINDS, input, { Business: /business|company|shop|biashara|sme/, Individual: /me|myself|family|personal|individual/, Agency: /agency|agent|broker/ })
+        if (value === 'Agency') return { ok: false, error: `Agencies register on the website so we can set up your workspace: ${SITE}/agencies/signup\n\nIf you are here as a customer, reply 1 or 2.` }
+        return value ? { ok: true, value: value === 'Business' ? 'sme' : 'individual', display: value } : { ok: false, error: 'Reply 1 for Individual or 2 for Business.' }
+      },
+    },
+    {
+      id: 'businessName',
+      label: 'Business name',
+      question: 'What is the name of the business?',
+      skip: (data) => data.kind !== 'sme',
+      parse: parseText(2, 120, 'Please send the registered or trading name.'),
+    },
+    {
+      id: 'phone',
+      label: 'Phone',
+      question: (ctx) => `Please confirm your phone number. Reply 1 to use ${formatIntl(ctx.phone)} (this chat), or type another number.`,
+      hint: 'WhatsApp reminders and updates go to this number.',
+      parse: (input, ctx) => {
+        if (/^(1|yes|y|this|same|ok)$/i.test(input.trim())) return { ok: true, value: ctx.phone, display: formatIntl(ctx.phone) }
+        const phone = normalizePhone(input)
+        if (!phone) return { ok: false, error: 'Reply 1 to use this number, or type a valid mobile number like 0712 345 678.' }
+        return { ok: true, value: phone, display: formatIntl(phone) }
+      },
     },
   ],
   onComplete: async (ctx, data) => {
     const org = ctx.organization
-    if (!org) throw new Error('Sign-up needs an organisation')
+    if (!org) throw new Error('Registration needs an organisation')
+    const phone = String(data.phone ?? ctx.phone)
+    if (phone !== ctx.phone) {
+      const taken = await emailOrPhoneTaken(null, phone)
+      if (taken === 'phone') throw new Error('That phone number is already on another account.')
+    }
     const password = generatePassword()
     const name = String(data.name)
-    const kind = data.kind === 'sme' || data.kind === 'corporate' ? data.kind : 'individual'
+    const kind = data.kind === 'sme' ? 'sme' : 'individual'
     const businessName = data.businessName ? String(data.businessName) : null
-    const protect = data.protect ? String(data.protect) : null
-    const { user, clientId } = await createClientUser({
-      organizationId: org.id,
-      name,
-      email: String(data.email),
-      phone: ctx.phone,
-      passwordHash: await hashPassword(password),
-      businessName,
-      clientType: kind,
-      notes: protect,
-    })
+    const { user, clientId } = await createClientUser({ organizationId: org.id, name, email: String(data.email), phone, passwordHash: await hashPassword(password), businessName, clientType: kind, notes: null })
     await linkContact(ctx.phone, { userId: user.id, organizationId: org.id })
-    await onClientSignedUp({ user, clientId, clientName: businessName ?? name, protect })
+    await onClientSignedUp({ user, clientId, clientName: businessName ?? name, protect: null })
     return success(`Welcome to ${org.shortName}, ${name.split(' ')[0]}`, [
-      `Your account is ready and linked to ${formatIntl(ctx.phone)}. Your adviser at ${org.shortName} will contact you within one working day to start your risk review.`,
+      `Your account is ready. Your adviser at ${org.shortName} will contact you within one working day.`,
       '',
       bold('Your website login'),
       `${SITE}/signin`,
@@ -101,7 +109,8 @@ export const signupFlow: Flow = {
       `Password: ${password}`,
       '_Keep this message safe. You can change the password in your portal._',
       '',
-      'Reply MENU to see everything you can do here.',
+      bold('What next?'),
+      'Reply 3 for insurance assistance, 5 to upload a document, or MENU for everything.',
     ])
   },
 }
@@ -132,13 +141,148 @@ export function joinFlow(orgs: Organization[]): Flow {
     onComplete: async (ctx, data) => {
       await linkContact(ctx.phone, { organizationId: String(data.org) })
       const org = orgs.find((o) => o.id === data.org)
-      return `You are now talking to ${org?.name ?? 'your agency'}. Reply MENU to continue.`
+      return `You are now talking to ${org?.name ?? 'your agency'}.`
     },
   }
 }
 
 export async function activeOrganizations(): Promise<Organization[]> {
   return listOrganizations(true)
+}
+
+/* ---------- Find or claim a business ---------- */
+
+const RELATIONSHIPS = ['Owner or director', 'Manager or staff', 'Authorised representative'] as const
+
+function businessLabel(b: Business): string {
+  return b.registrationNo ? `${b.name} (${b.registrationNo})` : b.name
+}
+
+export const claimBusinessFlow: Flow = {
+  id: 'claim-business',
+  title: 'Claim a business',
+  intro: () => "I'll help you link an existing business to your account.",
+  steps: [
+    {
+      id: 'query',
+      label: 'Business name',
+      question: 'What is the business name? Type the name (or registration number) and I will search.',
+      parse: async (input, ctx) => {
+        const q = input.trim()
+        if (q.length < 2) return { ok: false, error: 'Type at least two letters of the business name.' }
+        if (!ctx.organization) return { ok: false, error: 'Choose your agency first (reply MENU).' }
+        const found = await searchBusinesses(ctx.organization.id, q)
+        if (!found.length) return { ok: false, error: `I could not find a business matching "${q}". Check the spelling, or reply CANCEL and ask an adviser (7) to add it.` }
+        return { ok: true, value: { q, matches: found.map((b) => ({ id: b.id, label: businessLabel(b) })) }, display: q }
+      },
+    },
+    {
+      id: 'businessId',
+      label: 'Business',
+      question: 'I found these businesses. Which one is yours?',
+      choices: (_ctx, data) => ((data.query as { matches?: { label: string }[] })?.matches ?? []).map((m) => m.label),
+      parse: (input, _ctx, data) => {
+        const matches = (data.query as { matches?: { id: string; label: string }[] })?.matches ?? []
+        const label = choice(
+          matches.map((m) => m.label),
+          input,
+        )
+        const picked = matches.find((m) => m.label === label)
+        return picked ? { ok: true, value: picked.id, display: picked.label } : { ok: false, error: 'Reply with the number of the business.' }
+      },
+    },
+    {
+      id: 'relationship',
+      label: 'Your role',
+      question: 'What is your relationship with this business?',
+      choices: [...RELATIONSHIPS],
+      parse: (input) => {
+        const value = choice(RELATIONSHIPS, input, { 'Owner or director': /owner|director|founder|proprietor/, 'Manager or staff': /manager|staff|employee|accountant/, 'Authorised representative': /represent|agent|lawyer|advocate/ })
+        return value ? { ok: true, value } : { ok: false, error: 'Reply 1, 2 or 3.' }
+      },
+    },
+    {
+      id: 'verification',
+      label: 'Verification',
+      question: 'How can the agency verify you? Send the business registration number, a business phone or email, or the name of the person at the agency who knows you.',
+      hint: 'An adviser checks this before approving. You can also upload a document afterwards (reply 5).',
+      parse: parseText(3, 300, 'Send something the agency can check, for example the registration number.'),
+    },
+  ],
+  onComplete: async (ctx, data) => {
+    if (!ctx.organization) throw new Error('Business claim needs an organisation')
+    const matches = (data.query as { matches?: { id: string; label: string }[] })?.matches ?? []
+    const picked = matches.find((m) => m.id === data.businessId)
+    const applicant = ctx.user?.name ?? (ctx.client?.name ?? 'WhatsApp contact')
+    const claim = await submitBusinessClaim({
+      organizationId: ctx.organization.id,
+      businessId: String(data.businessId),
+      clientId: ctx.client?.id ?? null,
+      userId: ctx.user?.id ?? null,
+      phone: ctx.phone,
+      applicantName: applicant,
+      relationship: String(data.relationship),
+      verification: data.verification ? String(data.verification) : null,
+      channel: 'whatsapp',
+    })
+    return success(`Claim ${claim.reference} submitted`, [
+      `${bold('Business')}: ${picked?.label ?? claim.businessName}`,
+      `${bold('Applicant')}: ${applicant}`,
+      '',
+      `${ctx.organization.shortName} will verify your details and confirm here, usually within one working day.`,
+      '',
+      'Reply 6 any time to check this request, or 5 to upload a supporting document.',
+      ctx.user ? '' : '\nTip: reply 1 to create your account so the business is linked to it once approved.',
+    ].filter((l) => l !== undefined))
+  },
+}
+
+/* ---------- Enquiry ---------- */
+
+export const enquiryFlow: Flow = {
+  id: 'enquiry',
+  title: 'Make an enquiry',
+  steps: [
+    { id: 'subject', label: 'Subject', question: 'In a few words, what is your enquiry about?', hint: 'For example "Motor cover for a new car" or "My policy documents".', parse: parseText(3, 160, 'A few words are enough.') },
+    { id: 'body', label: 'Details', question: 'Tell me the details. Include anything that helps the agency answer you in one go.', parse: parseText(8, 2000, 'Please add a little more detail.') },
+    {
+      id: 'name',
+      label: 'Your name',
+      question: 'What name should we use for you?',
+      skip: () => false,
+      parse: parseName,
+    },
+  ],
+  onComplete: async (ctx, data) => {
+    if (!ctx.organization) throw new Error('Enquiry needs an organisation')
+    const name = ctx.user?.name ?? String(data.name)
+    const enquiry = await createEnquiry({ organizationId: ctx.organization.id, clientId: ctx.client?.id ?? null, userId: ctx.user?.id ?? null, phone: ctx.phone, name, subject: String(data.subject), body: String(data.body), channel: 'whatsapp' })
+    return success(`Enquiry ${enquiry.reference} received`, [`${ctx.organization.shortName} will reply here, usually within one working day.`, '', 'Reply 6 any time to check its status, or MENU for other options.'])
+  },
+}
+
+/* ---------- Change my name ---------- */
+
+export const nameChangeFlow: Flow = {
+  id: 'name-change',
+  title: 'Update your name',
+  noConfirm: true,
+  steps: [
+    {
+      id: 'confirm',
+      label: 'Confirm',
+      question: (ctx, data) => `Change your name from ${bold(ctx.user?.name ?? 'unknown')} to ${bold(String(data.newName ?? ''))}?`,
+      choices: ['Yes, update it', 'No, keep it'],
+      parse: (input) => (/^(1|yes|y|ndio|sawa)$/i.test(input.trim()) ? { ok: true, value: true } : /^(2|no|n|hapana)$/i.test(input.trim()) ? { ok: true, value: false } : { ok: false, error: 'Reply 1 to update or 2 to keep it.' }),
+    },
+  ],
+  onComplete: async (ctx, data) => {
+    if (!data.confirm) return 'Kept as it was. Reply MENU for options.'
+    if (!ctx.user) return 'Reply 1 to create an account first, then I can keep your name on file.'
+    const newName = String(data.newName)
+    await updateUserName(ctx.user.id, newName)
+    return success('Name updated', [`I now have you as ${bold(newName)}. Your portal and documents use this name from now on.`])
+  },
 }
 
 /* ---------- Ask for cover (quote) ---------- */
@@ -191,11 +335,7 @@ export const quoteFlow: Flow = {
   onComplete: async (ctx, data) => {
     if (!ctx.client || !ctx.user) throw new Error('Quote needs a client')
     const quote = await requestQuote({ client: ctx.client, product: String(data.product), notes: data.notes ? String(data.notes) : null, channel: 'whatsapp', actorUserId: ctx.user.id })
-    return success(`Request ${quote.reference} received`, [
-      `Your adviser will approach our panel for ${quote.product} and you will hear from us as each insurer replies.`,
-      '',
-      'Reply 3 any time to see your quotes, or MENU for everything else.',
-    ])
+    return success(`Request ${quote.reference} received`, [`Your adviser will approach our panel for ${quote.product} and you will hear from us as each insurer replies.`, '', 'Reply 6 any time to check this request, or MENU for everything else.'])
   },
 }
 
@@ -225,46 +365,28 @@ export const claimFlow: Flow = {
         return policy ? { ok: true, value: policy.id, display: `${policy.product}, ${policy.insurer}` } : { ok: false, error: 'Reply with the number of the policy.' }
       },
     },
-    {
-      id: 'description',
-      label: 'What happened',
-      question: 'In a few sentences, what happened? (for example "Shop broken into overnight, stock and a laptop taken")',
-      parse: parseText(8, 1000, 'Please tell us a little more about what happened.'),
-    },
-    {
-      id: 'incidentDate',
-      label: 'When',
-      question: 'When did it happen?',
-      hint: 'Reply TODAY, YESTERDAY or a date like 12/08/2026.',
-      optional: true,
-      parse: parseDate,
-    },
+    { id: 'description', label: 'What happened', question: 'In a few sentences, what happened?', hint: 'For example "Shop broken into overnight, stock and a laptop taken".', parse: parseText(8, 1000, 'Please tell us a little more about what happened.') },
+    { id: 'incidentDate', label: 'When', question: 'When did it happen?', hint: 'Reply TODAY, YESTERDAY or a date like 12/08/2026.', optional: true, parse: parseDate },
   ],
   onComplete: async (ctx, data: FlowData) => {
     if (!ctx.client || !ctx.user) throw new Error('Claim needs a client')
     const policies = await policiesForClient(ctx.client.id)
     const policy = policies.find((p) => p.id === data.policyId) ?? null
-    const claim = await reportClaim({
-      client: ctx.client,
-      policy,
-      product: policy?.product ?? 'Unknown',
-      insurer: policy?.insurer ?? 'Unknown',
-      description: String(data.description),
-      incidentDate: data.incidentDate ? String(data.incidentDate) : null,
-      channel: 'whatsapp',
-      actorUserId: ctx.user.id,
-    })
+    const claim = await reportClaim({ client: ctx.client, policy, product: policy?.product ?? 'Unknown', insurer: policy?.insurer ?? 'Unknown', description: String(data.description), incidentDate: data.incidentDate ? String(data.incidentDate) : null, channel: 'whatsapp', actorUserId: ctx.user.id })
     return success(`Claim ${claim.reference} recorded`, [
       `We register it with ${claim.insurer} within 24 hours and update you every week until it is settled.`,
       '',
-      bold('What to keep safe'),
-      '• Photos of the damage or scene',
-      '• Receipts, invoices and valuations',
-      '• Police abstract or assessor report, if any',
+      bold('What to send next'),
+      'Reply 5 to upload photos of the damage, receipts, and any police abstract or assessor report. I read them and attach them to this claim.',
       '',
-      `Reply 4 any time to check progress. Your next update is due ${claim.nextUpdateDue ? formatShortDate(claim.nextUpdateDue) : 'within a week'}.`,
+      `Reply 6 any time to check progress. Your next update is due ${claim.nextUpdateDue ? formatShortDate(claim.nextUpdateDue) : 'within a week'}.`,
     ])
   },
 }
 
-export const FLOWS: Record<string, Flow> = { signup: signupFlow, quote: quoteFlow, claim: claimFlow }
+export const FLOWS: Record<string, Flow> = { signup: registrationFlow, quote: quoteFlow, claim: claimFlow, 'claim-business': claimBusinessFlow, enquiry: enquiryFlow, 'name-change': nameChangeFlow }
+
+/** Whether this phone already belongs to an account (used before offering registration). */
+export async function phoneRegistered(phone: string): Promise<boolean> {
+  return Boolean(await findUserByPhone(phone))
+}

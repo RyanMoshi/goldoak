@@ -261,4 +261,130 @@ CREATE TABLE IF NOT EXISTS audit_log (
   at               timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS audit_log_org_idx ON audit_log(organization_id, at DESC);
+
+-- ---------- v3: agencies self-onboard, businesses, uploads/OCR, enquiries, jobs, memory ----------
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS type text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS address text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS description text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS logo_path text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS contact_name text;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS approved_at timestamptz;
+
+ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS memory jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS consented_at timestamptz;
+ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS inbound_count integer NOT NULL DEFAULT 0;
+ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS summarised_at integer NOT NULL DEFAULT 0;
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+-- Businesses an agency serves or knows about. Clients can search and claim them.
+CREATE TABLE IF NOT EXISTS businesses (
+  id                 text PRIMARY KEY,
+  organization_id    text NOT NULL REFERENCES organizations(id),
+  client_id          text REFERENCES clients(id) ON DELETE SET NULL,
+  name               text NOT NULL,
+  registration_no    text,
+  sector             text,
+  phone              text,
+  email              text,
+  address            text,
+  verified           boolean NOT NULL DEFAULT false,
+  created_by         text,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  updated_at         timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS businesses_org_name_idx ON businesses(organization_id, lower(name));
+
+CREATE TABLE IF NOT EXISTS business_claims (
+  id                 text PRIMARY KEY,
+  organization_id    text NOT NULL REFERENCES organizations(id),
+  business_id        text NOT NULL REFERENCES businesses(id) ON DELETE CASCADE,
+  client_id          text REFERENCES clients(id) ON DELETE SET NULL,
+  user_id            text REFERENCES users(id) ON DELETE SET NULL,
+  phone              text,
+  reference          text NOT NULL UNIQUE,
+  applicant_name     text NOT NULL,
+  relationship       text NOT NULL,
+  verification       text,
+  status             text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'approved', 'rejected')),
+  review_note        text,
+  reviewed_by        text,
+  reviewed_at        timestamptz,
+  channel            text NOT NULL DEFAULT 'whatsapp',
+  created_at         timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS business_claims_org_idx ON business_claims(organization_id, status, created_at DESC);
+
+-- Files people send us (WhatsApp or web), what we read from them, and whether they confirmed it.
+CREATE TABLE IF NOT EXISTS uploads (
+  id                 text PRIMARY KEY,
+  organization_id    text NOT NULL REFERENCES organizations(id),
+  client_id          text REFERENCES clients(id) ON DELETE SET NULL,
+  user_id            text REFERENCES users(id) ON DELETE SET NULL,
+  phone              text,
+  source             text NOT NULL DEFAULT 'whatsapp',
+  storage_path       text NOT NULL,
+  filename           text NOT NULL,
+  mimetype           text NOT NULL,
+  size_bytes         integer NOT NULL DEFAULT 0,
+  kind               text NOT NULL DEFAULT 'other',
+  caption            text,
+  ocr_status         text NOT NULL DEFAULT 'queued' CHECK (ocr_status IN ('queued', 'processing', 'done', 'failed', 'skipped')),
+  ocr_text           text,
+  extracted          jsonb,
+  confirmed_at       timestamptz,
+  confirmed_data     jsonb,
+  claim_id           text REFERENCES claims(id) ON DELETE SET NULL,
+  reviewed_by        text,
+  reviewed_at        timestamptz,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  updated_at         timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS uploads_org_idx ON uploads(organization_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS uploads_client_idx ON uploads(client_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS enquiries (
+  id                 text PRIMARY KEY,
+  organization_id    text NOT NULL REFERENCES organizations(id),
+  client_id          text REFERENCES clients(id) ON DELETE SET NULL,
+  user_id            text REFERENCES users(id) ON DELETE SET NULL,
+  phone              text,
+  reference          text NOT NULL UNIQUE,
+  subject            text NOT NULL,
+  body               text NOT NULL,
+  status             text NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'answered', 'closed')),
+  answer             text,
+  answered_by        text,
+  answered_at        timestamptz,
+  channel            text NOT NULL DEFAULT 'whatsapp',
+  created_at         timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS enquiries_org_idx ON enquiries(organization_id, status, created_at DESC);
+
+-- Durable background jobs with retries. Claimed with SKIP LOCKED so several workers never run one twice.
+CREATE TABLE IF NOT EXISTS jobs (
+  id                 text PRIMARY KEY,
+  organization_id    text,
+  type               text NOT NULL,
+  payload            jsonb NOT NULL DEFAULT '{}'::jsonb,
+  status             text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'running', 'done', 'failed', 'dead')),
+  attempts           integer NOT NULL DEFAULT 0,
+  max_attempts       integer NOT NULL DEFAULT 4,
+  run_after          timestamptz NOT NULL DEFAULT now(),
+  last_error         text,
+  idempotency_key    text UNIQUE,
+  created_at         timestamptz NOT NULL DEFAULT now(),
+  started_at         timestamptz,
+  finished_at        timestamptz
+);
+CREATE INDEX IF NOT EXISTS jobs_queue_idx ON jobs(status, run_after);
+
+CREATE TABLE IF NOT EXISTS password_resets (
+  token_hash         text PRIMARY KEY,
+  user_id            text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  expires_at         timestamptz NOT NULL,
+  used_at            timestamptz,
+  created_at         timestamptz NOT NULL DEFAULT now()
+);
 `

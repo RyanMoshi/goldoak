@@ -2,7 +2,7 @@
 
 import { Bot, Send } from 'lucide-react'
 import { useState } from 'react'
-import { contact } from '@/lib/contact'
+import { superAgentLink } from '@/lib/contact'
 
 interface Turn {
   role: 'user' | 'assistant'
@@ -17,7 +17,7 @@ export function AskWidget({ agencyCode }: { agencyCode?: string }) {
   const [draft, setDraft] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const wa = `https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent('Hi, I have a question about insurance')}`
+  const wa = superAgentLink('Hi, I have a question about insurance')
 
   async function ask(question: string) {
     const q = question.trim()
@@ -101,7 +101,7 @@ export function AskWidget({ agencyCode }: { agencyCode?: string }) {
       <p className="px-5 pb-4 text-xs text-text-body">
         Prefer WhatsApp?{' '}
         <a href={wa} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline-offset-2 hover:underline">
-          Message Super Agent on {contact.superAgentWhatsAppDisplay}
+          Message Super Agent on WhatsApp
         </a>
         . Sign up to get answers about your own cover.
       </p>

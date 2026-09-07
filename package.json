@@ -11,9 +11,11 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.124.0",
+    "@vercel/functions": "^3.9.5",
     "lucide-react": "^0.294.0",
     "next": "14.0.4",
     "nodemailer": "^6.9.7",
+    "pdf-parse": "^1.1.1",
     "pdfkit": "^0.20.2",
     "postgres": "^3.4.9",
     "react": "^18",
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@types/node": "^20",
     "@types/nodemailer": "^6.4.14",
+    "@types/pdf-parse": "^1.1.5",
     "@types/pdfkit": "^0.17.6",
     "@types/react": "^18",
     "@types/react-dom": "^18",

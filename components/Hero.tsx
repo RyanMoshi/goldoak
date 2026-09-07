@@ -2,13 +2,13 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { ArrowRight, Bot, Building2, LogIn, Shield } from 'lucide-react'
+import { ArrowRight, Bot, Building2, LogIn, MessageCircle, Shield } from 'lucide-react'
 import AnimatedSection from './AnimatedSection'
-import { contact } from '@/lib/contact'
+import { superAgentLink } from '@/lib/contact'
 
 /** Landing hero: one message, four clear doors. */
 const Hero = () => {
-  const wa = `https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent('MENU')}`
+  const wa = superAgentLink()
   return (
     <section className="relative flex min-h-[86vh] items-center overflow-hidden hero-gradient-navy">
       <div className="absolute inset-0 opacity-[0.03]">
@@ -58,7 +58,7 @@ const Hero = () => {
                   <Building2 className="h-4 w-4 text-secondary" /> For agencies
                 </Link>
                 <a href={wa} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 hover:text-white">
-                  WhatsApp <span className="font-mono text-secondary">{contact.superAgentWhatsAppDisplay}</span>
+                  <MessageCircle className="h-4 w-4 text-secondary" /> Chat on WhatsApp
                 </a>
               </div>
             </AnimatedSection>

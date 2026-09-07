@@ -4,9 +4,8 @@ export const contact = {
   email: 'info@goldoak.co.ke',
   whatsapp: 'https://wa.me/254729911311',
   location: 'Nairobi, Kenya',
-  /** The Super Agent WhatsApp line clients message for status, quotes and claims. */
-  superAgentWhatsApp: '255742473493',
-  superAgentWhatsAppDisplay: '+255 742 473 493',
+  /** The Super Agent WhatsApp line. Digits are used only to build wa.me links and are never displayed. */
+  superAgentWhatsApp: (process.env.NEXT_PUBLIC_WHATSAPP_BOT_NUMBER ?? '255742473493').replace(/\D/g, ''),
   hours: {
     weekday: 'Mon – Fri: 8:00 AM – 6:00 PM',
     saturday: 'Sat: 9:00 AM – 4:00 PM',
@@ -19,3 +18,8 @@ export const contact = {
     linkedin: '',
   },
 } as const
+
+/** A wa.me link that opens the Super Agent chat with a pre-filled message. */
+export function superAgentLink(text = 'MENU'): string {
+  return `https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent(text)}`
+}

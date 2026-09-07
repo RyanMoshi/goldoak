@@ -2,7 +2,7 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { Menu, Plus } from 'lucide-react'
+import { Menu, Plus, Search } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { AgentProfile } from '@/components/platform/shell/AgentProfile'
 import { AICommandBar } from '@/components/platform/ai/AICommandBar'
@@ -47,6 +47,9 @@ export function TopBar({ dateLabel, onOpenNav, agent }: TopBarProps) {
         </div>
 
         <div className="hidden items-center gap-2 lg:flex">
+          <Link href="/agency/search" aria-label="Search" className="inline-flex size-10 items-center justify-center rounded-control border border-line bg-surface text-ink-muted hover:text-ink focus-ring">
+            <Search className="size-4" aria-hidden="true" />
+          </Link>
           <Link
             href="/agency/clients/new"
             className="inline-flex h-10 items-center gap-2 rounded-control bg-gold px-4 text-sm font-semibold text-white transition-colors hover:bg-gold-500 focus-ring"

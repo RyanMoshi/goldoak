@@ -49,7 +49,7 @@ export async function getUser(id: string): Promise<PublicUser | null> {
 
 /** A safe stand-in when an organisation row is missing (never persisted). */
 export function placeholderOrganization(id: string, name = 'Agency'): Organization {
-  return { id, name, shortName: name, phone: '', email: '', whatsapp: '', code: null, active: true, greeting: null, licenceLabel: null }
+  return { id, name, shortName: name, phone: '', email: '', whatsapp: '', code: null, active: true, greeting: null, licenceLabel: null, status: 'active', type: null, address: null, description: null, logoPath: null, contactName: null }
 }
 
 export async function getOrganization(id: string): Promise<Organization | null> {
@@ -61,14 +61,14 @@ export async function getOrganization(id: string): Promise<Organization | null> 
 export async function getOrganizationByCode(code: string): Promise<Organization | null> {
   await ensureSchema()
   const sql = getSql()
-  const rows = await sql`SELECT * FROM organizations WHERE lower(code) = lower(${code.trim()}) AND active LIMIT 1`
+  const rows = await sql`SELECT * FROM organizations WHERE lower(code) = lower(${code.trim()}) AND active AND status = 'active' LIMIT 1`
   return rows[0] ? toOrganization(rows[0]) : null
 }
 
 export async function listOrganizations(activeOnly = false): Promise<Organization[]> {
   await ensureSchema()
   const sql = getSql()
-  const rows = activeOnly ? await sql`SELECT * FROM organizations WHERE active ORDER BY name` : await sql`SELECT * FROM organizations ORDER BY name`
+  const rows = activeOnly ? await sql`SELECT * FROM organizations WHERE active AND status = 'active' ORDER BY name` : await sql`SELECT * FROM organizations ORDER BY name`
   return rows.map(toOrganization)
 }
 
@@ -79,7 +79,7 @@ export async function listOrganizationSummaries(): Promise<OrganizationSummary[]
       (SELECT count(*) FROM users u WHERE u.organization_id = o.id AND u.role IN ('agency','agency_admin') AND u.active) AS staff_count,
       (SELECT count(*) FROM clients c WHERE c.organization_id = o.id) AS client_count,
       (SELECT count(*) FROM whatsapp_contacts w WHERE w.organization_id = o.id AND w.mode = 'human') AS open_conversations
-    FROM organizations o ORDER BY o.name`
+    FROM organizations o ORDER BY (o.status = 'pending') DESC, o.name`
   return rows.map(toOrganizationSummary)
 }
 
@@ -91,6 +91,12 @@ export interface OrganizationInput {
   email: string
   greeting?: string | null
   licenceLabel?: string | null
+  status?: 'pending' | 'active' | 'suspended'
+  type?: string | null
+  address?: string | null
+  description?: string | null
+  contactName?: string | null
+  logoPath?: string | null
 }
 
 export async function codeTaken(code: string, exceptId?: string): Promise<boolean> {
@@ -106,8 +112,9 @@ export async function createOrganization(input: OrganizationInput): Promise<Orga
   const sql = getSql()
   const id = newId('org')
   const whatsapp = (process.env.WHATSAPP_BOT_NUMBER ?? '').replace(/\D/g, '')
-  await sql`INSERT INTO organizations (id, name, short_name, phone, email, whatsapp, code, greeting, licence_label)
-    VALUES (${id}, ${input.name}, ${input.shortName}, ${input.phone}, ${input.email}, ${whatsapp}, ${input.code.toUpperCase()}, ${input.greeting ?? null}, ${input.licenceLabel ?? null})`
+  const status = input.status ?? 'active'
+  await sql`INSERT INTO organizations (id, name, short_name, phone, email, whatsapp, code, greeting, licence_label, status, active, type, address, description, contact_name)
+    VALUES (${id}, ${input.name}, ${input.shortName}, ${input.phone}, ${input.email}, ${whatsapp}, ${input.code.toUpperCase()}, ${input.greeting ?? null}, ${input.licenceLabel ?? null}, ${status}, ${status === 'active'}, ${input.type ?? null}, ${input.address ?? null}, ${input.description ?? null}, ${input.contactName ?? null})`
   const org = await getOrganization(id)
   if (!org) throw new Error('Organisation was not created')
   return org
@@ -126,6 +133,13 @@ export async function updateOrganization(id: string, input: Partial<Organization
       greeting = ${input.greeting !== undefined ? input.greeting : current.greeting},
       licence_label = ${input.licenceLabel !== undefined ? input.licenceLabel : current.licenceLabel},
       active = ${input.active ?? current.active},
+      status = ${input.status ?? (input.active === undefined ? current.status : input.active ? 'active' : 'suspended')},
+      type = ${input.type !== undefined ? input.type : current.type},
+      address = ${input.address !== undefined ? input.address : current.address},
+      description = ${input.description !== undefined ? input.description : current.description},
+      contact_name = ${input.contactName !== undefined ? input.contactName : current.contactName},
+      logo_path = ${input.logoPath !== undefined ? input.logoPath : current.logoPath},
+      approved_at = CASE WHEN ${input.status ?? ''} = 'active' AND approved_at IS NULL THEN now() ELSE approved_at END,
       updated_at = now()
     WHERE id = ${id}`
 }
@@ -206,7 +220,7 @@ interface CreateStaffInput {
   phone: string | null
   title: string | null
   passwordHash: string
-  createdBy: string
+  createdBy: string | null
 }
 
 export async function createStaffUser(input: CreateStaffInput): Promise<PublicUser> {
@@ -241,6 +255,20 @@ export async function setUserRole(userId: string, role: Extract<Role, 'agency' |
 export async function setUserPassword(userId: string, passwordHash: string): Promise<void> {
   const sql = getSql()
   await sql`UPDATE users SET password_hash = ${passwordHash} WHERE id = ${userId}`
+}
+
+/** Renames the account and, for individuals, the client record that carries the same name. */
+export async function updateUserName(userId: string, name: string): Promise<void> {
+  const sql = getSql()
+  const rows = await sql`UPDATE users SET name = ${name}, updated_at = now() WHERE id = ${userId} RETURNING (SELECT name FROM users WHERE id = ${userId}) AS old_name`
+  await sql`UPDATE clients SET name = ${name}, updated_at = now() WHERE user_id = ${userId} AND type = 'individual'`
+  void rows
+}
+
+export async function updateUserEmail(userId: string, email: string): Promise<void> {
+  const sql = getSql()
+  await sql`UPDATE users SET email = ${email.toLowerCase()}, updated_at = now() WHERE id = ${userId}`
+  await sql`UPDATE clients SET email = ${email.toLowerCase()}, updated_at = now() WHERE user_id = ${userId}`
 }
 
 export async function setUserPhone(userId: string, phone: string | null): Promise<void> {

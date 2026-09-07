@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
-import { Bot } from 'lucide-react'
+import { Bot, FolderOpen, ListChecks } from 'lucide-react'
 import { ClaimList } from '@/components/platform/portal/ClaimList'
 import { DocumentsCard } from '@/components/platform/portal/DocumentsCard'
 import { JourneyTracker } from '@/components/platform/portal/JourneyTracker'
@@ -79,6 +79,22 @@ export default async function PortalPage({ searchParams }: { searchParams: { wel
               <span className="block text-[12.5px] text-ink-muted">Insurance questions, answered with your own cover in mind.</span>
             </span>
           </Link>
+          <div className="grid grid-cols-2 gap-3">
+            <Link href="/portal/documents" className="flex flex-col gap-2 rounded-card border border-line bg-surface p-4 transition-colors hover:border-forest focus-ring">
+              <span className="inline-flex size-9 items-center justify-center rounded-full bg-gold/15 text-gold-700">
+                <FolderOpen className="size-4" aria-hidden="true" strokeWidth={1.75} />
+              </span>
+              <span className="text-[13.5px] font-bold text-ink">My documents</span>
+              <span className="text-[12px] text-ink-muted">Upload, read, confirm.</span>
+            </Link>
+            <Link href="/portal/requests" className="flex flex-col gap-2 rounded-card border border-line bg-surface p-4 transition-colors hover:border-forest focus-ring">
+              <span className="inline-flex size-9 items-center justify-center rounded-full bg-info/10 text-info">
+                <ListChecks className="size-4" aria-hidden="true" strokeWidth={1.75} />
+              </span>
+              <span className="text-[13.5px] font-bold text-ink">Requests</span>
+              <span className="text-[12px] text-ink-muted">Claim a business, enquire, track.</span>
+            </Link>
+          </div>
           <UpdatesFeed items={notifications} />
           <DocumentsCard hasClient={Boolean(client)} quotes={quotes} claims={claims} />
         </div>

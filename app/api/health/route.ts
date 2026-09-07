@@ -2,7 +2,9 @@ import { NextResponse } from 'next/server'
 import { getSql, hasDatabase } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { getProvider } from '@/lib/whatsapp/provider'
-import { aiConfigured } from '@/services/consult'
+import { aiModelLabel } from '@/lib/ai/provider'
+import { storageConfigured } from '@/lib/storage/supabase'
+import { jobStats } from '@/services/jobs'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -27,12 +29,15 @@ export async function GET() {
       database.detail = error instanceof Error ? error.message.slice(0, 160) : 'unknown'
     }
   }
+  const jobs = hasDatabase() && database.status === 'ok' ? await jobStats().catch(() => null) : null
   return NextResponse.json(
     {
       ok: database.status === 'ok',
       database,
       whatsapp: getProvider()?.name ?? 'not configured',
-      ai: aiConfigured() ? 'claude' : 'catalogue',
+      ai: aiModelLabel(),
+      storage: storageConfigured() ? 'supabase' : 'not configured',
+      jobs,
       version: process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'local',
       cron: process.env.CRON_SECRET ? 'configured' : 'missing',
       auth: process.env.AUTH_SECRET ? 'configured' : 'missing',

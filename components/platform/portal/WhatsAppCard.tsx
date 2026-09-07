@@ -1,6 +1,5 @@
 import { MessageCircle, Phone } from 'lucide-react'
 import { Card } from '@/components/platform/ui/Card'
-import { formatPhone } from '@/lib/format'
 import type { Organization } from '@/types/platform'
 
 /** The adviser, and the WhatsApp line that does everything the portal does. */
@@ -22,7 +21,7 @@ export function WhatsAppCard({ organization, adviserName, phoneLinked }: { organ
       <div className="mt-5 rounded-card border border-white/15 bg-white/5 p-4 text-[13px]">
         <p className="font-semibold">Do it all from WhatsApp</p>
         <p className="mt-1 text-white/75">
-          Message <span className="font-mono text-gold">Super Agent · {formatPhone(organization.whatsapp)}</span> from your registered number and reply with a number:
+          Open <span className="font-semibold text-gold">Super Agent</span> on WhatsApp from your registered number and reply with a number:
         </p>
         <ol className="mt-2 grid grid-cols-1 gap-x-3 gap-y-1 text-[12px] text-white/90 sm:grid-cols-3">
           <li><span className="font-mono text-gold">1</span> Where things stand</li>

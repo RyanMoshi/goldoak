@@ -3,7 +3,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowRight, Bell, Bot, Building2, FileSearch, ListChecks, LogIn, MessageCircle, ShieldCheck, UserRound, Users } from 'lucide-react'
 import { AskWidget } from '@/components/site/AskWidget'
-import { contact } from '@/lib/contact'
+import { superAgentLink } from '@/lib/contact'
 
 export const metadata: Metadata = {
   title: 'Super Agent',
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 const clientPoints = [
   { icon: ListChecks, title: 'See your progress', text: 'Understand, Solve, Compare, Implement, Support, Review. You always know which stage you are at and what happens next.' },
   { icon: ShieldCheck, title: 'Every policy in one place', text: 'Insurer, premium, renewal date, what is covered and the exclusions that matter. Branded PDFs whenever you need them.' },
-  { icon: FileSearch, title: 'Ask for cover, report a claim', text: 'Two taps on the site, or reply 5 or 6 on WhatsApp. Your adviser picks it up the same day.' },
+  { icon: FileSearch, title: 'Ask for cover, report a claim, send documents', text: 'Two taps on the site, or a number on WhatsApp. We read the documents you send and ask you to confirm.' },
   { icon: Bell, title: 'Reminders that find you', text: 'Renewals at 30, 14, 7 and 1 days. Quote replies as they arrive. Claim updates every week.' },
 ]
 
@@ -23,10 +23,10 @@ const agencyPoints = [
   { icon: Bot, title: 'An assistant that knows when to stop', text: 'It signs clients up, takes quote and claim details step by step, answers cover questions, and hands anything sensitive to a person.' },
 ]
 
-const menu = ['Where things stand', 'My policies', 'My quotes', 'My claims', 'Ask for cover', 'Report a claim', 'Ask a question', 'Recent updates', 'Talk to an adviser']
+const menu = ['Get started / Sign up', 'Find or claim a business', 'Get insurance assistance', 'Make an enquiry', 'Upload a document', 'Check a request', 'Talk to an agent', 'Help']
 
 export default function SuperAgentPage() {
-  const wa = `https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent('MENU')}`
+  const wa = superAgentLink()
   return (
     <div className="min-h-screen">
       <section className="relative overflow-hidden hero-gradient-navy">
@@ -86,11 +86,10 @@ export default function SuperAgentPage() {
                   ))}
                 </ol>
                 <p className="mt-3 text-sm text-text-body">
-                  Save <span className="font-mono">{contact.superAgentWhatsAppDisplay}</span> as Super Agent and send MENU from your registered number. New here? Send{' '}
                   <a href={wa} target="_blank" rel="noopener noreferrer" className="font-semibold text-primary underline-offset-2 hover:underline">
-                    a message
+                    Open Super Agent on WhatsApp
                   </a>{' '}
-                  and reply 1 to sign up from your phone.
+                  and reply with a number. New here? Reply 1 to sign up from your phone.
                 </p>
               </div>
             </div>
@@ -136,15 +135,15 @@ export default function SuperAgentPage() {
             <div>
               <div className="badge-gold mb-6 inline-flex">For agencies</div>
               <h2 className="mb-4 font-serif text-heading-1 font-medium text-text-headline">Run the whole book, and let the assistant do the chasing.</h2>
-              <p className="mb-6 max-w-xl text-body-lg text-text-body">Agencies join by invitation. GoldOak creates your agency and your first admin login; you invite your own advisers, set your WhatsApp join code and greeting, and start working the queue.</p>
+              <p className="mb-6 max-w-xl text-body-lg text-text-body">Register your agency in two minutes. GoldOak approves it, usually within a working day; then you invite your advisers, share your WhatsApp join link and start working the queue.</p>
               <ul className="mb-8 space-y-2 text-sm text-text-body">
                 <li>· Strict separation: your clients, conversations and reports are yours alone.</li>
                 <li>· Roles: agency admin, agency staff. Clients see only their own file.</li>
                 <li>· Works on a phone: bottom tabs, cards instead of tables, one-thumb replies.</li>
               </ul>
               <div className="flex flex-col gap-3 sm:flex-row">
-                <Link href="/contact" className="btn-primary inline-flex items-center justify-center gap-2">
-                  Request an agency account <ArrowRight className="h-5 w-5" />
+                <Link href="/agencies/signup" className="btn-primary inline-flex items-center justify-center gap-2">
+                  Register your agency <ArrowRight className="h-5 w-5" />
                 </Link>
                 <Link href="/signin?as=agency" className="btn-outline inline-flex items-center justify-center gap-2">
                   <LogIn className="h-5 w-5" /> Agency sign in

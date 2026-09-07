@@ -151,3 +151,44 @@ export async function assignConversationAction(phone: string, organizationId: st
     return { error: 'Could not route the conversation.' }
   }
 }
+
+/** Approve a self-registered agency: it goes live on the shared WhatsApp number. */
+export async function approveOrganizationAction(organizationId: string): Promise<AdminActionState> {
+  const session = await requireSession('admin')
+  try {
+    const org = await getOrganization(organizationId)
+    if (!org) return { error: 'That agency does not exist.' }
+    await updateOrganization(organizationId, { status: 'active', active: true })
+    await audit({ organizationId, actorUserId: session.uid, action: 'organization.approved', target: organizationId })
+    const { getSql } = await import('@/lib/db/client')
+    const admins = await getSql()`SELECT id, email, name FROM users WHERE organization_id = ${organizationId} AND role = 'agency_admin' AND active`
+    const { notify } = await import('@/services/notifications')
+    const { sendEmail } = await import('@/lib/email')
+    const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://goldoak.vercel.app'
+    for (const a of admins) {
+      await notify({ organizationId, userId: String(a.id), kind: 'welcome', title: `${org.name} is approved`, body: `Your agency is live on Super Agent. Share your WhatsApp link from Settings and invite your team.`, reference: `org-approved:${organizationId}:${String(a.id)}` })
+      await sendEmail({ to: String(a.email), subject: `${org.name} is live on Super Agent`, text: `Hello ${String(a.name).split(' ')[0]},\n\n${org.name} has been approved. Sign in at ${site}/signin?as=agency, open Settings for your WhatsApp join link, and invite your team.\n\nJoin code: ${org.code}` })
+    }
+    revalidatePath('/admin')
+    return { success: `${org.name} approved and told.` }
+  } catch (error) {
+    console.error('approveOrganization failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not approve the agency.' }
+  }
+}
+
+export async function retryJobAction(jobId: string): Promise<AdminActionState> {
+  await requireSession('admin')
+  try {
+    const { retryJob, runJobs } = await import('@/services/jobs')
+    const { registerJobHandlers } = await import('@/services/jobs/handlers')
+    await retryJob(jobId)
+    registerJobHandlers()
+    await runJobs(3, 120_000)
+    revalidatePath('/admin/system')
+    return { success: 'Job queued again.' }
+  } catch (error) {
+    console.error('retryJob failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not retry the job.' }
+  }
+}

@@ -19,6 +19,13 @@ export interface Organization {
   /** First line the assistant sends to a new contact of this agency. */
   greeting: string | null
   licenceLabel: string | null
+  /** pending = self-registered, waiting for the platform admin; active = live. */
+  status: 'pending' | 'active' | 'suspended'
+  type: string | null
+  address: string | null
+  description: string | null
+  logoPath: string | null
+  contactName: string | null
 }
 
 export interface OrganizationSummary extends Organization {
@@ -323,10 +330,22 @@ export interface WhatsAppContact {
   workflow: string | null
   step: number | null
   data: Record<string, unknown>
+  /** Long-lived facts and a rolling summary the assistant uses as memory. */
+  memory: ContactMemory
+  consentedAt: string | null
+  inboundCount: number
   lastInboundAt: string | null
   handoffAt: string | null
   createdAt: string
   updatedAt: string
+}
+
+export interface ContactMemory {
+  facts?: Record<string, string>
+  summary?: string
+  /** A workflow paused by an interruption (question mid-flow), restored on return. */
+  paused?: { workflow: string; step: number; data: Record<string, unknown> } | null
+  lastIntent?: string
 }
 
 export interface ConversationMessage {
@@ -371,4 +390,96 @@ export interface AuditEntry {
   target: string | null
   detail: Record<string, unknown> | null
   at: string
+}
+
+/* ---------- Businesses, uploads, enquiries ---------- */
+
+export interface Business {
+  id: string
+  organizationId: string
+  clientId: string | null
+  name: string
+  registrationNo: string | null
+  sector: string | null
+  phone: string | null
+  email: string | null
+  address: string | null
+  verified: boolean
+  createdAt: string
+}
+
+export type BusinessClaimStatus = 'pending' | 'approved' | 'rejected'
+
+export interface BusinessClaim {
+  id: string
+  organizationId: string
+  businessId: string
+  businessName: string
+  clientId: string | null
+  userId: string | null
+  phone: string | null
+  reference: string
+  applicantName: string
+  relationship: string
+  verification: string | null
+  status: BusinessClaimStatus
+  reviewNote: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  channel: string
+  createdAt: string
+}
+
+export type UploadKind = 'id' | 'policy' | 'claim' | 'vehicle' | 'receipt' | 'photo' | 'form' | 'other'
+export type OcrStatus = 'queued' | 'processing' | 'done' | 'failed' | 'skipped'
+
+export interface Upload {
+  id: string
+  organizationId: string
+  clientId: string | null
+  userId: string | null
+  phone: string | null
+  source: 'whatsapp' | 'web' | 'agency'
+  storagePath: string
+  filename: string
+  mimetype: string
+  sizeBytes: number
+  kind: UploadKind
+  caption: string | null
+  ocrStatus: OcrStatus
+  ocrText: string | null
+  extracted: Record<string, unknown> | null
+  confirmedAt: string | null
+  confirmedData: Record<string, unknown> | null
+  claimId: string | null
+  reviewedBy: string | null
+  reviewedAt: string | null
+  createdAt: string
+}
+
+export interface UploadRow extends Upload {
+  clientName: string | null
+}
+
+export type EnquiryStatus = 'open' | 'answered' | 'closed'
+
+export interface Enquiry {
+  id: string
+  organizationId: string
+  clientId: string | null
+  userId: string | null
+  phone: string | null
+  reference: string
+  subject: string
+  body: string
+  status: EnquiryStatus
+  answer: string | null
+  answeredBy: string | null
+  answeredAt: string | null
+  channel: string
+  createdAt: string
+}
+
+export interface EnquiryRow extends Enquiry {
+  clientName: string | null
 }

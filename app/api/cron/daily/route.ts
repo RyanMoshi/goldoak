@@ -2,10 +2,12 @@ import { timingSafeEqual } from 'node:crypto'
 import { NextResponse } from 'next/server'
 import { hasDatabase } from '@/lib/db/client'
 import { runDailyAutomation } from '@/services/automation'
+import { runJobs } from '@/services/jobs'
+import { registerJobHandlers } from '@/services/jobs/handlers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60
+export const maxDuration = 300
 
 /**
  * Daily automation. Vercel Cron calls this with `Authorization: Bearer ${CRON_SECRET}`
@@ -17,7 +19,9 @@ export async function GET(request: Request) {
   if (!hasDatabase()) return NextResponse.json({ ok: false, error: 'Database not configured' }, { status: 503 })
   try {
     const summary = await runDailyAutomation()
-    return NextResponse.json({ ok: true, ranAt: new Date().toISOString(), ...summary })
+    registerJobHandlers()
+    const jobs = await runJobs(50, 200_000)
+    return NextResponse.json({ ok: true, ranAt: new Date().toISOString(), ...summary, jobs })
   } catch (error) {
     console.error('daily automation failed', error instanceof Error ? error.message : error)
     return NextResponse.json({ ok: false, error: error instanceof Error ? error.message : 'failed' }, { status: 500 })

@@ -28,6 +28,8 @@ interface BootstrapInput {
   purgeExampleAccounts?: boolean
   /** Remove organisations whose join code starts with TEST, with everything under them. */
   purgeTestOrganizations?: boolean
+  /** Start afresh: remove every client, conversation, request and document across all organisations; keep organisations and staff accounts. */
+  purgeAllData?: boolean
   /** Create an agency (tenant) and its first agency admin in one call. */
   organization?: { name: string; shortName?: string; code: string; phone?: string; email?: string; greeting?: string; adminName: string; adminEmail: string; adminPassword: string; adminPhone?: string }
 }
@@ -44,7 +46,7 @@ export async function bootstrap(input: BootstrapInput = {}): Promise<BootstrapSu
   const whatsapp = (input.whatsapp ?? process.env.WHATSAPP_BOT_NUMBER ?? '255742473493').replace(/\D/g, '')
   const orgRows = await sql`INSERT INTO organizations (id, name, short_name, phone, email, whatsapp)
     VALUES (${ORG_ID}, 'GoldOak Insurance Agency', 'GoldOak', '+254 729 911 311', 'info@goldoak.co.ke', ${whatsapp})
-    ON CONFLICT (id) DO UPDATE SET whatsapp = EXCLUDED.whatsapp
+    ON CONFLICT (id) DO UPDATE SET whatsapp = EXCLUDED.whatsapp, status = 'active', active = true
     RETURNING (xmax = 0) AS inserted`
   const organization = orgRows[0]?.inserted ? 'created' : 'exists'
 
@@ -80,10 +82,23 @@ export async function bootstrap(input: BootstrapInput = {}): Promise<BootstrapSu
     }
   }
 
+  if (input.purgeAllData) {
+    for (const table of ['conversation_messages', 'whatsapp_contacts', 'consultations', 'documents', 'uploads', 'business_claims', 'businesses', 'enquiries', 'jobs', 'notifications', 'tasks', 'activity', 'quote_submissions', 'quote_requests', 'claims', 'policies', 'clients', 'processed_webhooks', 'password_resets']) {
+      await sql.unsafe(`DELETE FROM ${table}`)
+    }
+    const u = await sql`DELETE FROM users WHERE role = 'client' RETURNING id`
+    purged += u.length
+  }
+
   if (input.purgeTestOrganizations) {
     const orgs = await sql`SELECT id FROM organizations WHERE code LIKE 'TEST%'`
     for (const o of orgs) {
       const id = String(o.id)
+      await sql`DELETE FROM uploads WHERE organization_id = ${id}`
+      await sql`DELETE FROM business_claims WHERE organization_id = ${id}`
+      await sql`DELETE FROM businesses WHERE organization_id = ${id}`
+      await sql`DELETE FROM enquiries WHERE organization_id = ${id}`
+      await sql`DELETE FROM jobs WHERE organization_id = ${id}`
       await sql`DELETE FROM conversation_messages WHERE organization_id = ${id}`
       await sql`DELETE FROM whatsapp_contacts WHERE organization_id = ${id}`
       await sql`DELETE FROM consultations WHERE organization_id = ${id}`

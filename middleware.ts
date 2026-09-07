@@ -13,7 +13,7 @@ export async function middleware(request: NextRequest) {
     if (!canAccess(session.role, area)) return NextResponse.redirect(new URL(homeFor(session.role), request.url))
   }
 
-  if ((pathname === '/signin' || pathname === '/signup') && session) {
+  if ((pathname === '/signin' || pathname === '/signup' || pathname === '/agencies/signup') && session) {
     return NextResponse.redirect(new URL(homeFor(session.role), request.url))
   }
 
@@ -28,5 +28,5 @@ function redirectToSignIn(request: NextRequest, as: 'agency' | 'client') {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/agency/:path*', '/portal/:path*', '/signin', '/signup'],
+  matcher: ['/admin/:path*', '/agency/:path*', '/portal/:path*', '/signin', '/signup', '/agencies/signup'],
 }

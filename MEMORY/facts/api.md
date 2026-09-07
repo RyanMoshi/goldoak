@@ -1,21 +1,22 @@
 ---
 name: api
-description: "API endpoints: site forms, public assistant, documents, health, bootstrap, cron, WhatsApp webhooks."
+description: "API endpoints: site forms, public assistant, uploads, documents (PDF), health, bootstrap/purge, cron, jobs, WhatsApp webhooks."
 metadata.type: fact
 ---
 
 ## Site forms (nodemailer)
-- `POST /api/contact` — risk review and quote request forms; branded HTML email to admin + confirmation to client; attachments.
-- `POST /api/send-form` — insurance application form with files.
-Env: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `TO_EMAIL`.
+- `POST /api/contact`, `POST /api/send-form` — site forms with attachments. Env: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `TO_EMAIL`. `lib/email.ts` reuses the same account for password resets and agency-approval emails.
 
 ## Platform
-- `POST /api/consult` — public. `{ question, agency? }` → `{ answer, source: claude|catalogue, handoff }`. Per-IP limit 12 per 10 minutes (in-memory per instance). Not personalised.
-- `GET /api/documents/<type>?id=<subject>` — session cookie required. Types: `registration` (id = client), `client-summary` (id = client), `claim` (id = claim), `quote` (id = quote request), `agency-report` (staff only). Staff: subject must belong to `session.oid`; clients: subject must be theirs (id ignored for registration/summary). Returns `application/pdf`, header `X-Document-Number`, and writes `documents` + `audit_log`.
-- `GET /api/health` — `{ ok, database: { status, users, clients, organizations, waitingForHuman, failedWhatsApp24h }, whatsapp, ai: claude|catalogue, version: <commit>, cron, auth, time }`.
-- `POST /api/admin/seed` — header `x-admin-token`. Body options: `purgeDemo`, `purgeExampleAccounts`, `purgeTestOrganizations` (codes starting `TEST`), `adminEmail/adminPassword/adminName`, `whatsapp`, and `organization: { name, shortName?, code, phone?, email?, greeting?, adminName, adminEmail, adminPassword, adminPhone? }` which creates an agency and its first `agency_admin`. Returns `{ organization, admin, adminEmail, purged?, createdOrganization? }`.
-- `GET /api/cron/daily` — `Authorization: Bearer <CRON_SECRET>` or `x-admin-token`. Returns the automation summary (incl. `whatsappRetried`, `whatsappRecovered`).
-- `POST /api/whatsapp/openwa` — OpenWA events; HMAC `X-OpenWA-Signature`; idempotent via `X-OpenWA-Idempotency-Key`. With `x-admin-token` it returns `{ dryRun: true, replies, organizationId, userId, answered }` without sending.
-- `GET|POST /api/whatsapp/webhook` — Meta Cloud API verification and inbound messages.
+- `POST /api/consult` — public. `{ question, agency? }` → `{ answer, source: claude|nvidia|catalogue, handoff }`. 12 per 10 min per IP.
+- `POST /api/uploads` — session. multipart `{ file, kind?, clientId? (staff), caption? }` → `{ id, filename, status }`. Stores privately, queues OCR, drains jobs in the background. `maxDuration = 300`.
+- `GET /api/uploads/<id>` — session; the record. `?file=1` streams the file (staff: own organisation; clients: own uploads only). `POST` `{ confirmed, corrections? }` records the person's confirmation.
+- `GET /api/documents/<registration|client-summary|claim|quote|agency-report>?id=` — branded PDFs (see previous notes; ownership checked server-side).
+- `GET /api/health` — `{ ok, database: { status, users, clients, organizations, waitingForHuman, failedWhatsApp24h }, whatsapp, ai: <model>, storage: supabase|not configured, jobs: { queued, running, failed24h, dead, done24h }, version, cron, auth, time }`.
+- `POST /api/admin/seed` — `x-admin-token`. Options: `purgeDemo`, `purgeExampleAccounts`, `purgeTestOrganizations` (codes `TEST*` and everything under them), **`purgeAllData`** (start afresh: every client, conversation, request, document, job; keeps organisations and staff), `adminEmail/adminPassword/adminName`, `whatsapp`, `organization {…}` (creates an agency + first `agency_admin`, status active).
+- `GET /api/cron/daily` — `Bearer CRON_SECRET` or `x-admin-token`; automation + job drain (04:00 UTC).
+- `GET|POST /api/cron/jobs` — same auth; drains up to 25 jobs (04:30 UTC, or on demand).
+- `POST /api/whatsapp/openwa` — OpenWA events; HMAC; idempotent; fast ack + background processing. `x-admin-token` → dry run (synchronous, replies echoed); `x-debug: 1` adds error details.
+- `GET|POST /api/whatsapp/webhook` — Meta Cloud API; also background-processed.
 
-All platform routes are `runtime = 'nodejs'`, `dynamic = 'force-dynamic'`. `next.config.js` traces `node_modules/pdfkit/js/data/**` into the documents function.
+All platform routes are `runtime = 'nodejs'`, `dynamic = 'force-dynamic'`. `next.config.js` keeps `pdfkit` external and traces `node_modules/pdfkit/js/**`.

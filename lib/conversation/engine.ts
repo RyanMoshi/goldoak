@@ -103,15 +103,15 @@ function summary(flow: Flow, data: FlowData): string {
   return confirmation({ title: `${flow.title}: please check`, rows })
 }
 
-export async function startFlow(flow: Flow, ctx: FlowContext): Promise<FlowOutcome> {
-  const data: FlowData = {}
+export async function startFlow(flow: Flow, ctx: FlowContext, preset: FlowData = {}): Promise<FlowOutcome> {
+  const data: FlowData = { ...preset }
   const first = nextIndex(flow, data, -1)
   const intro = flow.intro?.(ctx)
   return { reply: await ask(flow, ctx, data, first, intro), state: { step: first, data } }
 }
 
-export async function restartFlow(flow: Flow, ctx: FlowContext): Promise<FlowOutcome> {
-  const out = await startFlow(flow, ctx)
+export async function restartFlow(flow: Flow, ctx: FlowContext, preset: FlowData = {}): Promise<FlowOutcome> {
+  const out = await startFlow(flow, ctx, preset)
   return { ...out, reply: `Starting again.\n\n${out.reply}` }
 }
 
@@ -135,6 +135,13 @@ export function helpFor(flow: Flow, state: FlowState): string {
   const active = activeSteps(flow, state.data)
   const where = state.step === CONFIRM_STEP ? 'You are checking your answers before we save them.' : state.step === EDIT_PICK_STEP ? 'Pick the number of the answer you want to change.' : `You are on step ${Math.max(1, active.indexOf(flow.steps[state.step]) + 1)} of ${active.length} in ${flow.title}.`
   return [where, '', 'Commands that work at any time:', '• BACK: previous question', '• SKIP: leave an optional answer blank', '• RESTART: start this over', '• CANCEL: stop without saving', '• MENU: main menu', '• ADVISER: talk to a person'].join('\n')
+}
+
+/** The question the current step is asking, for re-asking after an interruption. */
+export async function currentPrompt(flow: Flow, ctx: FlowContext, state: FlowState): Promise<string> {
+  if (state.step === CONFIRM_STEP) return summary(flow, state.data)
+  if (state.step === EDIT_PICK_STEP) return `Which one would you like to change?\n\n${options(activeSteps(flow, state.data).map((s) => s.label))}`
+  return ask(flow, ctx, state.data, state.step)
 }
 
 /** Feed the next message into a running flow. */

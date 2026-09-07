@@ -2,12 +2,16 @@ import {
   BarChart3,
   Building2,
   FileText,
+  FolderOpen,
   KanbanSquare,
   LayoutDashboard,
   MessageSquare,
+  MessagesSquare,
   RefreshCw,
+  ScrollText,
   Settings,
   ShieldAlert,
+  Store,
   UserCog,
   Users,
   type LucideIcon,
@@ -26,14 +30,18 @@ export interface PlatformNavItem {
 export const agencyNavigation: PlatformNavItem[] = [
   { href: '/agency/today', label: 'Today', icon: LayoutDashboard, description: 'What needs your attention now.' },
   { href: '/agency/conversations', label: 'Conversations', icon: MessageSquare, description: 'WhatsApp chats: who is waiting for a person, and every message.' },
-  { href: '/agency/pipeline', label: 'Pipeline', icon: KanbanSquare, description: 'Every opportunity from lead to placement.' },
   { href: '/agency/clients', label: 'Clients', icon: Users, description: 'One record per client: stage, policies, quotes, claims.' },
+  { href: '/agency/businesses', label: 'Businesses', icon: Store, description: 'Businesses you serve and claims to link them.' },
+  { href: '/agency/documents', label: 'Documents', icon: FolderOpen, description: 'Files clients sent, what the assistant read, confirmations.' },
+  { href: '/agency/enquiries', label: 'Enquiries', icon: MessagesSquare, description: 'Questions and requests waiting for an answer.' },
+  { href: '/agency/pipeline', label: 'Pipeline', icon: KanbanSquare, description: 'Every opportunity from lead to placement.' },
   { href: '/agency/quotes', label: 'Quotes', icon: FileText, description: 'Request, capture and compare insurer quotes on identical terms.' },
   { href: '/agency/renewals', label: 'Renewals', icon: RefreshCw, description: 'The renewal diary, 90 days out to expiry.' },
   { href: '/agency/claims', label: 'Claims', icon: ShieldAlert, description: 'Every open claim, its stage and the next update due.' },
   { href: '/agency/insurers', label: 'Insurers', icon: Building2, description: 'Panel appetite, contacts and turnaround record.' },
   { href: '/agency/reports', label: 'Reports', icon: BarChart3, description: 'Premium, commission, conversion and retention.' },
   { href: '/agency/team', label: 'Team', icon: UserCog, description: 'Invite staff, reset passwords, set roles.', adminOnly: true },
+  { href: '/agency/audit', label: 'Audit log', icon: ScrollText, description: 'Who did what.', adminOnly: true },
 ]
 
 export const agencySettings: PlatformNavItem = {
@@ -44,7 +52,7 @@ export const agencySettings: PlatformNavItem = {
 }
 
 /** Bottom tab bar on phones: the five most used destinations. */
-export const agencyMobileTabs: PlatformNavItem[] = [agencyNavigation[0], agencyNavigation[1], agencyNavigation[3], agencyNavigation[2], agencyNavigation[6]]
+export const agencyMobileTabs: PlatformNavItem[] = [agencyNavigation[0], agencyNavigation[1], agencyNavigation[2], agencyNavigation[4], agencyNavigation[9]]
 
 export function navigationFor(role: Role): PlatformNavItem[] {
   const admin = role === 'admin' || role === 'agency_admin'
@@ -52,5 +60,6 @@ export function navigationFor(role: Role): PlatformNavItem[] {
 }
 
 export function agencyNavFor(pathname: string): PlatformNavItem | undefined {
+  if (pathname.startsWith('/agency/search')) return { href: '/agency/search', label: 'Search', icon: Users, description: 'Search the agency.' }
   return [...agencyNavigation, agencySettings].find((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
 }

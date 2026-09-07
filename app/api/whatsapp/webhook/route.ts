@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server'
 import { getSql, hasDatabase } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
-import { handleInbound } from '@/lib/whatsapp/bot'
-import { sendWhatsApp } from '@/lib/whatsapp/provider'
+import { processInbound } from '@/lib/whatsapp/bot'
+import { runInBackground } from '@/lib/background'
 import { parseMetaPayload, verifyMetaSignature } from '@/lib/whatsapp/providers/meta'
 
 export const runtime = 'nodejs'
@@ -37,8 +37,7 @@ export async function POST(request: Request) {
     try {
       const inserted = await sql`INSERT INTO processed_webhooks (key) VALUES (${`meta:${message.messageId}`}) ON CONFLICT DO NOTHING RETURNING key`
       if (!inserted.length) continue
-      const result = await handleInbound(message.phone, message.text)
-      for (const reply of result.replies) await sendWhatsApp(message.phone, reply)
+      if (!runInBackground(() => processInbound({ message }))) await processInbound({ message })
     } catch (error) {
       console.error('meta webhook failed', error instanceof Error ? error.message : error)
     }

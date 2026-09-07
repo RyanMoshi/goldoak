@@ -7,13 +7,18 @@ import { requireAgencyAdmin, requireSession } from '@/lib/auth/server'
 import { generatePassword } from '@/lib/conversation/flows'
 import { normalizePhone } from '@/lib/format'
 import { audit } from '@/services/audit'
+import { createBusiness, reviewBusinessClaim } from '@/services/businesses'
+import { answerEnquiry } from '@/services/enquiries'
+import { enqueue, runJobs } from '@/services/jobs'
+import { registerJobHandlers } from '@/services/jobs/handlers'
+import { getUpload, markUploadReviewed } from '@/services/uploads'
 import { getContact, setMode } from '@/services/conversations'
 import { agentReply, resumeAssistant } from '@/services/handoff'
 import { codeTaken, createStaffUser, emailOrPhoneTaken, setUserActive, setUserPassword, setUserRole, updateOrganization, userInOrganization } from '@/services/users'
 import { runAgencyCommand } from '@/services/agency/commands'
 import { completeTask } from '@/services/agency/dashboard'
 import { addPolicy, createClient, messageClient, updateClaimStage, updateClientStage, updateQuoteStage } from '@/services/journey'
-import type { ClaimStage, CommandResult, JourneyStage, QuoteStage } from '@/types/platform'
+import type { ClaimStage, CommandResult, JourneyStage, QuoteStage, UploadKind } from '@/types/platform'
 import { CLAIM_STAGES, JOURNEY_STAGES } from '@/types/platform'
 
 export interface ActionState {
@@ -291,5 +296,92 @@ export async function updateOrganizationSettingsAction(formData: FormData): Prom
   } catch (error) {
     console.error('updateOrganizationSettings failed', error instanceof Error ? error.message : error)
     return { error: 'Could not save the settings.' }
+  }
+}
+
+/* ---------- Businesses and business claims ---------- */
+
+export async function createBusinessAction(formData: FormData): Promise<ActionState> {
+  const session = await requireSession('agency')
+  const name = String(formData.get('name') ?? '').trim()
+  const registrationNo = String(formData.get('registrationNo') ?? '').trim() || null
+  const sector = String(formData.get('sector') ?? '').trim() || null
+  const phoneInput = String(formData.get('phone') ?? '').trim()
+  const email = String(formData.get('email') ?? '').trim().toLowerCase() || null
+  const address = String(formData.get('address') ?? '').trim() || null
+  if (name.length < 2) return { error: 'Enter the business name.' }
+  const phone = phoneInput ? normalizePhone(phoneInput) : null
+  if (phoneInput && !phone) return { error: 'Enter a valid phone number.' }
+  try {
+    await createBusiness({ organizationId: session.oid, name, registrationNo, sector, phone, email, address, createdBy: session.uid, verified: true })
+    revalidatePath('/agency/businesses')
+    return { success: `${name} added. Clients can now find and claim it on WhatsApp or the portal.` }
+  } catch (error) {
+    console.error('createBusiness failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not add the business.' }
+  }
+}
+
+export async function reviewBusinessClaimAction(claimId: string, decision: 'approved' | 'rejected', note: string): Promise<ActionState> {
+  const session = await requireSession('agency')
+  try {
+    const claim = await reviewBusinessClaim(session.oid, claimId, decision, note.trim().slice(0, 500) || null, { id: session.uid, name: session.name })
+    if (!claim) return { error: 'That claim is not pending or not in your agency.' }
+    revalidatePath('/agency/businesses')
+    return { success: decision === 'approved' ? `${claim.reference} approved. The applicant has been told.` : `${claim.reference} rejected. The applicant has been told.` }
+  } catch (error) {
+    console.error('reviewBusinessClaim failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not review the claim.' }
+  }
+}
+
+/* ---------- Enquiries ---------- */
+
+export async function answerEnquiryAction(enquiryId: string, answer: string): Promise<ActionState> {
+  const session = await requireSession('agency')
+  const text = answer.trim()
+  if (text.length < 2) return { error: 'Write an answer first.' }
+  try {
+    const enquiry = await answerEnquiry(session.oid, enquiryId, text, { id: session.uid, name: session.name })
+    if (!enquiry) return { error: 'That enquiry is not in your agency.' }
+    revalidatePath('/agency/enquiries')
+    return { success: `Answered ${enquiry.reference}. The person has been told on WhatsApp and in their portal.` }
+  } catch (error) {
+    console.error('answerEnquiry failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not send the answer.' }
+  }
+}
+
+/* ---------- Documents (uploads) ---------- */
+
+export async function reviewUploadAction(uploadId: string, kind: string): Promise<ActionState> {
+  const session = await requireSession('agency')
+  const kinds = ['id', 'policy', 'claim', 'vehicle', 'receipt', 'photo', 'form', 'other']
+  try {
+    await markUploadReviewed(session.oid, uploadId, session.uid, kinds.includes(kind) ? (kind as UploadKind) : undefined)
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'upload.reviewed', target: uploadId })
+    revalidatePath('/agency/documents')
+    return { success: 'Marked as reviewed.' }
+  } catch (error) {
+    console.error('reviewUpload failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not update the document.' }
+  }
+}
+
+export async function retryUploadAction(uploadId: string): Promise<ActionState> {
+  const session = await requireSession('agency')
+  try {
+    const upload = await getUpload(session.oid, uploadId)
+    if (!upload) return { error: 'Not found.' }
+    const { getSql } = await import('@/lib/db/client')
+    await getSql()`UPDATE uploads SET ocr_status = 'queued', updated_at = now() WHERE id = ${uploadId}`
+    await enqueue({ type: 'ocr-upload', organizationId: session.oid, payload: { uploadId }, idempotencyKey: `ocr:${uploadId}:${Date.now()}` })
+    registerJobHandlers()
+    await runJobs(2, 120_000)
+    revalidatePath('/agency/documents')
+    return { success: 'Reading the document again.' }
+  } catch (error) {
+    console.error('retryUpload failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not retry.' }
   }
 }

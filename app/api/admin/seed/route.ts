@@ -31,6 +31,7 @@ export async function POST(request: Request) {
       purgeDemo: body.purgeDemo === true,
       purgeExampleAccounts: body.purgeExampleAccounts === true,
       purgeTestOrganizations: body.purgeTestOrganizations === true,
+      purgeAllData: body.purgeAllData === true,
       organization: body.organization && typeof body.organization === 'object' ? (body.organization as NonNullable<Parameters<typeof bootstrap>[0]>['organization']) : undefined,
       adminEmail: typeof body.adminEmail === 'string' ? body.adminEmail : undefined,
       adminPassword: typeof body.adminPassword === 'string' ? body.adminPassword : undefined,

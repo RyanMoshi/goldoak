@@ -64,14 +64,18 @@ export function SignInForm({ initialRole, next }: { initialRole: Role; next: str
             </Link>
           </p>
         ) : (
-          <p>Agency accounts are created by the GoldOak platform admin. Ask your principal for your username and password.</p>
+          <p>
+            New agency?{' '}
+            <Link href="/agencies/signup" className="font-semibold text-forest underline-offset-2 hover:underline">
+              Register your agency
+            </Link>
+            . Staff logins come from your agency admin.
+          </p>
         )}
         <p>
-          Forgot your password? Message us on{' '}
-          <a href="https://wa.me/254729911311" target="_blank" rel="noopener noreferrer" className="font-semibold text-forest underline-offset-2 hover:underline">
-            WhatsApp
-          </a>{' '}
-          and we will reset it.
+          <Link href="/forgot-password" className="font-semibold text-forest underline-offset-2 hover:underline">
+            Forgot your password?
+          </Link>
         </p>
       </div>
     </div>

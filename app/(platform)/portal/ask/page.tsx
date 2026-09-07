@@ -20,7 +20,7 @@ export default async function AskPage() {
           <ArrowLeft className="size-4" aria-hidden="true" /> My insurance
         </Link>
         <h1 className="mt-3 font-serif text-[28px] font-medium leading-9 text-forest sm:text-[34px] sm:leading-[2.75rem]">Ask the {agencyName} assistant</h1>
-        <p className="mt-1 text-[15px] text-ink-muted">{aiConfigured() ? 'Answers use your own cover and the product catalogue. ' : 'Answers come from the product catalogue. '}The same assistant answers on WhatsApp (reply 7).</p>
+        <p className="mt-1 text-[15px] text-ink-muted">{aiConfigured() ? 'Answers use your own cover and the product catalogue. ' : 'Answers come from the product catalogue. '}The same assistant answers on WhatsApp (reply 3, then 2).</p>
       </div>
       <AskAssistant history={history} agencyName={agencyName} />
     </div>

@@ -1,6 +1,12 @@
 import type {
   ActivityItem,
   AuditEntry,
+  Business,
+  BusinessClaim,
+  Enquiry,
+  EnquiryRow,
+  Upload,
+  UploadRow,
   Claim,
   Client,
   ClientListRow,
@@ -53,6 +59,12 @@ export function toOrganization(r: Row): Organization {
     active: r.active === undefined ? true : Boolean(r.active),
     greeting: strOrNull(r.greeting),
     licenceLabel: strOrNull(r.licence_label),
+    status: r.status === 'pending' || r.status === 'suspended' ? r.status : 'active',
+    type: strOrNull(r.type),
+    address: strOrNull(r.address),
+    description: strOrNull(r.description),
+    logoPath: strOrNull(r.logo_path),
+    contactName: strOrNull(r.contact_name),
   }
 }
 
@@ -75,6 +87,9 @@ export function toContact(r: Row): WhatsAppContact {
     workflow: strOrNull(r.workflow),
     step: r.step == null ? null : Number(r.step),
     data: obj(r.data),
+    memory: obj(r.memory) as WhatsAppContact['memory'],
+    consentedAt: isoOrNull(r.consented_at),
+    inboundCount: num(r.inbound_count),
     lastInboundAt: isoOrNull(r.last_inbound_at),
     handoffAt: isoOrNull(r.handoff_at),
     createdAt: iso(r.created_at),
@@ -252,4 +267,95 @@ export function toNotification(r: Row): Notification {
     readAt: isoOrNull(r.read_at),
     createdAt: iso(r.created_at),
   }
+}
+
+export function toBusiness(r: Row): Business {
+  return {
+    id: str(r.id),
+    organizationId: str(r.organization_id),
+    clientId: strOrNull(r.client_id),
+    name: str(r.name),
+    registrationNo: strOrNull(r.registration_no),
+    sector: strOrNull(r.sector),
+    phone: strOrNull(r.phone),
+    email: strOrNull(r.email),
+    address: strOrNull(r.address),
+    verified: Boolean(r.verified),
+    createdAt: iso(r.created_at),
+  }
+}
+
+export function toBusinessClaim(r: Row): BusinessClaim {
+  return {
+    id: str(r.id),
+    organizationId: str(r.organization_id),
+    businessId: str(r.business_id),
+    businessName: str(r.business_name),
+    clientId: strOrNull(r.client_id),
+    userId: strOrNull(r.user_id),
+    phone: strOrNull(r.phone),
+    reference: str(r.reference),
+    applicantName: str(r.applicant_name),
+    relationship: str(r.relationship),
+    verification: strOrNull(r.verification),
+    status: (r.status as BusinessClaim['status']) ?? 'pending',
+    reviewNote: strOrNull(r.review_note),
+    reviewedBy: strOrNull(r.reviewed_by),
+    reviewedAt: isoOrNull(r.reviewed_at),
+    channel: str(r.channel) || 'whatsapp',
+    createdAt: iso(r.created_at),
+  }
+}
+
+export function toUpload(r: Row): Upload {
+  return {
+    id: str(r.id),
+    organizationId: str(r.organization_id),
+    clientId: strOrNull(r.client_id),
+    userId: strOrNull(r.user_id),
+    phone: strOrNull(r.phone),
+    source: (r.source as Upload['source']) ?? 'whatsapp',
+    storagePath: str(r.storage_path),
+    filename: str(r.filename),
+    mimetype: str(r.mimetype),
+    sizeBytes: num(r.size_bytes),
+    kind: (r.kind as Upload['kind']) ?? 'other',
+    caption: strOrNull(r.caption),
+    ocrStatus: (r.ocr_status as Upload['ocrStatus']) ?? 'queued',
+    ocrText: strOrNull(r.ocr_text),
+    extracted: r.extracted == null ? null : obj(r.extracted),
+    confirmedAt: isoOrNull(r.confirmed_at),
+    confirmedData: r.confirmed_data == null ? null : obj(r.confirmed_data),
+    claimId: strOrNull(r.claim_id),
+    reviewedBy: strOrNull(r.reviewed_by),
+    reviewedAt: isoOrNull(r.reviewed_at),
+    createdAt: iso(r.created_at),
+  }
+}
+
+export function toUploadRow(r: Row): UploadRow {
+  return { ...toUpload(r), clientName: strOrNull(r.client_name) }
+}
+
+export function toEnquiry(r: Row): Enquiry {
+  return {
+    id: str(r.id),
+    organizationId: str(r.organization_id),
+    clientId: strOrNull(r.client_id),
+    userId: strOrNull(r.user_id),
+    phone: strOrNull(r.phone),
+    reference: str(r.reference),
+    subject: str(r.subject),
+    body: str(r.body),
+    status: (r.status as Enquiry['status']) ?? 'open',
+    answer: strOrNull(r.answer),
+    answeredBy: strOrNull(r.answered_by),
+    answeredAt: isoOrNull(r.answered_at),
+    channel: str(r.channel) || 'whatsapp',
+    createdAt: iso(r.created_at),
+  }
+}
+
+export function toEnquiryRow(r: Row): EnquiryRow {
+  return { ...toEnquiry(r), clientName: strOrNull(r.client_name) }
 }

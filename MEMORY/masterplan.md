@@ -10,51 +10,50 @@ Read this file first in any session, then open only the linked memory that match
 
 GoldOak is an insurance solutions agency in Nairobi, Kenya ("Understand the risk first. The policy comes after."). This repository is **one Next.js app** that contains two things:
 
-1. **The marketing site** (`app/(site)/`): homepage, about, solutions, how-we-work, claims, contact, and the Super Agent landing page with a public "Talk to the AI" box.
-2. **Super Agent**, a **multi-tenant** insurance operating system (`app/(platform)/`): client portal, agency workspace, super-admin area, a WhatsApp assistant on one shared number, server-side PDFs and daily automation, all on a Supabase Postgres database.
+1. **The marketing site** (`app/(site)/`): homepage (hero → how it works → what you can do → why → solutions → Super Agent → CTA), about, solutions, how-we-work, claims, contact, privacy, terms, and the Super Agent page with a public "Talk to the AI" box.
+2. **Super Agent** (`app/(platform)/`): a **multi-tenant** insurance operating system: client portal, agency workspace, super-admin area, an AI WhatsApp assistant on one shared number, document upload + OCR, server-side PDFs, background jobs and daily automation, all on Supabase Postgres + Supabase Storage.
 
 Deployed at `https://goldoak.vercel.app/` (Vercel project `goldoak`, GitHub `RyanMoshi/goldoak`, branch `main`). One repo, one deployment; never split Super Agent into a separate tree.
 
-**Stack:** Next.js 14.0.4 (App Router), React 18, TypeScript strict, Tailwind CSS 3.4, `postgres` (postgres.js) on Supabase, Lucide React, nodemailer (site forms), `@anthropic-ai/sdk` (optional AI), `pdfkit` (PDFs). No ORM, no auth library: sessions are signed cookies, passwords are scrypt.
+**Stack:** Next.js 14.0.4 (App Router), React 18, TypeScript strict, Tailwind CSS 3.4, `postgres` (postgres.js), `pdfkit`, `pdf-parse`, `@vercel/functions` (waitUntil), `@anthropic-ai/sdk` (optional), nodemailer. AI runs on **NVIDIA NIM** (`NVIDIA_API_KEY`; chat `nvidia/nemotron-3-super-120b-a12b`, vision `meta/llama-3.2-11b-vision-instruct`, OCR `nvidia/nemotron-parse`) behind `lib/ai/provider.ts`; Anthropic is used instead when `ANTHROPIC_API_KEY` is set; with neither the assistant answers from the catalogue.
 
 ## How the platform works (the model)
 
-- **Tenants:** every agency is an `organizations` row with a **join code** (`GOLDOAK`, …). Every record carries `organization_id`; every query is scoped by it. GoldOak (`org_goldoak`) is the first tenant and the default for web sign-ups without an agency code.
-- **Roles:** `admin` (platform super admin: creates agencies + their first admin, routes unassigned chats, sees everything), `agency_admin` (runs one agency: team, settings), `agency` (staff: the workspace), `client` (customers: sign up themselves on the site or on WhatsApp). Agencies never self-register. Enforced in `lib/auth/session.ts` (`canAccess`, `isAgencyAdmin`), `middleware.ts`, and every server action.
-- **One door on the site:** the navigation shows **Super Agent**. The homepage hero offers Get started, Talk to the AI, Sign in, For agencies. `/super-agent` holds the public assistant, client and agency sections and sign-in links.
-- **Client journey:** six stages `understand → solve → compare → implement → support → review` on `clients.stage`, shown in the portal, the pipeline board and on WhatsApp.
-- **Two channels, one system:** every client action (sign up, ask for cover, report a claim, ask a question, talk to an adviser) and every agency action goes through `services/*`; `services/notifications.ts` stores every message for the portal **and** sends it on WhatsApp. Site and WhatsApp are interchangeable.
-- **WhatsApp:** one shared number `+255 742 473 493` (profile should read "Super Agent") served by self-hosted **OpenWA**. `lib/whatsapp/bot.ts` resolves the tenant (account → saved contact → `JOIN <CODE>` / link → choose from a list → admin routing), then runs the step engine (`lib/conversation/engine.ts`, flows in `lib/conversation/flows.ts`), the consultation assistant (`services/consult.ts`, Claude when `ANTHROPIC_API_KEY` is set, catalogue otherwise) or human handoff (`services/handoff.ts`). State lives in `whatsapp_contacts`; every message in `conversation_messages`.
-- **Automation:** sign-up → welcome + lead task; daily cron (`/api/cron/daily`, 04:00 UTC) → renewal reminders 30/14/7/1 days, quote chasers, weekly claim-update tasks, retry of failed WhatsApp deliveries.
-- **Documents:** `/api/documents/<type>?id=` renders branded, numbered PDFs (registration, cover summary, claim, quote, agency report) server-side with pdfkit; rows in `documents`, entries in `audit_log`.
-- **No fake data.** Every dashboard reads the organisation's real records. Bootstrap creates only the GoldOak organisation and the platform admin.
+- **Tenants:** every agency is an `organizations` row with a **join code** and a `status` (`pending` → approved `active`). Every record carries `organization_id`; every query is scoped by it. GoldOak (`org_goldoak`, code `GOLDOAK`) is the first tenant and the default for web sign-ups without a code.
+- **Roles:** `admin` (super admin: approves agencies, sees everything, routes chats, system page), `agency_admin` (team, settings, audit), `agency` (staff), `client`. Agencies register themselves at `/agencies/signup` (pending until approved) or are created by the admin. Enforced in `lib/auth/session.ts`, `middleware.ts` and every server action.
+- **The WhatsApp number is never displayed.** Only wa.me links (`superAgentLink()` in `lib/contact.ts`) that open the chat.
+- **Client journey:** six stages `understand → solve → compare → implement → support → review` on `clients.stage`.
+- **Two channels, one system:** registration, business claims, enquiries, quotes, claims, document uploads and consultations all go through `services/*`; WhatsApp flows (`lib/conversation/flows.ts`) and portal forms (`lib/portal/*.ts`) call the same functions. `services/notifications.ts` stores every message for the portal and sends it on WhatsApp.
+- **WhatsApp assistant** (`lib/whatsapp/bot.ts`): the webhook acknowledges in milliseconds and processes in the background (`lib/background.ts` → `waitUntil`; falls back to a durable `jobs` row). Routing: tenant (account → contact → JOIN code → choose) → human handoff → media → first-contact welcome with consent → running workflow (engine) → consultation mode → menu numbers → `understand()` intents (rules first, model for the rest). Memory: contact `memory` (facts + rolling summary refreshed by a background job), workflow state, user profile, organisation context.
+- **Menus (spec):** guest 1 Get started / Sign up · 2 Find or claim a business · 3 Get insurance assistance · 4 Make an enquiry · 5 Upload a document · 6 Check a request · 7 Talk to an agent · 8 Help. Registered: 1 My insurance … 8 Help · 9 Report a claim.
+- **Documents:** photos/PDFs from WhatsApp or the portal → private Supabase Storage → `ocr-upload` job (nemotron-parse OCR → vision/LLM extraction) → the person confirms or corrects → agency reviews under Documents.
+- **Background jobs** (`services/jobs.ts`): Postgres queue with SKIP LOCKED, retries with backoff, dead-letter, admin retry at `/admin/system`; drained after every webhook, by `/api/cron/jobs`, and by the daily cron.
+- **Automation:** sign-up → welcome + lead task; daily cron → renewal reminders, quote chasers, claim-update tasks, WhatsApp outbox retry, job drain.
+- **No fake data.** Every dashboard reads real records.
 
-## Current State
+## Current State (September 2026, v3)
 
-### Done (September 2026)
-- Multi-tenancy, RBAC (4 roles), join codes, onboarding links (`wa.me/<number>?text=JOIN <CODE>`, `/signup?agency=<CODE>`).
-- Conversation engine with BACK / SKIP / CANCEL / RESTART / HELP / MENU, progress "Step n of m", confirmation with "change something", validation, error recovery; flows: sign-up, ask for cover, report a claim, choose agency; consultation mode; handoff.
-- Agency workspace: Today, Conversations (list + thread, reply on WhatsApp, take over / hand back), Pipeline (kanban), Clients (+ client 360 with PDFs), Quotes, Renewals, Claims, Insurers, Reports (+ PDF), Team (agency admins), Settings (profile, join code, greeting, onboarding links). Forest sidebar with gold active pill; bottom tab bar on phones.
-- Admin: agencies (create with first admin, deactivate), all staff accounts, all conversations with routing.
-- Portal: journey, actions, policies, quotes, claims, updates, documents, Ask the assistant (`/portal/ask`), profile.
-- Public `/api/consult` (rate-limited) behind the site's AskWidget.
-- Health endpoint reports agencies, chats waiting for a person, failed WhatsApp sends, AI mode and deployed commit.
-- Live multi-agency test script (see `playbooks/bootstrap-admin.md` → Testing) passed against production.
-- Cleanup: unused deps and files removed, design references in `design/`, legacy bot tables dropped.
+### Done
+- Multi-tenancy, 4 roles, agency self sign-up with approval, join codes/links, strict server-side isolation (verified live: Agency 1 cannot read Agency 2's chats, clients, documents, requests).
+- Conversation engine with BACK/SKIP/CANCEL/RESTART/HELP/MENU, progress, confirm/edit; flows: registration (name, email, type, business, phone confirm, review), claim a business (search → pick → relationship → verification → submit), enquiry, quote, claim, name change; consult mode; interruptions (a question mid-flow is answered, then the step is re-asked); profile recall/update.
+- WhatsApp media (images, PDFs; voice notes politely declined), OCR + extraction + confirmation, document review in the agency, portal upload page.
+- Agency pages: Today, Conversations, Clients, Businesses (+claims review), Documents, Enquiries, Pipeline, Quotes, Renewals, Claims, Insurers, Reports (+PDF), Team, Audit log, Settings, Search. Admin: agencies (approve/deactivate), all staff, all conversations with routing, System (jobs, retries, audit).
+- Portal: journey, actions, policies/quotes/claims, Ask the assistant, My documents, Requests (claim business, enquiry, tracker), PDFs, profile.
+- Forgot/reset password by email (SMTP), privacy and terms pages, consent line in the WhatsApp welcome.
+- Health endpoint reports AI model, storage, jobs, handoffs, failures.
 
-### Pending
-- Move OpenWA from Ryan's laptop to an always-on host (Docker on a VPS). Only the WhatsApp gateway is laptop-bound; Vercel, the database, cron and PDFs run without the laptop.
-- Set the WhatsApp profile name to "Super Agent": the whatsapp-web.js engine refuses `PUT /profile/name` (403), so set it in the WhatsApp app on the phone (Settings → Profile → Name). The status line was set via the API.
-- `ANTHROPIC_API_KEY` not yet provided; the assistant answers from the catalogue until it is.
-- Privacy Policy and Terms pages; password reset by email; portal document uploads (Vercel Blob).
-- A stray key-like string was removed from `README.md` but remains in git history; rotate it if it was real.
+### Pending / blockers
+- **The OpenWA gateway still runs on Ryan's laptop** (Cloudflare quick tunnel). Vercel, Supabase, AI, jobs and PDFs run without the laptop, but WhatsApp goes quiet when it is off. Moving OpenWA to a VPS (Docker) is the one remaining always-on step; see `playbooks/whatsapp-openwa.md`.
+- The WhatsApp profile name must be set to "Super Agent" on the phone (the engine refuses the API call).
+- OpenWA on whatsapp-web.js has no interactive buttons; numbered menus are the fallback and the default.
+- Vercel Hobby cron runs daily only; jobs are otherwise drained right after each webhook/upload.
+- Voice notes are not transcribed.
 
 ## Priority Queue
 1. Host OpenWA on a VPS (Docker) → `playbooks/whatsapp-openwa.md`.
-2. Add `ANTHROPIC_API_KEY` on Vercel (Production) to switch the assistant to Claude.
-3. Quotes workspace step 2: per-insurer request packs and reply capture into `quote_submissions`.
-4. Portal document upload (Vercel Blob), then e-signature.
-5. Privacy and Terms pages.
+2. Voice-note transcription (NVIDIA Riva/Whisper NIM) in `handleMedia`.
+3. Quotes workspace step 2: per-insurer request packs and reply capture.
+4. Agency logo upload (Storage) shown on PDFs and the portal.
 
 ## File Links
 
@@ -62,17 +61,18 @@ Deployed at `https://goldoak.vercel.app/` (Vercel project `goldoak`, GitHub `Rya
 |------|-----------|
 | [platform.md](facts/platform.md) | Anything about Super Agent: roles, tenancy, services, components, actions |
 | [database.md](facts/database.md) | Tables, connection, bootstrap, why env values look empty locally |
-| [auth.md](facts/auth.md) | Sessions, middleware, sign-in/up, roles, invitations |
-| [whatsapp.md](facts/whatsapp.md) | Providers, tenant routing, engine, flows, handoff, webhooks, automation |
+| [auth.md](facts/auth.md) | Sessions, middleware, sign-in/up, roles, agency approval, password reset |
+| [whatsapp.md](facts/whatsapp.md) | Providers, routing, engine, flows, memory, media/OCR, handoff, webhooks, jobs |
+| [ai.md](facts/ai.md) | AI provider layer: vendors, models, OCR, grounding rules |
 | [stack.md](facts/stack.md) | Dependencies, build commands, framework quirks |
 | [routes.md](facts/routes.md) | Every URL and which file renders it |
 | [brand.md](facts/brand.md) | Colours, logo, typography, platform design tokens |
-| [api.md](facts/api.md) | API routes (forms, health, seed, cron, webhooks, documents, consult) |
+| [api.md](facts/api.md) | API routes (forms, health, seed, cron, webhooks, documents, uploads, consult) |
 | [data.md](facts/data.md) | Static site content in `lib/` |
-| [email.md](facts/email.md) | SMTP for the site forms |
+| [email.md](facts/email.md) | SMTP for the site forms and password resets |
 | [dev-setup.md](playbooks/dev-setup.md) | First-time setup, env pull, dev server |
 | [deploy-vercel.md](playbooks/deploy-vercel.md) | Deploying, env vars, verifying live |
-| [bootstrap-admin.md](playbooks/bootstrap-admin.md) | Bootstrap, create agencies, invite staff, run the live test |
-| [whatsapp-openwa.md](playbooks/whatsapp-openwa.md) | Connect the OpenWA gateway and test the bot |
-| [add-feature.md](playbooks/add-feature.md) | Adding pages, services, actions, tables, flows |
+| [bootstrap-admin.md](playbooks/bootstrap-admin.md) | Bootstrap, create agencies, invite staff, run the live tests, purge |
+| [whatsapp-openwa.md](playbooks/whatsapp-openwa.md) | Connect the OpenWA gateway, move it to a server, test the bot |
+| [add-feature.md](playbooks/add-feature.md) | Adding pages, services, actions, tables, flows, jobs |
 | [fix-build.md](playbooks/fix-build.md) | Build failures and fixes |

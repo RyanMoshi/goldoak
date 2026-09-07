@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { ArrowRight, ListChecks, MessageCircle, ShieldCheck, Sparkles } from 'lucide-react'
 import AnimatedSection from './AnimatedSection'
-import { contact } from '@/lib/contact'
+import { superAgentLink } from '@/lib/contact'
 
 const points = [
   { icon: ListChecks, title: 'See your progress', text: 'Understand → Solve → Compare → Implement → Support → Review. You always know which stage we are at.' },
@@ -50,13 +50,13 @@ const PortalPreview = () => {
             })}
             <AnimatedSection animation="fade-up" delay={400}>
               <a
-                href={`https://wa.me/${contact.superAgentWhatsApp}?text=${encodeURIComponent('MENU')}`}
+                href={superAgentLink()}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex items-center justify-between rounded-xl border border-gold-200 bg-gold-50 px-6 py-4 text-sm text-text-headline hover:bg-gold-100 transition-colors"
               >
                 <span>
-                  <span className="font-semibold">Try it:</span> WhatsApp <span className="font-mono">{contact.superAgentWhatsAppDisplay}</span> with the word <span className="font-mono">MENU</span>
+                  <span className="font-semibold">Try it:</span> open Super Agent on WhatsApp and reply <span className="font-mono">MENU</span>
                 </span>
                 <ArrowRight className="w-4 h-4 text-secondary" aria-hidden="true" />
               </a>

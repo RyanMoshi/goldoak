@@ -16,6 +16,11 @@ export default async function AgencyLayout({ children }: { children: React.React
 
   return (
     <AppShell organization={safeOrg} agent={safeAgent} dateLabel={formatLongDate(new Date())} waiting={waiting}>
+      {safeOrg.status === 'pending' ? (
+        <div role="status" className="mb-5 rounded-card border border-warning/30 bg-warning/10 px-4 py-3 text-[13.5px] text-ink">
+          <span className="font-semibold">Your agency is awaiting approval.</span> You can set up your profile, join code and team now. Clients can reach you on the shared WhatsApp number as soon as GoldOak approves the agency, usually within one working day.
+        </div>
+      ) : null}
       {children}
     </AppShell>
   )
