@@ -172,6 +172,31 @@ async function route(phone: string, text: string, message: InboundMessage, conta
   const running = contact.workflow && contact.workflow !== 'join' && !workflowExpired(contact) ? contact.workflow : null
   const flow = running && FLOWS[running] && contact.step != null ? FLOWS[running] : null
   const state: FlowState | null = flow ? { step: contact.step as number, data: contact.data } : null
+
+  // A bare digit outside a form is a menu choice (or a mini-state answer): no model call needed.
+  if (!flow && /^\d$/.test(lower)) {
+    if (running === 'assist-pick') {
+      const pick: Intent | null = lower === '1' ? 'quote' : lower === '2' ? 'question' : lower === '3' ? 'claim' : null
+      if (pick) {
+        await setWorkflow(phone, null, null, {})
+        return { ...scoped, replies: await dispatch(pick, undefined, text, ctx, contact) }
+      }
+    }
+    if (running === 'upload-confirm' && contact.data.uploadId) {
+      const done = await confirmStep(phone, org, String(contact.data.uploadId), text)
+      if (done) return { ...scoped, replies: [done] }
+    }
+    if (lower === '0') {
+      await setWorkflow(phone, null, null, {})
+      return { ...scoped, replies: [mainMenu(org.shortName, registered, first)] }
+    }
+    const numbered = menuIntent(lower, registered)
+    if (numbered) {
+      if (running) await setWorkflow(phone, null, null, {})
+      return { ...scoped, replies: await dispatch(numbered, undefined, text, ctx, contact) }
+    }
+  }
+
   const understood = await understand(text, { registered, inFlow: running })
 
   if (understood.intent === 'cancel') {
@@ -230,18 +255,14 @@ async function route(phone: string, text: string, message: InboundMessage, conta
     return { ...scoped, replies: [success('Correction noted', ['An adviser will update the details.', '', 'Reply 5 to upload another document, or MENU.'])] }
   }
 
-  // 9. Sub-menu: insurance assistance.
-  if (running === 'assist-pick') {
-    const pick: Intent | null = lower === '1' ? 'quote' : lower === '2' ? 'question' : lower === '3' ? 'claim' : null
-    if (pick) {
-      await setWorkflow(phone, null, null, {})
-      return { ...scoped, replies: await dispatch(pick, pick === 'question' ? undefined : undefined, text, ctx, contact) }
-    }
+  // 9. Sub-menu: insurance assistance answered in words.
+  if (running === 'assist-pick' && (understood.intent === 'quote' || understood.intent === 'question' || understood.intent === 'claim')) {
+    await setWorkflow(phone, null, null, {})
+    return { ...scoped, replies: await dispatch(understood.intent, understood.value, text, ctx, contact) }
   }
 
-  // 10. Numbers from the menu, then understood intents.
-  const numbered = menuIntent(lower, registered)
-  return { ...scoped, replies: await dispatch(numbered ?? understood.intent, understood.value, text, ctx, contact) }
+  // 10. Understood intents.
+  return { ...scoped, replies: await dispatch(understood.intent, understood.value, text, ctx, contact) }
 }
 
 function presetFor(flow: Flow, state: FlowState) {

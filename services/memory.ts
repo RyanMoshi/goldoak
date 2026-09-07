@@ -135,6 +135,7 @@ function keywordIntent(text: string): Understanding | null {
 export async function understand(text: string, context: { registered: boolean; inFlow: string | null }): Promise<Understanding> {
   const byRule = keywordIntent(text)
   if (byRule && byRule.confidence >= 0.85) return byRule
+  if (/^\d{1,2}$/.test(text.trim())) return { intent: 'unknown', confidence: 0.2 }
   const answer = await chat({
     system: `Classify a WhatsApp message to an insurance assistant. The person is ${context.registered ? 'registered' : 'not registered'}${context.inFlow ? ` and currently in the "${context.inFlow}" form` : ''}.
 Intents: menu, signup, claim_business (link/claim an existing business), assistance (wants help choosing or understanding insurance), enquiry (a message for the agency), upload (wants to send a document), check_request (status of a request/claim/quote), agent (wants a human), help, status (their own policies/progress), quote (wants cover/price), claim (report an incident), question (a general insurance question), update_name, update_email, recall_profile (asks what we know about them), greeting, thanks, cancel, back, restart, unknown.
