@@ -40,10 +40,11 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await handleInbound(message.phone, message.text, message.name ?? null)
-    // Test mode: with the admin token, echo the replies instead of sending them.
+    // Test mode: with the admin token, echo the replies instead of sending them (x-debug: 1 adds error details).
     const adminToken = process.env.ADMIN_TOKEN
     const dryRun = Boolean(adminToken && adminToken.length >= 16 && request.headers.get('x-admin-token') === adminToken)
+    ;(globalThis as { __superAgentDebug?: boolean }).__superAgentDebug = dryRun && request.headers.get('x-debug') === '1'
+    const result = await handleInbound(message.phone, message.text, message.name ?? null)
     if (dryRun) return NextResponse.json({ ok: true, dryRun: true, answered: result.answered, organizationId: result.organizationId, userId: result.userId, replies: result.replies })
     let sent = true
     for (const reply of result.replies) {

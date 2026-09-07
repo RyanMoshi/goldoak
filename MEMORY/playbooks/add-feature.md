@@ -28,10 +28,20 @@ Client side: `startTransition(async () => setState(await doThingAction(fd)))`.
 Call `notify({ organizationId, userId: client.userId, clientId, kind, title, body, reference })` from the service. It lands in the portal Updates and on WhatsApp. Use `reference` to make it idempotent.
 
 ## A table or column
-Append to `lib/db/schema.ts` using `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. It applies on the next request. Add a mapper in `lib/db/mappers.ts` and a type in `types/platform.ts`.
+Append to `lib/db/schema.ts` using `CREATE TABLE IF NOT EXISTS` or `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`. It applies on the next request. Every tenant-owned table needs `organization_id`. Add a mapper in `lib/db/mappers.ts` and a type in `types/platform.ts`.
 
-## A WhatsApp command
-Client commands: extend `clientIntent()` and `clientReply()` in `lib/whatsapp/bot.ts`; multi-step flows use `saveState/loadState`. Agency commands: extend `detect()` in `services/agency/commands.ts` (this also powers the dashboard command bar).
+## A PDF
+Add a renderer in `services/documents.ts` using the helpers in `lib/pdf/document.ts` (`renderPdf`, `title`, `section`, `keyValues`, `table`, `callout`), register its prefix in `PREFIX`, and expose it in `app/api/documents/[type]/route.ts` with the same ownership checks.
+
+## A sensitive action
+Call `audit({ organizationId, actorUserId, action, target, detail })` from `services/audit.ts` after it succeeds.
+
+## A WhatsApp flow or command
+- **A new step-based flow:** add a `Flow` in `lib/conversation/flows.ts` (steps with `parse`, optional `skip`, `optional`; `onComplete` calls a service), register it in `FLOWS`, and start it from `dispatch()` in `lib/whatsapp/bot.ts` with `startFlow` + `setWorkflow`. BACK/CANCEL/RESTART/HELP/MENU, progress and confirmation come free from the engine.
+- **A stateless client reply:** extend `clientIntent()` and the `switch` in `dispatch()`; keep the numbered menu in `mainMenu()` in step.
+- **Staff commands:** extend `detect()` in `services/agency/commands.ts` (also powers the dashboard command bar).
+- **Message wording:** use the helpers in `lib/conversation/messages.ts` so every message shares one voice.
+- **Test:** run the live test (`playbooks/bootstrap-admin.md`) or call the webhook in dry-run mode with `x-admin-token` (+ `x-debug: 1` for error details).
 
 ## Verify
 `npx tsc --noEmit`, `npx next lint`, `npm run build`, then push and check `/api/health` and the page on the live site.

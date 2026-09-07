@@ -172,8 +172,11 @@ async function safeAdvance(flow: Flow, ctx: FlowContext, state: FlowState, text:
   try {
     return await advanceFlow(flow, ctx, state, text)
   } catch (error) {
-    console.error(`flow ${flow.id} failed`, error instanceof Error ? error.message : error)
-    return { reply: `Something went wrong on our side while saving that. Nothing was lost on your end. Please reply RESTART to try again, or 9 to talk to an adviser.`, state }
+    const stack = error instanceof Error ? (error.stack ?? '').split(/\r?\n/).slice(1, 4).join(' | ') : ''
+    const detail = error instanceof Error ? `${error.message} ${stack}` : String(error)
+    console.error(`flow ${flow.id} failed`, detail)
+    const debug = (globalThis as { __superAgentDebug?: boolean }).__superAgentDebug ? ` [debug: ${detail.slice(0, 600)}]` : ''
+    return { reply: `Something went wrong on our side while saving that. Nothing was lost on your end. Please reply RESTART to try again, or 9 to talk to an adviser.${debug}`, state }
   }
 }
 

@@ -1,26 +1,33 @@
 ---
 name: auth
-description: "Signed session cookies, role middleware, sign-in/sign-up, admin invitations."
+description: "Signed session cookies, role middleware, sign-in/sign-up, the four roles and who creates whom."
 metadata.type: fact
 ---
 
 ## Sessions
 - Cookie `goldoak_session`, 7 days, httpOnly, SameSite=Lax. Payload `{ uid, role, oid, name, exp }` signed with HMAC-SHA256 over `AUTH_SECRET` (Web Crypto, so it runs in edge middleware and Node). `lib/auth/session.ts`.
-- `lib/auth/server.ts`: `getSession()`, `requireSession(area)` (redirects to `/signin?as=…` or to the role's home).
+- `lib/auth/server.ts`: `getSession()`, `requireSession(area)` (area = `admin | agency | client`), `requireAgencyAdmin()`.
 - `middleware.ts` gates `/admin`, `/agency`, `/portal`; signed-in users skip `/signin` and `/signup`.
-- `homeFor(role)`: admin `/admin`, agency `/agency/today`, client `/portal`. `canAccess`: admin may enter agency.
+- `homeFor(role)`: admin `/admin`, agency_admin and agency `/agency/today`, client `/portal`. `canAccess(role, area)`: admin area only for `admin`; agency area for `admin`, `agency_admin`, `agency`; client area for `client`.
+
+## Roles
+`admin` (platform super admin) → `agency_admin` (runs one agency) → `agency` (staff) → `client`. `isAgencyAdmin` = admin or agency_admin (Team, Settings edits). Every server action re-checks the role and scopes by `session.oid`; cross-organisation ids are rejected (`userInOrganization`, org-scoped queries).
 
 ## Passwords
-scrypt (`lib/auth/password.ts`), stored as `scrypt$N$salt$hash`. No plaintext anywhere.
+scrypt (`lib/auth/password.ts`), stored as `scrypt$N$salt$hash`. Generated passwords look like `xxxx-xxxx-xxxx` (`generatePassword` in `lib/conversation/flows.ts`).
 
-## Sign-in (`/signin`, `lib/auth/actions.ts` → `signInAction`)
-Two tabs. **Client** tab matches `role = 'client'`; **Agency** tab matches `role IN ('agency','admin')`. Deactivated users are refused. Optional `next` is honoured only inside the role's own area.
+## Sign-in (`/signin`, `signInAction`)
+Two tabs. **Client** matches `role = 'client'`; **Agency** matches `role IN ('agency','agency_admin','admin')`. Deactivated users are refused. `next` is honoured only inside the role's own area.
 
-## Sign-up (`/signup` → `signUpAction`) — clients only
-Fields: name, business name (SME/corporate), email, WhatsApp number (**required**, normalised to E.164 digits), what to protect (optional), password. Creates `users` + `clients` (stage `understand`) under `DEFAULT_ORGANIZATION_ID`, then `onClientSignedUp()` sends the welcome (portal + WhatsApp) and creates the agency lead task and notification.
+## Sign-up — clients only
+- Web `/signup` (`signUpAction`): name, business name (SME/corporate), email, WhatsApp number (required, E.164 digits), what to protect, password. Optional `?agency=CODE` attaches the client to that agency (default GoldOak). Then `onClientSignedUp()`.
+- WhatsApp: reply 1 → `signup` flow → `createClientUser` with a generated password sent back in the chat, linked to the agency the contact is routed to.
 
-## Agency accounts (admin only)
-`/admin` → `createAgencyAccountAction`: name, email, phone, title, role (agency/admin), password (chosen or generated `xxxx-xxxx-xxxx`). The generated password is shown once in the success message. `resetAgencyPasswordAction`, `setAgencyActiveAction`. Agencies never self-register.
+## Who creates whom
+- Bootstrap creates the platform admin (`ADMIN_EMAIL`/`ADMIN_PASSWORD`).
+- Admin creates agencies + their first agency admin (`/admin`, or `POST /api/admin/seed { organization }`), and can add staff to any agency.
+- Agency admins invite their own staff at `/agency/team` (`inviteStaffAction`), reset passwords, promote/demote, deactivate.
+- Agencies and staff never self-register.
 
 ## Secrets
-`AUTH_SECRET`, `ADMIN_TOKEN`, `CRON_SECRET`, `ADMIN_PASSWORD` are sensitive on Vercel. Rotating `AUTH_SECRET` signs everyone out.
+`AUTH_SECRET`, `ADMIN_TOKEN`, `CRON_SECRET`, `ADMIN_PASSWORD`, `OPENWA_*`, `ANTHROPIC_API_KEY` are sensitive on Vercel. Rotating `AUTH_SECRET` signs everyone out.
