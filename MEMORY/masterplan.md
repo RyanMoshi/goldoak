@@ -41,18 +41,18 @@ Deployed at `https://goldoak.vercel.app/` (Vercel project `goldoak`, GitHub `Rya
 - Founder strategy documents in `Main Files/` (01–05).
 
 ### Pending
-- Connect OpenWA: set `OPENWA_BASE_URL`, `OPENWA_API_KEY`, `OPENWA_SESSION_ID`, `OPENWA_WEBHOOK_SECRET` on Vercel and register the webhook (see `playbooks/whatsapp-openwa.md`).
+- Move OpenWA from Ryan's laptop to an always-on host (today it runs locally behind a Cloudflare quick tunnel; see `facts/whatsapp.md` → Current deployment).
 - Agency workspaces still marked "coming next": pipeline board, quotes comparison engine, renewals diary, claims board, insurers panel, reports, settings (`app/(platform)/agency/[section]/page.tsx`).
 - Privacy Policy and Terms pages (footer links exist, no routes).
 - Password reset by email (today: admin resets agency passwords; clients ask on WhatsApp).
 - Document uploads on the portal (logbook, ID, policy schedules).
 
 ### Blockers
-- WhatsApp sends nothing until OpenWA env vars are set; the portal still records every notification, and `/api/whatsapp/openwa` echoes the bot reply in its JSON while no gateway is configured, for testing.
+- WhatsApp goes quiet whenever the laptop is off; the scheduled task restores it at logon and re-points Vercel at the new tunnel URL automatically.
 
 ## Priority Queue
 
-1. Connect the OpenWA gateway (user must host it and paste keys) → `playbooks/whatsapp-openwa.md`.
+1. Host OpenWA on a VPS (Docker) so WhatsApp is always on → `playbooks/whatsapp-openwa.md` + `facts/whatsapp.md`.
 2. Quotes workspace (Step 2 of the product plan): request packs per insurer, capture replies into `quote_submissions`, comparison on identical terms.
 3. Renewals diary and claims board pages backed by the existing tables.
 4. Portal document upload (Vercel Blob) and e-signature later.

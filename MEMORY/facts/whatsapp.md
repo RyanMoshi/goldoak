@@ -33,3 +33,11 @@ Identity = `users.phone` (active users). Unknown numbers get the sign-up link.
 
 ## Logs
 `whatsapp_messages` (direction in/out) and `notifications.whatsapp_status`.
+
+## Current deployment (September 2026)
+- OpenWA v0.23.4 runs on Ryan's Windows laptop at `C:UsersyanmOpenWA` under a portable Node 22 (`C:Usersyanm	ools
+ode22`), SQLite, whatsapp-web.js engine, API only on `:2785` (dashboard disabled). `better-sqlite3` is pinned to 12.4.1 with a downloaded prebuilt binary because 13.x has no Windows prebuilt and the machine has no C++ toolchain.
+- Session `goldoak` (id in `.env.local` as `OPENWA_SESSION_ID`) is paired with +255 742 473 493. Webhook registered to `https://goldoak.vercel.app/api/whatsapp/openwa` with `OPENWA_WEBHOOK_SECRET`.
+- Public URL is a Cloudflare **quick tunnel** (`C:Usersyanm	oolscloudflared.exe`), which changes on every restart. `C:Usersyanm	oolsstart-openwa.ps1` (scheduled task "GoldOak OpenWA Gateway", at logon) starts both processes, reads the new URL and updates Vercel's `OPENWA_BASE_URL` + redeploys. Log: `C:Usersyanm	oolsstart-openwa.log`.
+- The Vercel `OPENWA_API_KEY` is OpenWA's master key (this build has no key-management route). Keys live in `goldoak/.env.local`.
+- To move to a server: copy `OpenWA/.env` and `OpenWA/data/` (session credentials) to the host, run with Docker, set `OPENWA_BASE_URL` to the host's HTTPS URL, disable the scheduled task.
