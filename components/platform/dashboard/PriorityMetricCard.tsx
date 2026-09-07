@@ -13,6 +13,14 @@ const icons: Record<MetricIcon, LucideIcon> = {
   claims: ShieldAlert,
 }
 
+const tints: Record<MetricIcon, string> = {
+  leads: 'bg-gold/15 text-gold-700',
+  quotes: 'bg-info/10 text-info',
+  proposals: 'bg-forest-100 text-forest',
+  renewals: 'bg-warning/10 text-warning',
+  claims: 'bg-error/10 text-error',
+}
+
 interface Props {
   metric: PriorityMetric
   active: boolean
@@ -34,7 +42,9 @@ export function PriorityMetricCard({ metric, active, onSelect }: Props) {
     >
       <div className="flex items-center justify-between gap-2">
         <span className={cn('label-caps', active ? 'text-white/70' : 'text-ink-muted')}>{metric.label}</span>
-        <Icon className={cn('size-4 shrink-0', active ? 'text-gold' : 'text-ink-faint group-hover:text-ink-muted')} aria-hidden="true" strokeWidth={1.75} />
+        <span className={cn('inline-flex size-8 shrink-0 items-center justify-center rounded-full', active ? 'bg-white/10 text-gold' : tints[metric.icon])}>
+          <Icon className="size-4" aria-hidden="true" strokeWidth={1.75} />
+        </span>
       </div>
       <div className="mt-2.5 flex items-baseline gap-2">
         <span data-numeric className={cn('font-serif text-[30px] font-bold leading-8', active ? 'text-white' : 'text-forest')}>

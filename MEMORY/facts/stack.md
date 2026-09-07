@@ -38,3 +38,6 @@ npm run db:seed        # bootstrap the live database via /api/admin/seed (needs 
 - Server-action files (`'use server'`) may export only async functions; keep helpers such as `generatePassword` elsewhere (`lib/conversation/flows.ts`).
 - Static segments win over dynamic ones in the App Router, which is why `/agency/settings` could replace the old `[section]` placeholder without conflicts.
 - `vercel logs` streams and never exits; run it in the background and read the file.
+- **jsonb columns:** pass objects with `sql.json(value)` (or the raw object). Never `${JSON.stringify(x)}::jsonb`: postgres.js serialises again, stores a JSON *string*, and it comes back as a string (this once made the WhatsApp flow state grow exponentially per step until the function ran out of memory).
+- A schema statement that re-adds a check constraint must list every value in use; a stale `ADD CONSTRAINT` fails on every cold start and takes the whole platform down with it.
+- pdfkit must be in `serverComponentsExternalPackages` with `node_modules/pdfkit/js/**` traced into the documents route; it loads fonts via package `imports` (`#standard-fonts/*`).
