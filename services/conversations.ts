@@ -37,7 +37,7 @@ export async function linkContact(phone: string, patch: { organizationId?: strin
 
 export async function setWorkflow(phone: string, workflow: string | null, step: number | null, data: Record<string, unknown>): Promise<void> {
   const sql = getSql()
-  await sql`UPDATE whatsapp_contacts SET workflow = ${workflow}, step = ${step}, data = ${JSON.stringify(data)}::jsonb, updated_at = now() WHERE phone = ${phone}`
+  await sql`UPDATE whatsapp_contacts SET workflow = ${workflow}, step = ${step}, data = ${sql.json(data as never)}, updated_at = now() WHERE phone = ${phone}`
 }
 
 export async function setMode(phone: string, mode: ContactMode, assignedUserId: string | null = null): Promise<void> {

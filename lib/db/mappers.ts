@@ -27,6 +27,19 @@ const num = (v: unknown): number => (v == null ? 0 : Number(v))
 const numOrNull = (v: unknown): number | null => (v == null ? null : Number(v))
 const iso = (v: unknown): string => (v instanceof Date ? v.toISOString() : str(v))
 const isoOrNull = (v: unknown): string | null => (v == null ? null : iso(v))
+/** jsonb columns arrive as objects; tolerate a JSON string (older rows) and anything else becomes an empty object. */
+const obj = (v: unknown): Record<string, unknown> => {
+  if (v && typeof v === 'object' && !Array.isArray(v)) return v as Record<string, unknown>
+  if (typeof v === 'string') {
+    try {
+      const parsed: unknown = JSON.parse(v)
+      return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {}
+    } catch {
+      return {}
+    }
+  }
+  return {}
+}
 
 export function toOrganization(r: Row): Organization {
   return {
@@ -61,7 +74,7 @@ export function toContact(r: Row): WhatsAppContact {
     assignedUserId: strOrNull(r.assigned_user_id),
     workflow: strOrNull(r.workflow),
     step: r.step == null ? null : Number(r.step),
-    data: (r.data as Record<string, unknown>) ?? {},
+    data: obj(r.data),
     lastInboundAt: isoOrNull(r.last_inbound_at),
     handoffAt: isoOrNull(r.handoff_at),
     createdAt: iso(r.created_at),
@@ -101,7 +114,7 @@ export function toConsultation(r: Row): Consultation {
 }
 
 export function toAuditEntry(r: Row): AuditEntry {
-  return { id: str(r.id), organizationId: strOrNull(r.organization_id), actorUserId: strOrNull(r.actor_user_id), action: str(r.action), target: strOrNull(r.target), detail: (r.detail as Record<string, unknown>) ?? null, at: iso(r.at) }
+  return { id: str(r.id), organizationId: strOrNull(r.organization_id), actorUserId: strOrNull(r.actor_user_id), action: str(r.action), target: strOrNull(r.target), detail: r.detail == null ? null : obj(r.detail), at: iso(r.at) }
 }
 
 export function toPublicUser(r: Row): PublicUser {

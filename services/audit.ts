@@ -16,7 +16,7 @@ export async function audit(input: AuditInput): Promise<void> {
   try {
     const sql = getSql()
     await sql`INSERT INTO audit_log (id, organization_id, actor_user_id, action, target, detail)
-      VALUES (${newId('aud')}, ${input.organizationId}, ${input.actorUserId}, ${input.action}, ${input.target ?? null}, ${input.detail ? JSON.stringify(input.detail) : null}::jsonb)`
+      VALUES (${newId('aud')}, ${input.organizationId}, ${input.actorUserId}, ${input.action}, ${input.target ?? null}, ${input.detail ? sql.json(input.detail as never) : null})`
   } catch (error) {
     console.error('audit failed', error instanceof Error ? error.message : error)
   }
