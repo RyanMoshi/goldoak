@@ -61,7 +61,7 @@ export async function notify(input: NotifyInput): Promise<Notification | null> {
 /** Notifies every active agency user of an organisation. */
 export async function notifyOrganization(organizationId: string, input: Omit<NotifyInput, 'organizationId' | 'userId'>): Promise<void> {
   const sql = getSql()
-  const agents = await sql`SELECT id FROM users WHERE organization_id = ${organizationId} AND role IN ('agency','admin') AND active`
+  const agents = await sql`SELECT id FROM users WHERE organization_id = ${organizationId} AND role IN ('agency','agency_admin','admin') AND active`
   for (const agent of agents) {
     await notify({ ...input, organizationId, userId: String(agent.id), reference: input.reference ? `${input.reference}:${String(agent.id)}` : undefined })
   }

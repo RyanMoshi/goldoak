@@ -29,8 +29,6 @@ CREATE TABLE IF NOT EXISTS users (
   created_at      timestamptz NOT NULL DEFAULT now(),
   last_seen_at    timestamptz
 );
-ALTER TABLE users DROP CONSTRAINT IF EXISTS users_role_check;
-ALTER TABLE users ADD CONSTRAINT users_role_check CHECK (role IN ('admin', 'agency', 'client'));
 ALTER TABLE users ADD COLUMN IF NOT EXISTS active boolean NOT NULL DEFAULT true;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS created_by text;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS whatsapp_opt_in boolean NOT NULL DEFAULT true;
