@@ -13,8 +13,8 @@ const nextConfig = {
     // stay an external package and its data files must be traced into the documents function.
     serverComponentsExternalPackages: ['pdfkit'],
     outputFileTracingIncludes: {
-      '/api/documents/[type]': ['./node_modules/pdfkit/js/data/**'],
-      '/api/documents/[type]/route': ['./node_modules/pdfkit/js/data/**'],
+      '/api/documents/[type]': ['./node_modules/pdfkit/js/**'],
+      '/api/documents/[type]/route': ['./node_modules/pdfkit/js/**'],
     },
   },
 }
