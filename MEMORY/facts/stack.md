@@ -43,4 +43,6 @@ npm run db:seed        # bootstrap the live database via /api/admin/seed (needs 
 - `vercel logs` streams and never exits; run it in the background and read the file.
 - **jsonb columns:** pass objects with `sql.json(value)` (or the raw object). Never `${JSON.stringify(x)}::jsonb`: postgres.js serialises again, stores a JSON *string*, and it comes back as a string (this once made the WhatsApp flow state grow exponentially per step until the function ran out of memory).
 - A schema statement that re-adds a check constraint must list every value in use; a stale `ADD CONSTRAINT` fails on every cold start and takes the whole platform down with it.
+- Puppeteer 24 (from C:/Users/ryanm/OpenWA/node_modules) has no `page.$x`; find buttons with `page.evaluate` and text matching. Never click `form button[type=submit]` blindly: the sign-out form and the command bar come first in the DOM; call `closest('form').requestSubmit()` on a field inside the target form instead.
+- Full-page screenshots of the marketing site look blank because `AnimatedSection` reveals sections with an IntersectionObserver; use viewport screenshots or scroll first.
 - pdfkit must be in `serverComponentsExternalPackages` with `node_modules/pdfkit/js/**` traced into the documents route; it loads fonts via package `imports` (`#standard-fonts/*`).
