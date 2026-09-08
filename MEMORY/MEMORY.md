@@ -4,6 +4,8 @@
 
 ## Index
 
+> Handing the project over? Start with [HANDOVER.md](../HANDOVER.md) at the repository root.
+
 ### Core
 - [masterplan.md](masterplan.md) — What the product is, how the platform model works, current state, priority queue, links. Read first always.
 - [enhanced-prompt.md](enhanced-prompt.md) — Paste into any new AI session to onboard instantly. Quick facts, rules, task routing.
@@ -19,6 +21,9 @@
 - [brand.md](facts/brand.md) — Colours, logo, typography, platform tokens
 - [api.md](facts/api.md) — API endpoints: forms, public assistant, uploads, documents (PDF), health, seed/purge, cron, jobs, webhooks
 - [data.md](facts/data.md) — Static site content in `lib/`
+- [billing.md](facts/billing.md) — Quotations and invoices: numbering, totals, statuses, sending, PDFs
+- [campaigns.md](facts/campaigns.md) — Bulk WhatsApp and email: audience, batching worker, opt-out
+- [superagent.md](facts/superagent.md) — Super Agent as a product: console, telemetry, prompt assembly, neutrality
 - [email.md](facts/email.md) — Email platform: branding per tenant, templates and overrides, queue, log, preferences, OTP
 
 ### Playbooks

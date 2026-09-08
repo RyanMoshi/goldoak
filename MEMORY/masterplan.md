@@ -79,3 +79,13 @@ Deployed at `https://goldoak.vercel.app/` (Vercel project `goldoak`, GitHub `Rya
 
 ## State after v4 (8 September 2026)
 Live at https://goldoak.vercel.app. Verified in production with puppeteer: super admin sign-in (3 s, was 127 s), agency creation, temporary passwords by email + WhatsApp, forced first-login change, attaching an existing identity to another agency, agency picker, tenant isolation (Otto Test Agency cannot see GoldOak clients), client invitation (email + WhatsApp delivered), portal chat persisting across reload, all admin/agency/portal/public pages at 375/768/1366 px with no horizontal overflow. Test tenant "Otto Test Agency" (code OTTO, ottoalexis61@gmail.com) and GoldOak agency admin ryanmoshi77@gmail.com exist; remove/deactivate the test tenant when done. Remaining outside the code: rotate `AUTH_SECRET`, run the purge, and move the OpenWA gateway to a VPS (`deploy/openwa/`).
+
+## State after v5 (8 September 2026)
+
+The platform now separates three things that were previously blurred: **Super Admin** (the operator, `/admin`), **Super Agent** (the AI product, `/superagent`) and **agencies** (tenants, `/agency/*`). GoldOak is a tenant with no special code path.
+
+Added and verified in production: quotations and invoices with per-agency numbering, branded PDFs, email-with-attachment and public share links; WhatsApp and email campaigns with audience preview, opt-out, confirmation for large sends and a batching background worker; the Super Agent console with AI telemetry, per-agency usage and a global policy layer; an agency onboarding checklist derived from real setup state; a shared form kit; and a rewritten PDF engine.
+
+Two production bugs were found by testing and fixed: pdfkit appended a blank page per page because the footer was drawn past the bottom margin (a 3-page quote rendered as 12), and pdfkit's font metrics were not traced into the page functions that build a PDF inside a server action, so "email this quotation" failed until `next.config.js` listed those routes.
+
+Outstanding for handover: run the guarded clean reset (`POST /api/admin/reset`, dry run first) once the operator confirms, and move the OpenWA WhatsApp gateway off the laptop using `deploy/openwa/`.
