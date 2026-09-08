@@ -110,16 +110,30 @@ export async function POST(request: Request) {
 
   // Delete tenant data. Order matters only where there is no ON DELETE CASCADE.
   const deleted: Record<string, number> = {}
-  for (const table of TENANT_TABLES) {
-    const rows = keep.length
-      ? await sql.unsafe(`DELETE FROM ${table} WHERE organization_id IS NULL OR organization_id <> ALL($1) RETURNING 1`, [keep])
-      : await sql.unsafe(`DELETE FROM ${table} RETURNING 1`)
-    deleted[table] = rows.length
+  let removedUsers: { id: unknown }[] = []
+  let removedOrgs: { id: unknown }[] = []
+  try {
+    for (const table of TENANT_TABLES) {
+      const rows = keep.length
+        ? await sql.unsafe(`DELETE FROM ${table} WHERE organization_id IS NULL OR organization_id <> ALL($1) RETURNING 1`, [keep])
+        : await sql.unsafe(`DELETE FROM ${table} RETURNING 1`)
+      deleted[table] = rows.length
+    }
+    removedUsers = keep.length
+      ? await sql`DELETE FROM users WHERE role <> 'admin' AND (organization_id IS NULL OR NOT (organization_id = ANY(${keep}))) RETURNING id`
+      : await sql`DELETE FROM users WHERE role <> 'admin' RETURNING id`
+    // The platform administrator belongs to no agency, but the bootstrap gave it
+    // one. Detach it, or the organisation it points at cannot be deleted.
+    const detachAdmins = keep.length
+      ? await sql`UPDATE users SET organization_id = NULL WHERE role = 'admin' AND (organization_id IS NULL OR NOT (organization_id = ANY(${keep}))) RETURNING id`
+      : await sql`UPDATE users SET organization_id = NULL WHERE role = 'admin' RETURNING id`
+    deleted['admins_detached'] = detachAdmins.length
+    removedOrgs = keep.length ? await sql`DELETE FROM organizations WHERE NOT (id = ANY(${keep})) RETURNING id` : await sql`DELETE FROM organizations RETURNING id`
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    console.error('reset failed', message)
+    return NextResponse.json({ error: 'Reset stopped part-way; nothing further was deleted.', detail: message.slice(0, 400), deletedSoFar: deleted }, { status: 500 })
   }
-  const removedUsers = keep.length
-    ? await sql`DELETE FROM users WHERE role <> 'admin' AND (organization_id IS NULL OR NOT (organization_id = ANY(${keep}))) RETURNING id`
-    : await sql`DELETE FROM users WHERE role <> 'admin' RETURNING id`
-  const removedOrgs = keep.length ? await sql`DELETE FROM organizations WHERE NOT (id = ANY(${keep})) RETURNING id` : await sql`DELETE FROM organizations RETURNING id`
 
   // Optionally hand the platform administrator a fresh temporary password, so
   // the person taking the system over sets their own on first sign-in and no
