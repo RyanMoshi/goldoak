@@ -7,7 +7,8 @@ import { EmptyState } from '@/components/platform/ui/EmptyState'
 import { PageHeader } from '@/components/platform/ui/PageHeader'
 import { requireAgencyAdmin } from '@/lib/auth/server'
 import { relativeTime } from '@/lib/format'
-import { listCampaigns } from '@/services/campaigns'
+import { SuppressionPanel } from '@/components/platform/campaigns/SuppressionPanel'
+import { listCampaigns, listSuppressions } from '@/services/campaigns'
 import { CAMPAIGN_STATUS_LABEL } from '@/types/campaigns'
 
 export const metadata: Metadata = { title: 'Campaigns' }
@@ -25,7 +26,7 @@ const TONE: Record<string, 'neutral' | 'info' | 'gold' | 'success' | 'error'> = 
 
 export default async function CampaignsPage() {
   const session = await requireAgencyAdmin()
-  const campaigns = await listCampaigns(session.oid)
+  const [campaigns, suppressions] = await Promise.all([listCampaigns(session.oid), listSuppressions(session.oid)])
   const sent = campaigns.reduce((n, c) => n + c.sentCount, 0)
   const active = campaigns.filter((c) => c.status === 'processing' || c.status === 'scheduled').length
 
@@ -107,6 +108,7 @@ export default async function CampaignsPage() {
           </ul>
         </Card>
       )}
+      <SuppressionPanel entries={suppressions} />
     </div>
   )
 }

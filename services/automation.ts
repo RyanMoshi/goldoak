@@ -1,3 +1,6 @@
+import { launchDueCampaigns } from '@/services/campaigns'
+import { refreshOverdue } from '@/services/billing'
+import { sendTemplateEmail } from '@/services/emails'
 import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { toPolicy } from '@/lib/db/mappers'
@@ -62,6 +65,8 @@ function formatIntl(digits: string): string {
   return `+${digits}`
 }
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://goldoak.vercel.app'
+
 export interface AutomationSummary {
   renewalReminders: number
   renewalTasks: number
@@ -70,6 +75,10 @@ export interface AutomationSummary {
   policiesMarkedDue: number
   whatsappRetried: number
   whatsappRecovered: number
+  invoiceReminders: number
+  invoicesMarkedOverdue: number
+  quotesExpired: number
+  campaignsStarted: number
 }
 
 
@@ -77,7 +86,7 @@ export interface AutomationSummary {
 export async function runDailyAutomation(): Promise<AutomationSummary> {
   await ensureSchema()
   const sql = getSql()
-  const summary: AutomationSummary = { renewalReminders: 0, renewalTasks: 0, quoteChasers: 0, claimReminders: 0, policiesMarkedDue: 0, whatsappRetried: 0, whatsappRecovered: 0 }
+  const summary: AutomationSummary = { renewalReminders: 0, renewalTasks: 0, quoteChasers: 0, claimReminders: 0, policiesMarkedDue: 0, whatsappRetried: 0, whatsappRecovered: 0, invoiceReminders: 0, invoicesMarkedOverdue: 0, quotesExpired: 0, campaignsStarted: 0 }
 
   // 1. Policies entering the renewal window.
   const marked = await sql`UPDATE policies SET status = 'renewal-due' WHERE status = 'live' AND expiry_date <= current_date + 30 RETURNING id`
@@ -161,6 +170,50 @@ export async function runDailyAutomation(): Promise<AutomationSummary> {
       await sql`UPDATE notifications SET whatsapp_status = 'sent' WHERE id = ${String(row.id)}`
       summary.whatsappRecovered++
     }
+  }
+
+
+  // 5. Billing: age the documents, then chase what is genuinely overdue.
+  try {
+    const aged = await refreshOverdue()
+    summary.invoicesMarkedOverdue = aged.overdue
+    summary.quotesExpired = aged.expired
+    const overdue = await sql`SELECT b.*, o.name AS org_name FROM billing_documents b JOIN organizations o ON o.id = b.organization_id
+      WHERE b.kind = 'invoice' AND b.status = 'overdue' AND b.customer_email IS NOT NULL
+      AND b.due_date >= current_date - 60`
+    for (const row of overdue) {
+      const days = Math.max(0, Math.round((Date.now() - new Date(String(row.due_date)).getTime()) / 86400000))
+      // Chase on day 1, 7, 14 and 30 only, so nobody is emailed daily.
+      if (![1, 7, 14, 30].includes(days)) continue
+      const outcome = await sendTemplateEmail({
+        key: 'invoice-reminder',
+        to: String(row.customer_email),
+        organizationId: String(row.organization_id),
+        clientId: row.client_id ? String(row.client_id) : null,
+        relatedType: 'billing',
+        relatedId: String(row.id),
+        category: 'reminders',
+        vars: {
+          first_name: String(row.customer_name).split(' ')[0],
+          agency_name: String(row.org_name),
+          invoice_number: String(row.number),
+          total: `${String(row.currency)} ${Number(row.total - row.amount_paid).toLocaleString('en-KE')}`,
+          due_date: formatShortDate(String(row.due_date)),
+          days_overdue: String(days),
+          document_url: row.share_token ? `${SITE_URL}/d/${String(row.share_token)}` : '',
+        },
+      })
+      if (outcome === 'queued' || outcome === 'sent') summary.invoiceReminders++
+    }
+  } catch (error) {
+    console.error('billing automation failed', error instanceof Error ? error.message : error)
+  }
+
+  // 6. Campaigns whose scheduled time has arrived.
+  try {
+    summary.campaignsStarted = await launchDueCampaigns()
+  } catch (error) {
+    console.error('campaign scheduler failed', error instanceof Error ? error.message : error)
   }
 
   return summary
