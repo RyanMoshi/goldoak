@@ -7,7 +7,7 @@ metadata.type: playbook
 ## Sign-in procedures
 | Who | Where | Tab | Lands on |
 |-----|-------|-----|----------|
-| Super admin | https://goldoak.vercel.app/signin | Agency | `/admin` (Agencies, Conversations, WhatsApp, Emails, Templates, System) |
+| Super admin | https://goldoak.vercel.app/signin | Agency | `/admin` (Agencies, Super Agent, Conversations, WhatsApp, Emails, Templates, System) |
 | GoldOak agency admin / staff | `/signin` | Agency | `/agency/today` (GoldOak is tenant `GOLDOAK`, nothing special) |
 | Any other agency's staff | `/signin` | Agency | `/agency/today` of that agency; picker at `/choose-agency` when the email belongs to several |
 | Client | `/signin` | Client | `/portal` of the agency chosen (picker when several) |
@@ -25,12 +25,23 @@ First sign-in with a temporary password always goes to `/account/password?first=
 ## Per-agency WhatsApp number
 `/agency/whatsapp` → Connect → scan the QR from the agency's phone. Routing is Number → Agency → Client → Conversation (`whatsapp_channels.session_id` → `organization_id`; the webhook resolves the session id first). The shared Super Agent number keeps routing by account / join code / choice. Admin overview at `/admin/channels`.
 
+## The three platform-level surfaces
+
+- `/admin` — the operator: agencies, accounts, conversations, channels, emails, templates, system.
+- `/superagent` — the **Super Agent console**: AI usage per agency, models, failures, global policy and shared knowledge. Admin-gated in middleware; an agency admin who visits it is redirected away.
+- `/agency/*` — a tenant workspace. GoldOak is a tenant like any other, created through the ordinary agency onboarding.
+
 ## Start afresh
-1. Rotate the session secret (signs everyone out): Vercel → Project → Settings → Environment Variables → `AUTH_SECRET` → new 32+ random chars → redeploy. Or `vercel env rm AUTH_SECRET production` then `vercel env add AUTH_SECRET production`.
-2. Purge data (keeps organisations and staff accounts, removes every client/conversation/request/document/job):
+
+**Rotate the session secret** (signs everyone out): Vercel → Project → Settings → Environment Variables → `AUTH_SECRET` → new 32+ random chars → redeploy. Or `vercel env rm AUTH_SECRET production` then `vercel env add AUTH_SECRET production`.
+
+**Wipe the data.** **Preferred (September 2026 onwards):** `POST /api/admin/reset` — see HANDOVER.md section 16. It needs the admin token, `ALLOW_DB_RESET=1` on the deployment and the phrase `RESET <today>`; with no body it is a dry run that reports exactly what it would delete. It can also hand the platform administrator a fresh temporary password (`resetAdminPassword: true`).
+
+**Older, narrower purge** (keeps organisations and staff accounts, removes every client/conversation/request/document/job):
    `curl -X POST https://goldoak.vercel.app/api/admin/seed -H "x-admin-token: $ADMIN_TOKEN" -H "content-type: application/json" -d '{"purgeAllData":true}'`
-   Add `"purgeTestOrganizations":true` to remove agencies whose code starts with `TEST`. Otto Test Agency (code `OTTO`) from the September 2026 tests must be deactivated/removed by hand at `/admin`.
-3. Re-invite the real GoldOak agency admin from `/admin` (a temporary password is emailed).
+   Add `"purgeTestOrganizations":true` to remove agencies whose code starts with `TEST`.
+
+After either, re-create each agency from `/admin`; a temporary password is emailed to its first administrator.
 
 ## Environment variables (Vercel, production)
 | Name | Purpose |
