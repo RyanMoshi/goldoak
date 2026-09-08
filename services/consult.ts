@@ -105,21 +105,39 @@ async function askModel(input: ConsultInput): Promise<ConsultResult | null> {
   return { answer: answer || "I don't have enough information to answer that accurately. Reply 7 to talk to an adviser.", source: process.env.ANTHROPIC_API_KEY ? 'claude' : 'nvidia', escalate }
 }
 
+const STOP = new Set(['what', 'does', 'cover', 'covers', 'insurance', 'that', 'this', 'with', 'from', 'have', 'need', 'about', 'kenya', 'sentences', 'sentence', 'please', 'much', 'which', 'would', 'should', 'could', 'there', 'their', 'they'])
+
+/**
+ * Used only when no model answers (not configured, or the endpoint is
+ * saturated): the closest catalogue entries by name and phrase match, said
+ * honestly as general information.
+ */
 function catalogueAnswer(input: ConsultInput): ConsultResult {
   const q = input.question.toLowerCase()
-  const words = q.split(/[^a-z]+/).filter((w) => w.length > 3)
+  const words = q.split(/[^a-z]+/).filter((w) => w.length > 3 && !STOP.has(w))
+  const phrases = words.slice(0, -1).map((w, i) => `${w} ${words[i + 1]}`)
   const scored = solutionDetails
     .map((d) => {
-      const hay = `${d.name} ${d.whatItIs} ${d.whoNeedsIt} ${d.whatItProtects.join(' ')}`.toLowerCase()
-      const score = words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0) + (hay.includes(q) ? 3 : 0)
+      const name = d.name.toLowerCase()
+      const hay = `${name} ${d.whatItIs} ${d.whoNeedsIt} ${d.whatItProtects.join(' ')}`.toLowerCase()
+      let score = 0
+      for (const w of words) {
+        if (name.includes(w)) score += 3
+        else if (hay.includes(w)) score += 1
+      }
+      for (const ph of phrases) {
+        if (name.includes(ph)) score += 5
+        else if (hay.includes(ph)) score += 2
+      }
       return { d, score }
     })
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
-    .slice(0, 2)
+  // One entry when it is a clear winner; two when they are close.
+  const picked = scored.slice(0, scored.length > 1 && scored[1].score * 2 > scored[0].score ? 2 : 1)
 
   const org = input.organization?.shortName ?? 'our'
-  if (!scored.length) {
+  if (!picked.length) {
     return {
       answer: [`I don't have enough information to answer that accurately.`, '', 'I can help with questions about cover: medical, motor, property, business, liability, life and travel. Try, for example, "What does comprehensive motor cover?"', '', `For anything specific to your situation, reply 7 and a ${org} adviser will pick this up.`].join('\n'),
       source: 'catalogue',
@@ -127,7 +145,8 @@ function catalogueAnswer(input: ConsultInput): ConsultResult {
     }
   }
   const lines: string[] = []
-  for (const { d } of scored) {
+  lines.push('Our assistant is busy right now, so here is general information:', '')
+  for (const { d } of picked) {
     lines.push(`*${d.name}*`, d.whatItIs, `Who needs it: ${d.whoNeedsIt}`, `Covers: ${d.whatItProtects.slice(0, 4).join(', ')}.`, '')
   }
   lines.push(`This is general guidance. Premiums depend on your details, so an adviser confirms the price. Reply 3 for a quote or 7 to talk to a ${org} adviser.`)
