@@ -2,10 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { hashPassword } from '@/lib/auth/password'
 import { requireAgencyAdmin, requireSession } from '@/lib/auth/server'
-import { generatePassword } from '@/lib/conversation/flows'
 import { normalizePhone } from '@/lib/format'
+import { channelForOrganization, connectChannel, disconnectChannel, restartChannel } from '@/lib/whatsapp/channels'
+import { inviteClient, inviteStaff, resetToTemporaryPassword } from '@/services/onboarding'
 import { audit } from '@/services/audit'
 import { createBusiness, reviewBusinessClaim } from '@/services/businesses'
 import { answerEnquiry } from '@/services/enquiries'
@@ -14,7 +14,7 @@ import { registerJobHandlers } from '@/services/jobs/handlers'
 import { getUpload, markUploadReviewed } from '@/services/uploads'
 import { getContact, setMode } from '@/services/conversations'
 import { agentReply, resumeAssistant } from '@/services/handoff'
-import { codeTaken, createStaffUser, emailOrPhoneTaken, setUserActive, setUserPassword, setUserRole, updateOrganization, userInOrganization } from '@/services/users'
+import { codeTaken, emailOrPhoneTaken, getUser, setUserActive, setUserRole, updateAiSettings, updateBranding, updateOrganization, userInOrganization } from '@/services/users'
 import { runAgencyCommand } from '@/services/agency/commands'
 import { completeTask } from '@/services/agency/dashboard'
 import { addPolicy, createClient, messageClient, updateClaimStage, updateClientStage, updateQuoteStage } from '@/services/journey'
@@ -133,16 +133,19 @@ export async function createClientAction(formData: FormData): Promise<ActionStat
   if (name.length < 2) return { error: 'Enter the client’s name.' }
   const phone = phoneInput ? normalizePhone(phoneInput) : null
   if (phoneInput && !phone) return { error: 'Enter a valid mobile number.' }
+  const invite = formData.get('invite') === 'on' || formData.get('invite') === 'true'
+  const message = String(formData.get('message') ?? '').trim().slice(0, 500) || null
+  if (invite && !email) return { error: 'An email address is needed to send an invitation. Untick "Send an invitation" to record a lead only.' }
   let clientId: string
   try {
-    const client = await createClient({ organizationId: session.oid, name, type, phone, email, notes, adviserName: session.name })
-    clientId = client.id
+    const result = await inviteClient({ organizationId: session.oid, actor: { id: session.uid, name: session.name }, name, type, phone, email, notes, message, invite })
+    clientId = result.clientId
   } catch (error) {
     console.error('createClient failed', error instanceof Error ? error.message : error)
-    return { error: 'Could not add the client.' }
+    return { error: error instanceof Error && /platform administrator/.test(error.message) ? error.message : 'Could not add the client.' }
   }
   revalidatePath('/agency/clients')
-  redirect(`/agency/clients/${clientId}`)
+  redirect(`/agency/clients/${clientId}?invited=${invite ? 1 : 0}`)
 }
 
 /* ---------- Conversations (WhatsApp handoff) ---------- */
@@ -206,21 +209,17 @@ export async function inviteStaffAction(formData: FormData): Promise<TeamActionS
   const phoneInput = String(formData.get('phone') ?? '').trim()
   const title = String(formData.get('title') ?? '').trim() || null
   const role = formData.get('role') === 'agency_admin' ? 'agency_admin' : 'agency'
-  let password = String(formData.get('password') ?? '').trim()
   if (name.length < 2) return { error: 'Enter the full name.', field: 'name' }
   if (!EMAIL.test(email)) return { error: 'Enter a valid email address.', field: 'email' }
   const phone = phoneInput ? normalizePhone(phoneInput) : null
   if (phoneInput && !phone) return { error: 'Enter a valid mobile number.', field: 'phone' }
-  if (password && password.length < 8) return { error: 'Passwords need at least 8 characters, or leave blank to generate one.', field: 'password' }
-  if (!password) password = generatePassword()
   try {
     const taken = await emailOrPhoneTaken(email, phone)
     if (taken === 'email') return { error: 'An account with that email already exists.', field: 'email' }
     if (taken === 'phone') return { error: 'That phone number is already on another account.', field: 'phone' }
-    const user = await createStaffUser({ role, organizationId: session.oid, name, email, phone, title, passwordHash: await hashPassword(password), createdBy: session.uid })
-    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'user.created', target: user.id, detail: { role } })
+    const { user, temporaryPassword, emailed } = await inviteStaff({ organizationId: session.oid, actor: { id: session.uid, name: session.name }, name, email, phone, title, role })
     revalidatePath('/agency/team')
-    return { success: `${user.name} can sign in on the Agency tab with ${user.email} and the password ${password}. Share it privately.` }
+    return { success: emailed ? `${user.name} has been emailed a temporary password (${temporaryPassword}) and will choose their own at first sign-in.` : `${user.name}'s temporary password is ${temporaryPassword}. Email could not be sent, so share it privately; they must change it at first sign-in.` }
   } catch (error) {
     console.error('inviteStaff failed', error instanceof Error ? error.message : error)
     return { error: 'Could not create the account.' }
@@ -230,12 +229,12 @@ export async function inviteStaffAction(formData: FormData): Promise<TeamActionS
 export async function resetStaffPasswordAction(userId: string): Promise<TeamActionState> {
   const session = await requireAgencyAdmin()
   if (!(await userInOrganization(userId, session.oid))) return { error: 'That person is not in your agency.' }
-  const password = generatePassword()
   try {
-    await setUserPassword(userId, await hashPassword(password))
-    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'user.password-reset', target: userId })
+    const user = await getUser(userId)
+    if (!user) return { error: 'Account not found.' }
+    const { temporaryPassword, emailed } = await resetToTemporaryPassword(user, { id: session.uid, name: session.name }, session.oid)
     revalidatePath('/agency/team')
-    return { success: `New password: ${password}. Share it privately.` }
+    return { success: emailed ? `A temporary password (${temporaryPassword}) was emailed to ${user.email}. They must change it at first sign-in.` : `Temporary password: ${temporaryPassword}. Email could not be sent; share it privately.` }
   } catch (error) {
     console.error('resetStaffPassword failed', error instanceof Error ? error.message : error)
     return { error: 'Could not reset the password.' }
@@ -383,5 +382,104 @@ export async function retryUploadAction(uploadId: string): Promise<ActionState> 
   } catch (error) {
     console.error('retryUpload failed', error instanceof Error ? error.message : error)
     return { error: 'Could not retry.' }
+  }
+}
+
+/* ---------- Branding, AI configuration, reminders (agency admins) ---------- */
+
+export async function updateBrandingAction(formData: FormData): Promise<ActionState> {
+  const session = await requireAgencyAdmin()
+  const colour = (v: FormDataEntryValue | null) => {
+    const s = String(v ?? '').trim()
+    return /^#[0-9a-f]{6}$/i.test(s) ? s.toLowerCase() : ''
+  }
+  const url = (v: FormDataEntryValue | null) => {
+    const s = String(v ?? '').trim()
+    return /^https:\/\/[^\s]+$/i.test(s) ? s.slice(0, 300) : ''
+  }
+  const branding = {
+    primary: colour(formData.get('primary')),
+    accent: colour(formData.get('accent')),
+    logoUrl: url(formData.get('logoUrl')),
+    supportEmail: String(formData.get('supportEmail') ?? '').trim().toLowerCase().slice(0, 120),
+    supportPhone: String(formData.get('supportPhone') ?? '').trim().slice(0, 40),
+    website: url(formData.get('website')),
+    footerNote: String(formData.get('footerNote') ?? '').trim().slice(0, 300),
+  }
+  const days = String(formData.get('reminderDays') ?? '')
+    .split(/[,\s]+/)
+    .map((d) => Number(d))
+    .filter((d) => Number.isInteger(d) && d >= 0 && d <= 365)
+  try {
+    await updateBranding(session.oid, branding, days.length ? Array.from(new Set(days)).sort((a, b) => b - a) : [30, 14, 7, 1])
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'organization.branding-updated', target: session.oid })
+    revalidatePath('/agency/settings')
+    return { success: 'Branding and reminders saved. New emails use them from now on.' }
+  } catch (error) {
+    console.error('updateBranding failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not save the branding.' }
+  }
+}
+
+export async function updateAiSettingsAction(formData: FormData): Promise<ActionState> {
+  const session = await requireAgencyAdmin()
+  const text = (k: string, max: number) => String(formData.get(k) ?? '').trim().slice(0, max)
+  try {
+    await updateAiSettings(session.oid, {
+      assistantName: text('assistantName', 40),
+      tone: text('tone', 300),
+      services: text('services', 4000),
+      faqs: text('faqs', 6000),
+      escalation: text('escalation', 1500),
+      doNotSay: text('doNotSay', 1000),
+      useGeneralCatalogue: formData.get('useGeneralCatalogue') !== 'off',
+    })
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'organization.ai-updated', target: session.oid })
+    revalidatePath('/agency/ai')
+    return { success: 'Assistant settings saved. The next conversation uses them.' }
+  } catch (error) {
+    console.error('updateAiSettings failed', error instanceof Error ? error.message : error)
+    return { error: 'Could not save the assistant settings.' }
+  }
+}
+
+/* ---------- WhatsApp channel (agency admins) ---------- */
+
+export async function connectWhatsAppAction(label: string): Promise<ActionState> {
+  const session = await requireAgencyAdmin()
+  try {
+    await connectChannel(session.oid, session.uid, label.trim().slice(0, 60) || null)
+    revalidatePath('/agency/whatsapp')
+    return { success: 'Session created. Scan the QR code with the phone that holds your agency number.' }
+  } catch (error) {
+    console.error('connectWhatsApp failed', error instanceof Error ? error.message : error)
+    return { error: error instanceof Error ? error.message : 'Could not create the WhatsApp session.' }
+  }
+}
+
+export async function restartWhatsAppAction(): Promise<ActionState> {
+  const session = await requireAgencyAdmin()
+  try {
+    const channel = await channelForOrganization(session.oid)
+    if (!channel) return { error: 'No WhatsApp number is connected yet.' }
+    await restartChannel(channel)
+    await audit({ organizationId: session.oid, actorUserId: session.uid, action: 'whatsapp.channel-restarted', target: channel.id })
+    revalidatePath('/agency/whatsapp')
+    return { success: 'Restarting the session. Give it a minute.' }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Could not restart the session.' }
+  }
+}
+
+export async function disconnectWhatsAppAction(): Promise<ActionState> {
+  const session = await requireAgencyAdmin()
+  try {
+    const channel = await channelForOrganization(session.oid)
+    if (!channel) return { error: 'No WhatsApp number is connected.' }
+    await disconnectChannel(channel, session.uid)
+    revalidatePath('/agency/whatsapp')
+    return { success: 'Number disconnected. Clients now reach you through the shared Super Agent number with your join code.' }
+  } catch (error) {
+    return { error: error instanceof Error ? error.message : 'Could not disconnect.' }
   }
 }

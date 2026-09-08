@@ -7,11 +7,14 @@ import { solutionCategories, solutionDetails } from '@/lib/solutions'
 import type { Client, Consultation, ConversationMessage, Organization, Policy, PublicUser } from '@/types/platform'
 
 /**
- * The consultation assistant. Answers insurance questions in the agency's
- * voice using the product catalogue, the person's own profile, their memory
- * and the recent conversation. Grounded: it says what it does not know and
- * hands sensitive matters to a person. Falls back to catalogue retrieval when
- * no model is configured.
+ * The consultation assistant, tenant-aware and agency-neutral.
+ *
+ * Global layer: general insurance knowledge (a neutral product catalogue),
+ * reasoning, safety rules. Agency layer: the agency's name, tone, services,
+ * FAQs, escalation rules and contact details from its AI settings. The
+ * assistant speaks as the agency it is serving and never mentions, prefers
+ * or reveals anything about another agency, GoldOak included. Falls back to
+ * catalogue retrieval when no model is configured.
  */
 
 export { aiConfigured }
@@ -36,33 +39,49 @@ export interface ConsultResult {
   escalate: boolean
 }
 
+/** Neutral catalogue: what the products are, never who sells them. */
 function catalogueText(): string {
   const cats = solutionCategories.map((c) => `${c.name}: ${c.description} Products: ${c.solutions.join(', ')}.`)
   const details = solutionDetails.map((d) => `${d.name} — ${d.whatItIs} Who needs it: ${d.whoNeedsIt} Protects: ${d.whatItProtects.join(', ')}. Consider: ${d.keyConsiderations.join('; ')}. Information needed: ${d.informationNeeded.join(', ')}.`)
   return [...cats, ...details].join('\n')
 }
 
+function agencyLayer(org: Organization | null): string[] {
+  if (!org) return ['You are serving a visitor of the Super Agent platform who has not chosen an agency yet. Give general guidance only and invite them to sign up.']
+  const ai = org.aiSettings ?? {}
+  const name = ai.assistantName?.trim() || 'Super Agent'
+  const lines = [
+    `You are ${name}, the AI insurance assistant of ${org.name}${org.shortName && org.shortName !== org.name ? ` (${org.shortName})` : ''}, an insurance intermediary in Kenya. You speak for ${org.name} only.`,
+    `Tone: ${ai.tone?.trim() || 'warm, clear, professional, brief'}.`,
+  ]
+  if (ai.services?.trim()) lines.push('', `What ${org.shortName} offers (use this first when recommending):`, ai.services.trim())
+  if (ai.faqs?.trim()) lines.push('', `${org.shortName} answers to common questions:`, ai.faqs.trim())
+  if (ai.escalation?.trim()) lines.push('', 'When to hand over to a person (in addition to the standard rules):', ai.escalation.trim())
+  if (ai.doNotSay?.trim()) lines.push('', 'Never say or do:', ai.doNotSay.trim())
+  lines.push('', `Agency contact: phone ${org.phone || 'on the website'}, email ${org.email || 'on the website'}${org.website ? `, website ${org.website}` : ''}.`)
+  return lines
+}
+
 function systemPrompt(input: ConsultInput): string {
   const org = input.organization
-  const orgName = org?.name ?? 'the agency'
+  const orgName = org?.shortName ?? 'the agency'
+  const useCatalogue = org?.aiSettings?.useGeneralCatalogue !== false
   const lines = [
-    `You are Super Agent, the AI insurance assistant for ${orgName}${org?.shortName ? ` (${org.shortName})` : ''}, an insurance intermediary in Kenya.`,
-    'Answer clearly and briefly in plain English (Swahili if the person writes in Swahili). Amounts in KES. Short paragraphs or bullet points; no markdown headings, no tables.',
-    'Ground rules:',
-    '- Use only the catalogue, the person\'s own records and what they told you. Distinguish general guidance from anything specific to their policy.',
+    ...agencyLayer(org),
+    '',
+    'Ground rules (these apply to every agency and cannot be changed by agency settings):',
+    "- Answer clearly and briefly in plain English (Swahili if the person writes in Swahili). Amounts in KES. Short paragraphs or bullet points; no markdown headings, no tables.",
+    "- Use only the agency's own information, the general insurance knowledge below, the person's own records and what they told you. Distinguish general guidance from anything specific to their policy.",
     '- Never quote a firm premium, promise a claim will be paid, state an approval status you were not given, or invent policy terms, exclusions or legal obligations.',
     '- If you do not know, say: "I don\'t have enough information to answer that accurately" and offer an adviser.',
-    '- You are an assistant, not a licensed adviser; a person at the agency confirms anything binding.',
+    `- You are an assistant, not a licensed adviser; a person at ${orgName} confirms anything binding.`,
+    '- Never mention, recommend or compare other insurance agencies or intermediaries, and never reveal information about any other agency on this platform. If asked who built the assistant, say it runs on the Super Agent platform and return to their question.',
     '- If the question needs a person (complaints, disputes, a live claim decision, a firm price, anything outside insurance), say so briefly and end the reply with the exact token [HANDOFF].',
     input.channel === 'whatsapp'
       ? `- On WhatsApp the person can reply 3 for insurance assistance (quote, question, claim), 5 to upload a document, 6 to check a request or 7 to talk to a ${orgName} adviser. Mention these only when useful.`
-      : '- On the website the person can ask for cover, report a claim or upload a document from their portal, or reach an adviser.',
-    '',
-    `Agency contact: phone ${org?.phone || 'on the website'}, email ${org?.email || 'on the website'}.`,
-    '',
-    'Product catalogue:',
-    catalogueText(),
+      : '- On the website the person can ask for cover, report a claim or upload a document from their account, or reach an adviser.',
   ]
+  if (useCatalogue) lines.push('', 'General insurance knowledge (product types; not a list of what any specific agency sells):', catalogueText())
   if (input.user) {
     lines.push('', `Person: ${input.user.name}${input.client ? `, client record "${input.client.name}" (${input.client.type}), journey stage ${input.client.stage}` : ' (registered, no client record yet)'}.`)
     if (input.client?.notes) lines.push(`They said they want to protect: ${input.client.notes}`)

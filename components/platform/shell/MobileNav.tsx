@@ -17,10 +17,11 @@ interface MobileNavProps {
   organization: Organization
   agent: PublicUser
   waiting: number
+  memberships?: number
 }
 
 /** Navigation drawer below lg. Traps focus while open and closes on Escape. */
-export function MobileNav({ open, onClose, organization, agent, waiting }: MobileNavProps) {
+export function MobileNav({ open, onClose, organization, agent, waiting, memberships = 1 }: MobileNavProps) {
   const panelRef = useRef<HTMLDivElement>(null)
   const closeButtonRef = useRef<HTMLButtonElement>(null)
 
@@ -92,7 +93,7 @@ export function MobileNav({ open, onClose, organization, agent, waiting }: Mobil
           <SidebarNav role={agent.role} onNavigate={onClose} withSettings waiting={waiting} />
         </div>
         <div className="border-t border-white/10 p-3">
-          <AgentProfile agent={agent} placement="above" on="forest" />
+          <AgentProfile agent={agent} placement="above" on="forest" memberships={memberships} />
         </div>
       </div>
     </div>

@@ -387,4 +387,102 @@ CREATE TABLE IF NOT EXISTS password_resets (
   used_at            timestamptz,
   created_at         timestamptz NOT NULL DEFAULT now()
 );
+
+-- ---------- v4: identity vs membership, first-login password change, per-agency WhatsApp, email platform, OTP ----------
+ALTER TABLE users ADD COLUMN IF NOT EXISTS must_change_password boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS password_changed_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verified_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS email_prefs jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at timestamptz;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_logins integer NOT NULL DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS locked_until timestamptz;
+
+-- Platform identity (users) vs agency relationship (memberships). One person can belong to several agencies.
+CREATE TABLE IF NOT EXISTS memberships (
+  id               text PRIMARY KEY,
+  user_id          text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  organization_id  text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  role             text NOT NULL CHECK (role IN ('agency_admin', 'agency', 'client')),
+  client_id        text REFERENCES clients(id) ON DELETE SET NULL,
+  status           text NOT NULL DEFAULT 'active' CHECK (status IN ('invited', 'active', 'suspended')),
+  invited_by       text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (user_id, organization_id)
+);
+CREATE INDEX IF NOT EXISTS memberships_org_idx ON memberships(organization_id, role);
+INSERT INTO memberships (id, user_id, organization_id, role, client_id)
+  SELECT 'mem_' || substr(md5(u.id || u.organization_id), 1, 14), u.id, u.organization_id, u.role, (SELECT c.id FROM clients c WHERE c.user_id = u.id AND c.organization_id = u.organization_id LIMIT 1)
+  FROM users u WHERE u.organization_id IS NOT NULL AND u.role IN ('agency_admin', 'agency', 'client')
+  ON CONFLICT (user_id, organization_id) DO NOTHING;
+
+-- One WhatsApp number (gateway session) per agency. The shared Super Agent number is the fallback.
+CREATE TABLE IF NOT EXISTS whatsapp_channels (
+  id               text PRIMARY KEY,
+  organization_id  text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  provider         text NOT NULL DEFAULT 'openwa' CHECK (provider IN ('openwa', 'meta')),
+  session_id       text UNIQUE,
+  phone            text,
+  label            text,
+  status           text NOT NULL DEFAULT 'pending',
+  last_error       text,
+  webhook_id       text,
+  created_by       text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS whatsapp_channels_org_idx ON whatsapp_channels(organization_id);
+ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS channel_id text;
+ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS channel text NOT NULL DEFAULT 'whatsapp';
+
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ai_settings jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS branding jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS reminder_days jsonb NOT NULL DEFAULT '[30,14,7,1]'::jsonb;
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS website text;
+
+-- Every important email: who, which template, whether it arrived.
+CREATE TABLE IF NOT EXISTS email_log (
+  id               text PRIMARY KEY,
+  organization_id  text REFERENCES organizations(id) ON DELETE SET NULL,
+  user_id          text REFERENCES users(id) ON DELETE SET NULL,
+  client_id        text REFERENCES clients(id) ON DELETE SET NULL,
+  template         text NOT NULL,
+  to_email         text NOT NULL,
+  subject          text NOT NULL,
+  status           text NOT NULL DEFAULT 'queued' CHECK (status IN ('queued', 'sent', 'failed', 'dead', 'skipped')),
+  provider_id      text,
+  error            text,
+  attempts         integer NOT NULL DEFAULT 0,
+  related_type     text,
+  related_id       text,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  sent_at          timestamptz
+);
+CREATE INDEX IF NOT EXISTS email_log_org_idx ON email_log(organization_id, created_at DESC);
+
+-- Template overrides: NULL organization = global default written by the super admin.
+CREATE TABLE IF NOT EXISTS email_templates (
+  id               text PRIMARY KEY,
+  organization_id  text REFERENCES organizations(id) ON DELETE CASCADE,
+  key              text NOT NULL,
+  subject          text,
+  heading          text,
+  body             text,
+  updated_by       text,
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS email_templates_key_idx ON email_templates(coalesce(organization_id, ''), key);
+
+-- Email one-time codes, hashed, single use, short lived.
+CREATE TABLE IF NOT EXISTS otps (
+  id               text PRIMARY KEY,
+  user_id          text REFERENCES users(id) ON DELETE CASCADE,
+  email            text NOT NULL,
+  purpose          text NOT NULL,
+  code_hash        text NOT NULL,
+  expires_at       timestamptz NOT NULL,
+  attempts         integer NOT NULL DEFAULT 0,
+  used_at          timestamptz,
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS otps_email_idx ON otps(email, purpose, created_at DESC);
 `

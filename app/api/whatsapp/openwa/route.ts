@@ -6,6 +6,7 @@ import { acknowledgeChat, sendWhatsApp, whatsappConfigured } from '@/lib/whatsap
 import { parseOpenWAEvent, verifyOpenWASignature } from '@/lib/whatsapp/providers/openwa'
 import { runInBackground } from '@/lib/background'
 import { enqueue } from '@/services/jobs'
+import { organizationForSession } from '@/lib/whatsapp/channels'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,7 +38,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: false }, { status: 400 })
   }
 
-  const { key, message } = parseOpenWAEvent(payload)
+  const { key, sessionId, message } = parseOpenWAEvent(payload)
   if (!message) return NextResponse.json({ ok: true, ignored: true })
   if (!hasDatabase()) return NextResponse.json({ ok: true, ignored: 'no database' })
 
@@ -49,13 +50,16 @@ export async function POST(request: Request) {
     if (!inserted.length) return NextResponse.json({ ok: true, duplicate: true })
   }
 
+  // Which agency's number received this? The shared number resolves later by account/code; an agency's own number resolves here.
+  const channelOrganizationId = sessionId && sessionId !== process.env.OPENWA_SESSION_ID ? await organizationForSession(sessionId) : null
+
   const adminToken = process.env.ADMIN_TOKEN
   const dryRun = Boolean(adminToken && adminToken.length >= 16 && request.headers.get('x-admin-token') === adminToken)
   ;(globalThis as { __superAgentDebug?: boolean }).__superAgentDebug = dryRun && request.headers.get('x-debug') === '1'
 
   if (dryRun) {
     try {
-      const result = await handleInbound(message)
+      const result = await handleInbound(message, channelOrganizationId)
       return NextResponse.json({ ok: true, dryRun: true, answered: result.answered, organizationId: result.organizationId, userId: result.userId, replies: result.replies })
     } catch (error) {
       console.error('openwa dry-run failed', error instanceof Error ? error.message : error)
@@ -65,22 +69,22 @@ export async function POST(request: Request) {
 
   if (!whatsappConfigured()) {
     // No gateway: handle inline and echo, so the conversation can be tested end to end.
-    const result = await handleInbound(message)
+    const result = await handleInbound(message, channelOrganizationId)
     return NextResponse.json({ ok: true, sent: false, answered: result.answered, reply: result.replies.join('\n\n') })
   }
 
   const scheduled = runInBackground(async () => {
     try {
-      await acknowledgeChat(message.phone)
-      await processInbound({ message })
+      await acknowledgeChat(message.phone, channelOrganizationId)
+      await processInbound({ message, channelOrganizationId })
     } catch (error) {
       console.error('inbound processing failed', error instanceof Error ? error.message : error)
-      await enqueue({ type: 'process-inbound', payload: { message }, idempotencyKey: `inbound:${idempotencyKey}` }).catch(() => null)
-      await sendWhatsApp(message.phone, 'Something went wrong on our side. Nothing was lost; I will get back to you in a moment.').catch(() => null)
+      await enqueue({ type: 'process-inbound', payload: { message, channelOrganizationId }, idempotencyKey: `inbound:${idempotencyKey}` }).catch(() => null)
+      await sendWhatsApp(message.phone, 'Something went wrong on our side. Nothing was lost; I will get back to you in a moment.', channelOrganizationId).catch(() => null)
     }
   })
   if (!scheduled) {
-    await enqueue({ type: 'process-inbound', payload: { message }, idempotencyKey: `inbound:${idempotencyKey}` })
+    await enqueue({ type: 'process-inbound', payload: { message, channelOrganizationId }, idempotencyKey: `inbound:${idempotencyKey}` })
   }
   return NextResponse.json({ ok: true, queued: true })
 }

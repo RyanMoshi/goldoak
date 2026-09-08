@@ -13,10 +13,11 @@ interface TopBarProps {
   dateLabel: string
   onOpenNav: () => void
   agent: PublicUser
+  memberships?: number
 }
 
 /** Page title and date left, command bar centre, actions right. Command bar gets its own row on phones. */
-export function TopBar({ dateLabel, onOpenNav, agent }: TopBarProps) {
+export function TopBar({ dateLabel, onOpenNav, agent, memberships = 1 }: TopBarProps) {
   const pathname = usePathname()
   const title = agencyNavFor(pathname)?.label ?? 'Super Agent'
 
@@ -38,7 +39,7 @@ export function TopBar({ dateLabel, onOpenNav, agent }: TopBarProps) {
             <p className="truncate font-mono text-[11px] leading-4 text-ink-muted">{dateLabel}</p>
           </div>
           <div className="ml-auto flex items-center gap-1 lg:hidden">
-            <AgentProfile agent={agent} compact placement="below" />
+            <AgentProfile agent={agent} compact placement="below" memberships={memberships} />
           </div>
         </div>
 
@@ -57,7 +58,7 @@ export function TopBar({ dateLabel, onOpenNav, agent }: TopBarProps) {
             <Plus className="size-4" aria-hidden="true" strokeWidth={2.25} />
             New lead
           </Link>
-          <AgentProfile agent={agent} compact placement="below" />
+          <AgentProfile agent={agent} compact placement="below" memberships={memberships} />
         </div>
       </div>
     </header>

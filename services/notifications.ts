@@ -3,6 +3,8 @@ import { ensureSchema } from '@/lib/db/migrate'
 import { toNotification } from '@/lib/db/mappers'
 import { newId } from '@/lib/ids'
 import { sendWhatsApp } from '@/lib/whatsapp/provider'
+import { sendTemplateEmail } from '@/services/emails'
+import type { Vars } from '@/lib/email/templates'
 import type { Notification, NotificationKind } from '@/types/platform'
 
 interface NotifyInput {
@@ -18,6 +20,8 @@ interface NotifyInput {
   phone?: string | null
   /** Skip WhatsApp even when a provider exists. */
   inAppOnly?: boolean
+  /** Also send a branded email: which template and its variables (first_name and title/body are filled in). */
+  email?: { key: string; vars?: Vars; category?: 'security' | 'account' | 'reminders' | 'updates' | 'marketing' | 'system' }
 }
 
 /**
@@ -37,18 +41,25 @@ export async function notify(input: NotifyInput): Promise<Notification | null> {
 
   let phone = input.phone ?? null
   let optIn = true
+  let email: string | null = null
+  let firstName = 'there'
   if (input.userId) {
-    const rows = await sql`SELECT phone, whatsapp_opt_in FROM users WHERE id = ${input.userId} AND active LIMIT 1`
+    const rows = await sql`SELECT phone, whatsapp_opt_in, email, name FROM users WHERE id = ${input.userId} AND active LIMIT 1`
     if (rows[0]) {
       phone = phone ?? (rows[0].phone ? String(rows[0].phone) : null)
       optIn = rows[0].whatsapp_opt_in !== false
+      email = rows[0].email ? String(rows[0].email) : null
+      firstName = String(rows[0].name ?? '').split(' ')[0] || 'there'
     }
   }
 
   let whatsappStatus: Notification['whatsappStatus'] = 'skipped'
   if (phone && optIn && !input.inAppOnly) {
-    const sent = await sendWhatsApp(phone, `${input.title}\n\n${input.body}`)
+    const sent = await sendWhatsApp(phone, `${input.title}\n\n${input.body}`, input.organizationId)
     whatsappStatus = sent ? 'sent' : 'failed'
+  }
+  if (input.email && email) {
+    void sendTemplateEmail({ key: input.email.key, to: email, organizationId: input.organizationId, userId: input.userId, clientId: input.clientId ?? null, category: input.email.category, vars: { first_name: firstName, title: input.title, body: input.body, ...(input.email.vars ?? {}) }, relatedType: 'notification', relatedId: input.reference ?? undefined }).catch(() => null)
   }
 
   const rows = await sql`INSERT INTO notifications (id, organization_id, user_id, client_id, kind, title, body, reference, whatsapp_status)

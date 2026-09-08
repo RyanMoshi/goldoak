@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { EmailPreferences } from '@/components/platform/portal/EmailPreferences'
 import { PhoneForm } from '@/components/platform/portal/PhoneForm'
 import { Card, CardHeader } from '@/components/platform/ui/Card'
 import { requireSession } from '@/lib/auth/server'
@@ -36,6 +37,10 @@ export default async function ProfilePage() {
         <CardHeader title="WhatsApp" description="Reminders and updates go to this number, and it is how we recognise you when you message us." />
         <div className="mt-4"><PhoneForm current={user.phone} /></div>
       </Card>
+      <Card as="section">
+        <CardHeader title="Security" description="Change your password whenever you like. We email you each time it changes." aside={<Link href="/account/password" className="inline-flex h-9 items-center rounded-control border border-line px-3 text-[13px] font-semibold text-ink hover:border-ink-muted focus-ring">Change password</Link>} />
+      </Card>
+      <EmailPreferences prefs={user.emailPrefs ?? {}} />
       <Card as="section">
         <CardHeader title="Your data" description="Held under the Data Protection Act 2019." />
         <p className="mt-3 text-[13.5px] text-ink-muted">

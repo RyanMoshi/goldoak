@@ -6,7 +6,7 @@ import { Wordmark } from '@/components/platform/ui/Wordmark'
 import type { Organization, PublicUser } from '@/types/platform'
 
 /** Desktop navigation rail. Fixed, 240px, forest green with a gold active pill. Hidden below lg. */
-export function Sidebar({ organization, agent, waiting }: { organization: Organization; agent: PublicUser; waiting: number }) {
+export function Sidebar({ organization, agent, waiting, memberships = 1 }: { organization: Organization; agent: PublicUser; waiting: number; memberships?: number }) {
   return (
     <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col bg-forest text-white lg:flex" aria-label="Primary">
       <div className="flex h-16 items-center px-4">
@@ -25,7 +25,7 @@ export function Sidebar({ organization, agent, waiting }: { organization: Organi
       </div>
       <div className="flex flex-col gap-2 border-t border-white/10 p-3">
         <SettingsNavLink />
-        <AgentProfile agent={agent} placement="above" on="forest" />
+        <AgentProfile agent={agent} placement="above" on="forest" memberships={memberships} />
       </div>
     </aside>
   )

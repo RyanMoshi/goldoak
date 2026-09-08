@@ -54,9 +54,19 @@ export async function assignContact(phone: string, organizationId: string, assig
   await sql`UPDATE whatsapp_contacts SET assigned_user_id = ${assignedUserId}, updated_at = now() WHERE phone = ${phone} AND organization_id = ${organizationId}`
 }
 
-/** Workflow expiry: a flow abandoned for more than two hours starts over. */
+/**
+ * A workflow never silently expires: the person can come back hours or days
+ * later and continue. Only a flow untouched for 30 days is dropped, because by
+ * then the data it holds is stale.
+ */
 export function workflowExpired(contact: WhatsAppContact): boolean {
-  return Date.now() - new Date(contact.updatedAt).getTime() > 2 * 60 * 60 * 1000
+  return Date.now() - new Date(contact.updatedAt).getTime() > 30 * 24 * 60 * 60 * 1000
+}
+
+/** Minutes since the previous inbound message (before this one was recorded). */
+export function minutesSince(previousInboundAt: string | null): number {
+  if (!previousInboundAt) return 0
+  return Math.floor((Date.now() - new Date(previousInboundAt).getTime()) / 60_000)
 }
 
 interface AppendInput {

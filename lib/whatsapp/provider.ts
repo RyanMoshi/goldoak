@@ -63,14 +63,31 @@ export function whatsappConfigured(): boolean {
   return getProvider() !== null
 }
 
+/** The provider bound to an agency's own channel, or the shared gateway. */
+export async function providerForOrganization(organizationId?: string | null): Promise<WhatsAppProvider | null> {
+  if (organizationId) {
+    try {
+      const { channelForOrganization } = await import('@/lib/whatsapp/channels')
+      const channel = await channelForOrganization(organizationId)
+      if (channel?.provider === 'openwa' && channel.sessionId && channel.status === 'ready' && process.env.OPENWA_BASE_URL && process.env.OPENWA_API_KEY) return new OpenWAProvider(channel.sessionId)
+    } catch (error) {
+      console.error('channel lookup failed', error instanceof Error ? error.message : error)
+    }
+  }
+  return getProvider()
+}
+
 /** The number people message. Never shown as digits on the site; used only to build wa.me links. */
 export function botNumber(): string | undefined {
   return process.env.WHATSAPP_BOT_NUMBER?.replace(/\D/g, '') || undefined
 }
 
-/** Sends a WhatsApp text if a provider is configured. Never throws; returns whether it was sent. */
-export async function sendWhatsApp(toPhone: string, body: string): Promise<boolean> {
-  const provider = getProvider()
+/**
+ * Sends a WhatsApp text from the agency's own number when it has one, else
+ * from the shared Super Agent number. Never throws; returns whether it was sent.
+ */
+export async function sendWhatsApp(toPhone: string, body: string, organizationId?: string | null): Promise<boolean> {
+  const provider = await providerForOrganization(organizationId)
   if (!provider) return false
   try {
     await provider.sendText(toPhone, body.slice(0, 4000))
@@ -81,8 +98,8 @@ export async function sendWhatsApp(toPhone: string, body: string): Promise<boole
   }
 }
 
-export async function sendWhatsAppDocument(toPhone: string, doc: OutboundDocument): Promise<boolean> {
-  const provider = getProvider()
+export async function sendWhatsAppDocument(toPhone: string, doc: OutboundDocument, organizationId?: string | null): Promise<boolean> {
+  const provider = await providerForOrganization(organizationId)
   if (!provider?.sendDocument) return false
   try {
     await provider.sendDocument(toPhone, doc)
@@ -94,8 +111,8 @@ export async function sendWhatsAppDocument(toPhone: string, doc: OutboundDocumen
 }
 
 /** Best-effort presence: mark the chat read and show typing while we work. */
-export async function acknowledgeChat(toPhone: string): Promise<void> {
-  const provider = getProvider()
+export async function acknowledgeChat(toPhone: string, organizationId?: string | null): Promise<void> {
+  const provider = await providerForOrganization(organizationId)
   if (!provider) return
   const chatId = `${toPhone.replace(/\D/g, '')}@c.us`
   try {

@@ -26,6 +26,24 @@ export interface Organization {
   description: string | null
   logoPath: string | null
   contactName: string | null
+  website: string | null
+  /** Email/portal branding chosen by the agency: primary, accent, logoUrl, supportEmail, supportPhone, footerNote. */
+  branding: Record<string, string>
+  /** What the assistant knows about this agency: services, faqs, tone, escalation, disclosure. */
+  aiSettings: AiSettings
+  /** Days before expiry on which renewal reminders go out. */
+  reminderDays: number[]
+}
+
+export interface AiSettings {
+  assistantName?: string
+  tone?: string
+  services?: string
+  faqs?: string
+  escalation?: string
+  doNotSay?: string
+  /** Allow the general insurance catalogue as background knowledge (default true). */
+  useGeneralCatalogue?: boolean
 }
 
 export interface OrganizationSummary extends Organization {
@@ -44,8 +62,24 @@ export interface PublicUser {
   title: string | null
   active: boolean
   whatsappOptIn: boolean
+  mustChangePassword: boolean
+  emailVerifiedAt?: string | null
+  emailPrefs?: Record<string, boolean>
   createdAt?: string
   lastSeenAt?: string | null
+}
+
+/** A person's relationship with one agency. The same identity can hold several. */
+export interface Membership {
+  id: string
+  userId: string
+  organizationId: string
+  organizationName: string
+  organizationShortName: string
+  role: 'agency_admin' | 'agency' | 'client'
+  clientId: string | null
+  status: 'invited' | 'active' | 'suspended'
+  createdAt: string
 }
 
 /* ---------- Client journey ---------- */

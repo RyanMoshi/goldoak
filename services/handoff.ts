@@ -51,7 +51,7 @@ export async function agentReply(organizationId: string, actor: { id: string; na
   const contact = await getContact(phone)
   if (!contact || contact.organizationId !== organizationId) return 'forbidden'
   const text = body.trim()
-  const sent = await sendWhatsApp(phone, text)
+  const sent = await sendWhatsApp(phone, text, organizationId)
   await appendMessage({ phone, organizationId, userId: contact.userId, direction: 'out', role: 'agent', body: `${text}\n\n— ${actor.name}` })
   if (contact.mode !== 'human') await setMode(phone, 'human', actor.id)
   else if (!contact.assignedUserId) await assignContact(phone, organizationId, actor.id)
@@ -64,7 +64,7 @@ export async function resumeAssistant(organizationId: string, actorUserId: strin
   if (!contact || contact.organizationId !== organizationId) return false
   await setMode(phone, 'ai')
   const text = 'Your adviser has handed this chat back to the Super Agent assistant. Reply MENU to see what I can do, or 9 to reach an adviser again.'
-  await sendWhatsApp(phone, text)
+  await sendWhatsApp(phone, text, organizationId)
   await appendMessage({ phone, organizationId, userId: contact.userId, direction: 'out', role: 'system', body: text })
   await audit({ organizationId, actorUserId, action: 'conversation.resume-ai', target: phone })
   return true

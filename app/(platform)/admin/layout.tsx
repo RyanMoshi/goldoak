@@ -20,8 +20,22 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <span className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.14em] text-gold">Platform admin</span>
             </span>
           </Link>
+          <nav aria-label="Platform sections" className="hidden items-center gap-1 md:flex">
+            {[
+              ['/admin', 'Agencies'],
+              ['/admin/conversations', 'Conversations'],
+              ['/admin/channels', 'WhatsApp'],
+              ['/admin/emails', 'Emails'],
+              ['/admin/templates', 'Templates'],
+              ['/admin/system', 'System'],
+            ].map(([href, label]) => (
+              <Link key={href} href={href} className="inline-flex h-9 items-center rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
+                {label}
+              </Link>
+            ))}
+          </nav>
           <div className="flex items-center gap-1">
-            <span className="hidden text-[13px] text-ink-muted sm:inline">{session.name}</span>
+            <span className="hidden text-[13px] text-ink-muted lg:inline">{session.name}</span>
             <Link href="/agency/today" className="inline-flex h-9 items-center gap-2 rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
               <LayoutDashboard className="size-4" aria-hidden="true" strokeWidth={1.75} />
               <span className="hidden sm:inline">Agency workspace</span>

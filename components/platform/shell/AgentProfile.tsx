@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { Building2, LogOut, MoreHorizontal, Settings, UserRound } from 'lucide-react'
+import { Building2, KeyRound, LogOut, MoreHorizontal, Repeat, Settings, UserRound } from 'lucide-react'
 import { useCallback, useId, useRef, useState } from 'react'
 import { Avatar } from '@/components/platform/ui/Avatar'
 import { useClickOutside } from '@/hooks/useClickOutside'
@@ -15,10 +15,11 @@ interface AgentProfileProps {
   placement?: 'above' | 'below'
   /** Surface the trigger sits on. */
   on?: 'light' | 'forest'
+  memberships?: number
 }
 
 /** The signed-in agent, with a restrained menu. */
-export function AgentProfile({ agent, compact = false, placement = 'above', on = 'light' }: AgentProfileProps) {
+export function AgentProfile({ agent, compact = false, placement = 'above', on = 'light', memberships = 1 }: AgentProfileProps) {
   const [open, setOpen] = useState(false)
   const rootRef = useRef<HTMLDivElement>(null)
   const menuId = useId()
@@ -88,6 +89,14 @@ export function AgentProfile({ agent, compact = false, placement = 'above', on =
               Platform admin
             </MenuLink>
           ) : null}
+          {memberships > 1 ? (
+            <MenuLink href="/choose-agency" icon={Repeat} onSelect={close}>
+              Switch agency
+            </MenuLink>
+          ) : null}
+          <MenuLink href="/account/password" icon={KeyRound} onSelect={close}>
+            Change password
+          </MenuLink>
           <div className="my-1 h-px bg-divider" />
           <form action={signOutAction}>
             <button

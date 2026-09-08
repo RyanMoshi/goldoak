@@ -13,7 +13,7 @@ export default async function TodayPage() {
   return (
     <Dashboard
       data={data}
-      agent={agent ?? { id: session.uid, role: 'agency', organizationId: session.oid, name: session.name, email: '', phone: null, title: null, active: true, whatsappOptIn: true }}
+      agent={agent ?? { id: session.uid, role: 'agency', organizationId: session.oid, name: session.name, email: '', phone: null, title: null, active: true, whatsappOptIn: true, mustChangePassword: false }}
       organization={organization ?? placeholderOrganization(session.oid)}
       greeting={greetingFor(new Date())}
     />

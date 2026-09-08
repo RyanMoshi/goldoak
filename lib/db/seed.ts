@@ -126,8 +126,9 @@ export async function bootstrap(input: BootstrapInput = {}): Promise<BootstrapSu
     await sql`INSERT INTO organizations (id, name, short_name, phone, email, whatsapp, code, greeting)
       VALUES (${orgId}, ${o.name}, ${o.shortName ?? o.name.split(' ')[0]}, ${o.phone ?? ''}, ${o.email ?? ''}, ${whatsapp}, ${code}, ${o.greeting ?? null})`
     const userId = newId('usr')
-    await sql`INSERT INTO users (id, role, organization_id, name, email, phone, password_hash, title)
-      VALUES (${userId}, 'agency_admin', ${orgId}, ${o.adminName}, ${o.adminEmail.toLowerCase()}, ${o.adminPhone ?? null}, ${await hashPassword(o.adminPassword)}, 'Agency admin')`
+    await sql`INSERT INTO users (id, role, organization_id, name, email, phone, password_hash, title, must_change_password)
+      VALUES (${userId}, 'agency_admin', ${orgId}, ${o.adminName}, ${o.adminEmail.toLowerCase()}, ${o.adminPhone ?? null}, ${await hashPassword(o.adminPassword)}, 'Agency admin', false)`
+    await sql`INSERT INTO memberships (id, user_id, organization_id, role) VALUES (${newId('mem')}, ${userId}, ${orgId}, 'agency_admin') ON CONFLICT DO NOTHING`
     createdOrganization = { id: orgId, code, adminUserId: userId }
   }
 

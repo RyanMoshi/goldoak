@@ -8,13 +8,19 @@ export async function middleware(request: NextRequest) {
 
   const area: Area | null = pathname.startsWith('/admin') ? 'admin' : pathname.startsWith('/agency') ? 'agency' : pathname.startsWith('/portal') ? 'client' : null
 
+  if (pathname.startsWith('/account') || pathname === '/choose-agency') {
+    if (!session) return redirectToSignIn(request, 'client')
+    return NextResponse.next()
+  }
+
   if (area) {
     if (!session) return redirectToSignIn(request, area === 'client' ? 'client' : 'agency')
+    if (session.mcp) return NextResponse.redirect(new URL('/account/password', request.url))
     if (!canAccess(session.role, area)) return NextResponse.redirect(new URL(homeFor(session.role), request.url))
   }
 
   if ((pathname === '/signin' || pathname === '/signup' || pathname === '/agencies/signup') && session) {
-    return NextResponse.redirect(new URL(homeFor(session.role), request.url))
+    return NextResponse.redirect(new URL(session.mcp ? '/account/password' : homeFor(session.role), request.url))
   }
 
   return NextResponse.next()
@@ -28,5 +34,5 @@ function redirectToSignIn(request: NextRequest, as: 'agency' | 'client') {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/agency/:path*', '/portal/:path*', '/signin', '/signup', '/agencies/signup'],
+  matcher: ['/admin/:path*', '/agency/:path*', '/portal/:path*', '/account/:path*', '/choose-agency', '/signin', '/signup', '/agencies/signup'],
 }

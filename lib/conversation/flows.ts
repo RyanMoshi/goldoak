@@ -1,4 +1,5 @@
-import { hashPassword } from '@/lib/auth/password'
+import { generateTempPassword, hashPassword } from '@/lib/auth/password'
+import { sendTemplateEmail } from '@/services/emails'
 import { choice, parseDate, parseEmail, parseName, parseText, type Flow, type FlowContext, type FlowData } from '@/lib/conversation/engine'
 import { bold, formatIntl, success } from '@/lib/conversation/messages'
 import { formatShortDate, normalizePhone } from '@/lib/format'
@@ -93,12 +94,13 @@ export const registrationFlow: Flow = {
       const taken = await emailOrPhoneTaken(null, phone)
       if (taken === 'phone') throw new Error('That phone number is already on another account.')
     }
-    const password = generatePassword()
+    const password = generateTempPassword()
     const name = String(data.name)
     const kind = data.kind === 'sme' ? 'sme' : 'individual'
     const businessName = data.businessName ? String(data.businessName) : null
-    const { user, clientId } = await createClientUser({ organizationId: org.id, name, email: String(data.email), phone, passwordHash: await hashPassword(password), businessName, clientType: kind, notes: null })
+    const { user, clientId } = await createClientUser({ organizationId: org.id, name, email: String(data.email), phone, passwordHash: await hashPassword(password), businessName, clientType: kind, notes: null, temporaryPassword: true })
     await linkContact(ctx.phone, { userId: user.id, organizationId: org.id })
+    void sendTemplateEmail({ key: 'temp-password', to: String(data.email), organizationId: org.id, userId: user.id, clientId, vars: { first_name: name.split(' ')[0], email: String(data.email), temporary_password: password, login_url: `${SITE}/signin`, role_label: '' }, category: 'security' }).catch(() => null)
     await onClientSignedUp({ user, clientId, clientName: businessName ?? name, protect: null })
     return success(`Welcome to ${org.shortName}, ${name.split(' ')[0]}`, [
       `Your account is ready. Your adviser at ${org.shortName} will contact you within one working day.`,
@@ -106,8 +108,8 @@ export const registrationFlow: Flow = {
       bold('Your website login'),
       `${SITE}/signin`,
       `Username: ${String(data.email)}`,
-      `Password: ${password}`,
-      '_Keep this message safe. You can change the password in your portal._',
+      `Temporary password: ${password}`,
+      '_You will choose your own password the first time you sign in. We have also emailed these details._',
       '',
       bold('What next?'),
       'Reply 3 for insurance assistance, 5 to upload a document, or MENU for everything.',

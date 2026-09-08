@@ -1,11 +1,11 @@
 'use client'
 
-import { CheckCircle2, KeyRound, UserMinus, UserPlus, X } from 'lucide-react'
+import { CheckCircle2, Eye, KeyRound, UserMinus, UserPlus, X } from 'lucide-react'
 import { useState, useTransition } from 'react'
 import { Field, inputClass } from '@/components/platform/auth/AuthShell'
 import { Badge } from '@/components/platform/ui/Badge'
 import { Card, CardHeader } from '@/components/platform/ui/Card'
-import { createAgencyAccountAction, resetAgencyPasswordAction, setAgencyActiveAction, type AdminActionState } from '@/lib/admin/actions'
+import { createAgencyAccountAction, impersonateAction, resetAgencyPasswordAction, setAgencyActiveAction, type AdminActionState } from '@/lib/admin/actions'
 import { cn } from '@/lib/cn'
 import { formatPhone, relativeTime } from '@/lib/format'
 import { ROLE_LABELS, type Organization, type PublicUser } from '@/types/platform'
@@ -120,6 +120,18 @@ export function AgencyAccounts({ users, currentUserId, organizations }: { users:
                 <button type="button" onClick={() => reset(u)} disabled={pending} className="inline-flex h-8 items-center gap-1.5 rounded-control border border-line bg-surface px-2.5 text-[12.5px] font-semibold text-ink hover:border-ink-muted focus-ring disabled:opacity-60">
                   <KeyRound className="size-3.5" aria-hidden="true" /> New password
                 </button>
+                {u.id !== currentUserId && u.role !== 'admin' && u.active ? (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => {
+                      if (window.confirm(`Open the workspace as ${u.name}? This is logged in the audit trail.`)) startTransition(async () => setState(await impersonateAction(u.id)))
+                    }}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-control border border-line bg-surface px-2.5 text-[12.5px] font-semibold text-ink-muted hover:border-ink-muted hover:text-ink focus-ring disabled:opacity-60"
+                  >
+                    <Eye className="size-3.5" aria-hidden="true" /> View as
+                  </button>
+                ) : null}
                 {u.id !== currentUserId ? (
                   <button type="button" onClick={() => toggle(u)} disabled={pending} className="inline-flex h-8 items-center gap-1.5 rounded-control border border-line bg-surface px-2.5 text-[12.5px] font-semibold text-ink-muted hover:border-ink-muted hover:text-ink focus-ring disabled:opacity-60">
                     <UserMinus className="size-3.5" aria-hidden="true" /> {u.active ? 'Deactivate' : 'Reactivate'}

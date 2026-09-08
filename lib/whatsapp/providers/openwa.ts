@@ -15,7 +15,16 @@ export class OpenWAProvider implements WhatsAppProvider {
 
   private base = (process.env.OPENWA_BASE_URL ?? '').replace(/\/$/, '')
   private apiKey = process.env.OPENWA_API_KEY ?? ''
-  private session = process.env.OPENWA_SESSION_ID ?? ''
+  private session: string
+
+  /** Bound to one gateway session: the shared number by default, or an agency's own. */
+  constructor(sessionId?: string) {
+    this.session = sessionId ?? process.env.OPENWA_SESSION_ID ?? ''
+  }
+
+  get sessionId(): string {
+    return this.session
+  }
 
   private url(path: string): string {
     return `${this.base}/api/sessions/${encodeURIComponent(this.session)}${path}`
@@ -106,15 +115,16 @@ interface OpenWAEvent {
 const MEDIA_TYPES: Record<string, InboundMediaKind> = { image: 'image', document: 'document', audio: 'audio', voice: 'audio', ptt: 'audio', video: 'video', sticker: 'sticker' }
 
 /** Turns an OpenWA `message.received` event into an inbound message, or null when it should be ignored. */
-export function parseOpenWAEvent(payload: unknown): { key: string | null; message: InboundMessage | null } {
+export function parseOpenWAEvent(payload: unknown): { key: string | null; sessionId: string | null; message: InboundMessage | null } {
   const event = payload as OpenWAEvent
   const key = event?.idempotencyKey ?? null
-  if (event?.event !== 'message.received' || !event.data) return { key, message: null }
+  const sessionId = event?.sessionId ? String(event.sessionId) : null
+  if (event?.event !== 'message.received' || !event.data) return { key, sessionId, message: null }
   const d = event.data
-  if (d.fromMe || d.isGroup || (d.kind && d.kind !== 'individual')) return { key, message: null }
+  if (d.fromMe || d.isGroup || (d.kind && d.kind !== 'individual')) return { key, sessionId, message: null }
   const from = d.senderPhone ? String(d.senderPhone) : String(d.from ?? '')
   const phone = from.replace(/@.*$/, '').replace(/\D/g, '')
-  if (!phone || from.endsWith('@lid')) return { key, message: null }
+  if (!phone || from.endsWith('@lid')) return { key, sessionId, message: null }
   const name = d.pushName ?? d.notifyName ?? d.senderName ?? d.contact?.pushName ?? d.contact?.name ?? null
   const type = d.type ?? 'text'
   const text = (d.body ?? d.caption ?? '').trim()
@@ -126,8 +136,8 @@ export function parseOpenWAEvent(payload: unknown): { key: string | null; messag
     media = { kind, mimetype, filename: d.media?.filename ?? null, base64: d.media?.data ?? null, omitted: Boolean(d.media?.omitted) || !d.media?.data, sizeBytes: d.media?.sizeBytes ?? null, chatId: String(d.from ?? `${phone}@c.us`) }
   } else if (type !== 'text' && !text) {
     // Location, contact, poll, call…: nothing we can act on.
-    return { key, message: null }
+    return { key, sessionId, message: null }
   }
-  if (!text && !media) return { key, message: null }
-  return { key, message: { phone, text, messageId: String(d.id ?? key ?? ''), name: name ? String(name).slice(0, 80) : null, media } }
+  if (!text && !media) return { key, sessionId, message: null }
+  return { key, sessionId, message: { phone, text, messageId: String(d.id ?? key ?? ''), name: name ? String(name).slice(0, 80) : null, media } }
 }

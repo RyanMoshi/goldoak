@@ -72,7 +72,6 @@ export interface AutomationSummary {
   whatsappRecovered: number
 }
 
-const RENEWAL_WINDOWS = [30, 14, 7, 1] as const
 
 /** Daily sweep: renewal reminders, quote SLA chasers, claim update reminders. Idempotent per day. */
 export async function runDailyAutomation(): Promise<AutomationSummary> {
@@ -84,13 +83,14 @@ export async function runDailyAutomation(): Promise<AutomationSummary> {
   const marked = await sql`UPDATE policies SET status = 'renewal-due' WHERE status = 'live' AND expiry_date <= current_date + 30 RETURNING id`
   summary.policiesMarkedDue = marked.length
 
-  const expiring = await sql`SELECT p.*, c.name AS client_name, c.user_id AS client_user_id, c.phone AS client_phone
-    FROM policies p JOIN clients c ON c.id = p.client_id
-    WHERE p.status IN ('live','renewal-due') AND p.expiry_date BETWEEN current_date AND current_date + 30`
+  const expiring = await sql`SELECT p.*, c.name AS client_name, c.user_id AS client_user_id, c.phone AS client_phone, c.adviser_name, o.reminder_days
+    FROM policies p JOIN clients c ON c.id = p.client_id JOIN organizations o ON o.id = p.organization_id
+    WHERE p.status IN ('live','renewal-due') AND p.expiry_date BETWEEN current_date AND current_date + 90`
   for (const row of expiring) {
     const policy = toPolicy(row)
     const days = daysUntil(policy.expiryDate)
-    const window = RENEWAL_WINDOWS.find((w) => days === w)
+    const windows = Array.isArray(row.reminder_days) ? (row.reminder_days as unknown[]).map(Number) : [30, 14, 7, 1]
+    const window = windows.find((w) => days === w)
     const clientUserId = row.client_user_id ? String(row.client_user_id) : null
     const clientName = String(row.client_name)
 
@@ -104,6 +104,7 @@ export async function runDailyAutomation(): Promise<AutomationSummary> {
         body: `${policy.insurer}, policy ${policy.policyNumber}, expires ${formatShortDate(policy.expiryDate)}. Your adviser is reviewing options. Reply ADVISER to talk it through.`,
         reference: `renewal-${window}:${policy.id}`,
         phone: row.client_phone ? String(row.client_phone) : null,
+        email: { key: 'renewal-reminder', category: 'reminders', vars: { policy_name: policy.product, policy_number: policy.policyNumber, insurer: policy.insurer, renewal_date: formatShortDate(policy.expiryDate), days_left: String(window), premium: `KES ${Math.round(policy.premium).toLocaleString('en-KE')}`, agent_name: row.adviser_name ? String(row.adviser_name) : 'Your adviser', dashboard_url: `${process.env.NEXT_PUBLIC_SITE_URL ?? 'https://goldoak.vercel.app'}/portal` } },
       })
       if (n) summary.renewalReminders++
     }
@@ -151,11 +152,11 @@ export async function runDailyAutomation(): Promise<AutomationSummary> {
   }
 
   // 4. Outbox: retry WhatsApp deliveries that failed in the last 3 days (gateway offline, tunnel changed).
-  const failed = await sql`SELECT n.id, n.title, n.body, u.phone FROM notifications n JOIN users u ON u.id = n.user_id
+  const failed = await sql`SELECT n.id, n.title, n.body, n.organization_id, u.phone FROM notifications n JOIN users u ON u.id = n.user_id
     WHERE n.whatsapp_status = 'failed' AND n.created_at > now() - interval '3 days' AND u.phone IS NOT NULL AND u.active AND u.whatsapp_opt_in ORDER BY n.created_at ASC LIMIT 50`
   for (const row of failed) {
     summary.whatsappRetried++
-    const ok = await sendWhatsApp(String(row.phone), `${String(row.title)}\n\n${String(row.body)}`)
+    const ok = await sendWhatsApp(String(row.phone), `${String(row.title)}\n\n${String(row.body)}`, String(row.organization_id))
     if (ok) {
       await sql`UPDATE notifications SET whatsapp_status = 'sent' WHERE id = ${String(row.id)}`
       summary.whatsappRecovered++

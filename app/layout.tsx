@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { Petrona, Karla, JetBrains_Mono } from 'next/font/google'
 import './globals.css'
 import { Toaster } from 'react-hot-toast'
+import { AppLoader } from '@/components/site/AppLoader'
 
 const petrona = Petrona({
   subsets: ['latin'],
@@ -96,6 +97,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en" className={`${petrona.variable} ${karla.variable} ${jetbrains.variable}`}>
       <body className="font-sans antialiased">
+        <AppLoader />
         {children}
         <Toaster
           position="top-right"

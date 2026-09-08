@@ -9,7 +9,7 @@ import { storageConfigured } from '@/lib/storage/supabase'
 import { getProvider, sendWhatsApp, type InboundMessage } from '@/lib/whatsapp/provider'
 import { runAgencyCommand } from '@/services/agency/commands'
 import { consult } from '@/services/consult'
-import { appendMessage, getContact, linkContact, recentMessages, setMode, setWorkflow, touchContact, workflowExpired } from '@/services/conversations'
+import { appendMessage, getContact, linkContact, minutesSince, recentMessages, setMode, setWorkflow, touchContact, workflowExpired } from '@/services/conversations'
 import { requestHandoff } from '@/services/handoff'
 import { registerJobHandlers } from '@/services/jobs/handlers'
 import { runJobs } from '@/services/jobs'
@@ -19,6 +19,7 @@ import { listNotifications, markAllRead, notifyOrganization } from '@/services/n
 import { getPortalData } from '@/services/portal'
 import { listRequests } from '@/services/requests'
 import { confirmUpload, extractedLines, getUpload, storeUpload, uploadAllowed } from '@/services/uploads'
+import { getMembership } from '@/services/memberships'
 import { findUserByPhone, getOrganization, getOrganizationByCode, updateUserEmail } from '@/services/users'
 import { CLAIM_STAGES, JOURNEY_STAGES, type Organization, type PortalData, type PublicUser, type WhatsAppContact } from '@/types/platform'
 
@@ -44,15 +45,24 @@ export interface InboundResult {
   answered: boolean
 }
 
-/** Full handling of one inbound message. Returns the replies to send. */
-export async function handleInbound(message: InboundMessage): Promise<InboundResult> {
+/** Full handling of one inbound message. Returns the replies to send. `channelOrganizationId` is set when the message arrived on an agency's own number. */
+export async function handleInbound(message: InboundMessage, channelOrganizationId: string | null = null): Promise<InboundResult> {
   await ensureSchema()
   const phone = message.phone
   const text = (message.text ?? '').trim().slice(0, 4000)
+  const before = await getContact(phone)
+  const gapMinutes = minutesSince(before?.lastInboundAt ?? null)
   let contact = await touchContact(phone, message.name ?? null)
-  const user = await findUserByPhone(phone)
+  let user = await findUserByPhone(phone)
 
-  if (user && (contact.userId !== user.id || (user.organizationId && contact.organizationId !== user.organizationId))) {
+  if (channelOrganizationId) {
+    // The agency's own number: this conversation belongs to that agency, whatever the contact was linked to before.
+    if (user && user.organizationId !== channelOrganizationId && !(await getMembership(user.id, channelOrganizationId))) user = null
+    if (contact.organizationId !== channelOrganizationId || (user && contact.userId !== user.id)) {
+      await linkContact(phone, { organizationId: channelOrganizationId, userId: user?.id ?? null })
+      contact = (await getContact(phone)) ?? contact
+    }
+  } else if (user && (contact.userId !== user.id || (user.organizationId && contact.organizationId !== user.organizationId))) {
     await linkContact(phone, { userId: user.id, organizationId: user.organizationId ?? contact.organizationId })
     contact = (await getContact(phone)) ?? contact
   }
@@ -63,7 +73,7 @@ export async function handleInbound(message: InboundMessage): Promise<InboundRes
 
   let result: InboundResult
   try {
-    result = await route(phone, text, message, contact, user)
+    result = await route(phone, text, message, contact, user, gapMinutes)
   } catch (error) {
     console.error('route failed', error instanceof Error ? `${error.message} ${error.stack?.split('\n')[1] ?? ''}` : error)
     result = { replies: ['Something went wrong on our side. Nothing was lost. Please try again in a moment, or reply 7 to talk to a person.'], userId: user?.id ?? null, organizationId: contact.organizationId, answered: true }
@@ -75,16 +85,16 @@ export async function handleInbound(message: InboundMessage): Promise<InboundRes
 }
 
 /** Background path (from the webhook): handle, send, then drain any jobs that were queued. */
-export async function processInbound(payload: { message: InboundMessage }): Promise<void> {
+export async function processInbound(payload: { message: InboundMessage; channelOrganizationId?: string | null }): Promise<void> {
   registerJobHandlers()
-  const result = await handleInbound(payload.message)
-  for (const reply of result.replies) await sendWhatsApp(payload.message.phone, reply)
+  const result = await handleInbound(payload.message, payload.channelOrganizationId ?? null)
+  for (const reply of result.replies) await sendWhatsApp(payload.message.phone, reply, result.organizationId)
   await runJobs(5, 200_000)
 }
 
 /* ---------- Routing ---------- */
 
-async function route(phone: string, text: string, message: InboundMessage, contact: WhatsAppContact, user: PublicUser | null): Promise<InboundResult> {
+async function route(phone: string, text: string, message: InboundMessage, contact: WhatsAppContact, user: PublicUser | null, gapMinutes = 0): Promise<InboundResult> {
   const lower = text.toLowerCase()
   const base = { userId: user?.id ?? null, organizationId: contact.organizationId, answered: true }
 
@@ -220,6 +230,11 @@ async function route(phone: string, text: string, message: InboundMessage, conta
   }
 
   if (flow && state) {
+    // Coming back hours or days later: remind them where we were instead of treating the greeting as an answer.
+    if (gapMinutes >= 360 && (understood.intent === 'greeting' || understood.intent === 'unknown' || understood.intent === 'thanks') && text.length < 40) {
+      const back = await currentPrompt(flow, ctx, state)
+      return { ...scoped, replies: [`${bold(`Welcome back${first ? `, ${first}` : ''}`)}\nWe were in the middle of ${flow.title.toLowerCase()}. Your answers so far are saved. Here is where we were:\n\n${back}\n\n${italic('Reply CANCEL to drop it, or MENU for other options.')}`] }
+    }
     if (understood.intent === 'back') return { ...scoped, replies: [await persist(phone, flow, await backFlow(flow, ctx, state))] }
     if (understood.intent === 'restart') return { ...scoped, replies: [await persist(phone, flow, await restartFlow(flow, ctx, presetFor(flow, state)))] }
     const outcome = await safeAdvance(flow, ctx, state, text)
@@ -232,7 +247,11 @@ async function route(phone: string, text: string, message: InboundMessage, conta
     return { ...scoped, replies: [await persist(phone, flow, outcome)] }
   }
 
-  // 6. Consultation mode: free questions until MENU.
+  // 6. Consultation mode: free questions until MENU. A greeting after a long gap goes back to the menu.
+  if (running === 'consult' && gapMinutes >= 360 && understood.intent === 'greeting') {
+    await setWorkflow(phone, null, null, {})
+    return { ...scoped, replies: [mainMenu(org.shortName, registered, first)] }
+  }
   if (running === 'consult') {
     if (['question', 'assistance', 'unknown', 'status', 'greeting', 'thanks'].includes(understood.intent)) {
       return { ...scoped, replies: [await answerQuestion(phone, org, user, client, text, contact)] }
@@ -457,7 +476,7 @@ export async function afterUploadProcessed(uploadId: string): Promise<void> {
   }
   const contact = await getContact(phone)
   if (contact?.mode === 'human') return
-  await sendWhatsApp(phone, text)
+  await sendWhatsApp(phone, text, orgId)
   await appendMessage({ phone, organizationId: orgId, userId: upload.userId, direction: 'out', role: 'assistant', body: text })
 }
 

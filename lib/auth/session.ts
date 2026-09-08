@@ -12,6 +12,10 @@ export interface SessionPayload {
   role: Role
   oid: string
   name: string
+  /** Set until the person replaces a temporary password; the middleware allows only /account/password. */
+  mcp?: boolean
+  /** Super admin acting as this user; every action is audited against the admin. */
+  imp?: string
   /** unix seconds */
   exp: number
 }

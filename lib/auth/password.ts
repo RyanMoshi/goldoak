@@ -27,3 +27,17 @@ export async function verifyPassword(password: string, stored: string): Promise<
   const key = await derive(password, salt, expected.length, Number(cost))
   return key.length === expected.length && timingSafeEqual(key, expected)
 }
+
+const WORDS = ['Mango', 'Baobab', 'Safari', 'Zebra', 'Acacia', 'Kilima', 'Savanna', 'Jambo', 'Coral', 'Cedar', 'Lotus', 'Maple', 'Nomad', 'Onyx', 'Pearl', 'Quartz', 'Rhino', 'Solar', 'Tembo', 'Amber', 'Bantu', 'Delta', 'Ember', 'Falcon', 'Gazelle', 'Harbor', 'Indigo', 'Jade', 'Karibu', 'Lemon', 'Meadow', 'Nyota', 'Orbit', 'Pepper', 'Raven', 'Simba', 'Topaz', 'Umoja', 'Velvet', 'Willow']
+
+/**
+ * A temporary password a person can type from a phone screen: a familiar word
+ * plus four digits, no ambiguous characters (no 0/O, 1/l/I). ~1.3 million
+ * combinations, rate-limited sign-in, and it must be changed on first login.
+ */
+export function generateTempPassword(): string {
+  const bytes = randomBytes(4)
+  const word = WORDS[bytes[0] % WORDS.length]
+  const digits = String(((bytes[1] << 16) | (bytes[2] << 8) | bytes[3]) % 7000 + 2000)
+  return `${word}${digits.replace(/[01]/g, (d) => (d === '0' ? '3' : '7'))}`
+}

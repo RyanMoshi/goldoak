@@ -5,6 +5,7 @@ import type {
   BusinessClaim,
   Enquiry,
   EnquiryRow,
+  Membership,
   Upload,
   UploadRow,
   Claim,
@@ -65,6 +66,10 @@ export function toOrganization(r: Row): Organization {
     description: strOrNull(r.description),
     logoPath: strOrNull(r.logo_path),
     contactName: strOrNull(r.contact_name),
+    website: strOrNull(r.website),
+    branding: obj(r.branding) as Record<string, string>,
+    aiSettings: obj(r.ai_settings) as Organization['aiSettings'],
+    reminderDays: Array.isArray(r.reminder_days) ? (r.reminder_days as unknown[]).map(Number).filter((n) => Number.isFinite(n) && n >= 0) : [30, 14, 7, 1],
   }
 }
 
@@ -144,6 +149,9 @@ export function toPublicUser(r: Row): PublicUser {
     title: strOrNull(r.title),
     active: r.active === undefined ? true : Boolean(r.active),
     whatsappOptIn: r.whatsapp_opt_in === undefined ? true : Boolean(r.whatsapp_opt_in),
+    mustChangePassword: Boolean(r.must_change_password),
+    emailVerifiedAt: isoOrNull(r.email_verified_at),
+    emailPrefs: obj(r.email_prefs) as Record<string, boolean>,
     createdAt: r.created_at ? iso(r.created_at) : undefined,
     lastSeenAt: isoOrNull(r.last_seen_at),
   }
@@ -358,4 +366,18 @@ export function toEnquiry(r: Row): Enquiry {
 
 export function toEnquiryRow(r: Row): EnquiryRow {
   return { ...toEnquiry(r), clientName: strOrNull(r.client_name) }
+}
+
+export function toMembership(r: Row): Membership {
+  return {
+    id: str(r.id),
+    userId: str(r.user_id),
+    organizationId: str(r.organization_id),
+    organizationName: str(r.organization_name),
+    organizationShortName: str(r.organization_short_name),
+    role: (r.role as Membership['role']) ?? 'client',
+    clientId: strOrNull(r.client_id),
+    status: (r.status as Membership['status']) ?? 'active',
+    createdAt: iso(r.created_at),
+  }
 }

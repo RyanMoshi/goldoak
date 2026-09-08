@@ -10,7 +10,7 @@ import { newId } from '@/lib/ids'
  * to `max_attempts`, then are marked dead and surfaced on the admin dashboard.
  */
 
-export type JobType = 'ocr-upload' | 'memory-summary' | 'whatsapp-send' | 'whatsapp-send-document' | 'process-inbound'
+export type JobType = 'ocr-upload' | 'memory-summary' | 'whatsapp-send' | 'whatsapp-send-document' | 'process-inbound' | 'web-answer' | 'email-send'
 
 export interface Job {
   id: string

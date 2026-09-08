@@ -1,13 +1,16 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { hashPassword } from '@/lib/auth/password'
-import { generatePassword } from '@/lib/conversation/flows'
-import { requireSession } from '@/lib/auth/server'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { getSession, requireSession } from '@/lib/auth/server'
+import { SESSION_COOKIE, SESSION_DAYS, homeFor, signSession } from '@/lib/auth/session'
+import { announceApproval, inviteStaff, resetToTemporaryPassword } from '@/services/onboarding'
+import { listMemberships } from '@/services/memberships'
 import { normalizePhone } from '@/lib/format'
 import { audit } from '@/services/audit'
 import { linkContact } from '@/services/conversations'
-import { codeTaken, createOrganization, createStaffUser, emailOrPhoneTaken, getOrganization, setUserActive, setUserPassword, updateOrganization } from '@/services/users'
+import { codeTaken, createOrganization, emailOrPhoneTaken, getOrganization, getUser, setUserActive, updateOrganization } from '@/services/users'
 
 export interface AdminActionState {
   error?: string
@@ -29,7 +32,6 @@ export async function createOrganizationAction(formData: FormData): Promise<Admi
   const adminName = String(formData.get('adminName') ?? '').trim()
   const adminEmail = String(formData.get('adminEmail') ?? '').trim().toLowerCase()
   const adminPhoneInput = String(formData.get('adminPhone') ?? '').trim()
-  let password = String(formData.get('adminPassword') ?? '').trim()
 
   if (name.length < 2) return { error: 'Enter the agency name.', field: 'name' }
   if (code.length < 3 || code.length > 12) return { error: 'The join code needs 3 to 12 letters or digits (for example ACME).', field: 'code' }
@@ -38,8 +40,6 @@ export async function createOrganizationAction(formData: FormData): Promise<Admi
   if (!EMAIL.test(adminEmail)) return { error: 'Enter a valid email for the agency admin.', field: 'email' }
   const adminPhone = adminPhoneInput ? normalizePhone(adminPhoneInput) : null
   if (adminPhoneInput && !adminPhone) return { error: 'Enter a valid mobile number for the agency admin.', field: 'phone' }
-  if (password && password.length < 8) return { error: 'Passwords need at least 8 characters, or leave blank to generate one.', field: 'password' }
-  if (!password) password = generatePassword()
 
   try {
     if (await codeTaken(code)) return { error: 'That join code is already used by another agency.', field: 'code' }
@@ -48,10 +48,10 @@ export async function createOrganizationAction(formData: FormData): Promise<Admi
     if (taken === 'phone') return { error: 'That phone number is already on another account.', field: 'phone' }
 
     const org = await createOrganization({ name, shortName, code, phone, email, greeting })
-    const admin = await createStaffUser({ role: 'agency_admin', organizationId: org.id, name: adminName, email: adminEmail, phone: adminPhone, title: 'Agency admin', passwordHash: await hashPassword(password), createdBy: session.uid })
+    const { user: admin, temporaryPassword, emailed } = await inviteStaff({ organizationId: org.id, actor: { id: session.uid, name: session.name }, name: adminName, email: adminEmail, phone: adminPhone, title: 'Agency admin', role: 'agency_admin' })
     await audit({ organizationId: org.id, actorUserId: session.uid, action: 'organization.created', target: org.id, detail: { name, code, adminUserId: admin.id } })
     revalidatePath('/admin')
-    return { success: `${org.name} is live with join code ${code}. ${admin.name} can sign in on the Agency tab with ${admin.email} and the password ${password}. Share it privately.` }
+    return { success: `${org.name} is live with join code ${code}. ${admin.name} ${emailed ? 'has been emailed' : 'could not be emailed; share'} the temporary password ${temporaryPassword}; they choose their own at first sign-in.` }
   } catch (error) {
     console.error('createOrganization failed', error instanceof Error ? error.message : error)
     return { error: 'Could not create the agency. Please try again.' }
@@ -82,15 +82,12 @@ export async function createAgencyAccountAction(formData: FormData): Promise<Adm
   const title = String(formData.get('title') ?? '').trim() || null
   const roleRaw = String(formData.get('role') ?? 'agency')
   const role = roleRaw === 'agency_admin' ? 'agency_admin' : roleRaw === 'admin' ? 'admin' : 'agency'
-  let password = String(formData.get('password') ?? '').trim()
 
   if (!organizationId) return { error: 'Choose the agency.', field: 'organization' }
   if (name.length < 2) return { error: 'Enter the person’s full name.', field: 'name' }
   if (!EMAIL.test(email)) return { error: 'Enter a valid email address.', field: 'email' }
   const phone = phoneInput ? normalizePhone(phoneInput) : null
   if (phoneInput && !phone) return { error: 'Enter a valid mobile number.', field: 'phone' }
-  if (password && password.length < 8) return { error: 'Passwords need at least 8 characters, or leave blank to generate one.', field: 'password' }
-  if (!password) password = generatePassword()
 
   try {
     const org = await getOrganization(organizationId)
@@ -98,10 +95,9 @@ export async function createAgencyAccountAction(formData: FormData): Promise<Adm
     const taken = await emailOrPhoneTaken(email, phone)
     if (taken === 'email') return { error: 'An account with that email already exists.', field: 'email' }
     if (taken === 'phone') return { error: 'That phone number is already on another account.', field: 'phone' }
-    const user = await createStaffUser({ role, organizationId, name, email, phone, title, passwordHash: await hashPassword(password), createdBy: session.uid })
-    await audit({ organizationId, actorUserId: session.uid, action: 'user.created', target: user.id, detail: { role } })
+    const { user, temporaryPassword, emailed } = await inviteStaff({ organizationId, actor: { id: session.uid, name: session.name }, name, email, phone, title, role })
     revalidatePath('/admin')
-    return { success: `${user.name} (${org.shortName}) can now sign in on the Agency tab with ${user.email} and the password ${password}. Share it privately; they should change it after first use.` }
+    return { success: `${user.name} (${org.shortName}) ${emailed ? 'has been emailed' : 'could not be emailed; share'} the temporary password ${temporaryPassword}. They choose their own at first sign-in.` }
   } catch (error) {
     console.error('createAgencyAccount failed', error instanceof Error ? error.message : error)
     return { error: 'Could not create the account. Please try again.' }
@@ -110,12 +106,12 @@ export async function createAgencyAccountAction(formData: FormData): Promise<Adm
 
 export async function resetAgencyPasswordAction(userId: string): Promise<AdminActionState> {
   const session = await requireSession('admin')
-  const password = generatePassword()
   try {
-    await setUserPassword(userId, await hashPassword(password))
-    await audit({ organizationId: null, actorUserId: session.uid, action: 'user.password-reset', target: userId })
+    const user = await getUser(userId)
+    if (!user) return { error: 'Account not found.' }
+    const { temporaryPassword, emailed } = await resetToTemporaryPassword(user, { id: session.uid, name: session.name }, user.organizationId)
     revalidatePath('/admin')
-    return { success: `New password: ${password}. Share it privately.` }
+    return { success: emailed ? `A temporary password (${temporaryPassword}) was emailed to ${user.email}.` : `Temporary password: ${temporaryPassword}. Email could not be sent; share it privately.` }
   } catch (error) {
     console.error('resetAgencyPassword failed', error instanceof Error ? error.message : error)
     return { error: 'Could not reset the password.' }
@@ -160,15 +156,7 @@ export async function approveOrganizationAction(organizationId: string): Promise
     if (!org) return { error: 'That agency does not exist.' }
     await updateOrganization(organizationId, { status: 'active', active: true })
     await audit({ organizationId, actorUserId: session.uid, action: 'organization.approved', target: organizationId })
-    const { getSql } = await import('@/lib/db/client')
-    const admins = await getSql()`SELECT id, email, name FROM users WHERE organization_id = ${organizationId} AND role = 'agency_admin' AND active`
-    const { notify } = await import('@/services/notifications')
-    const { sendEmail } = await import('@/lib/email')
-    const site = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://goldoak.vercel.app'
-    for (const a of admins) {
-      await notify({ organizationId, userId: String(a.id), kind: 'welcome', title: `${org.name} is approved`, body: `Your agency is live on Super Agent. Share your WhatsApp link from Settings and invite your team.`, reference: `org-approved:${organizationId}:${String(a.id)}` })
-      await sendEmail({ to: String(a.email), subject: `${org.name} is live on Super Agent`, text: `Hello ${String(a.name).split(' ')[0]},\n\n${org.name} has been approved. Sign in at ${site}/signin?as=agency, open Settings for your WhatsApp join link, and invite your team.\n\nJoin code: ${org.code}` })
-    }
+    await announceApproval({ ...org, status: 'active', active: true })
     revalidatePath('/admin')
     return { success: `${org.name} approved and told.` }
   } catch (error) {
@@ -191,4 +179,37 @@ export async function retryJobAction(jobId: string): Promise<AdminActionState> {
     console.error('retryJob failed', error instanceof Error ? error.message : error)
     return { error: 'Could not retry the job.' }
   }
+}
+
+/* ---------- Impersonation (support), fully audited ---------- */
+
+/** The super admin opens another person's workspace. Every action taken is logged against the admin, and a banner shows who is acting. */
+export async function impersonateAction(userId: string): Promise<AdminActionState> {
+  const session = await requireSession('admin')
+  if (session.imp) return { error: 'Return to your own account first.' }
+  const target = await getUser(userId)
+  if (!target || target.role === 'admin') return { error: 'That account cannot be impersonated.' }
+  const memberships = await listMemberships(target.id)
+  const membership = memberships[0]
+  const oid = membership?.organizationId ?? target.organizationId
+  if (!oid) return { error: 'That account has no agency.' }
+  const role = membership?.role ?? target.role
+  const token = await signSession({ uid: target.id, role, oid, name: target.name, imp: session.uid })
+  await audit({ organizationId: oid, actorUserId: session.uid, action: 'auth.impersonation-started', target: target.id, detail: { role } })
+  cookies().set(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: 60 * 60 })
+  redirect(homeFor(role))
+}
+
+export async function stopImpersonationAction(): Promise<void> {
+  const session = await getSession()
+  if (!session?.imp) redirect('/admin')
+  const admin = await getUser(session.imp)
+  await audit({ organizationId: session.oid, actorUserId: session.imp, action: 'auth.impersonation-ended', target: session.uid })
+  if (!admin || admin.role !== 'admin') {
+    cookies().delete(SESSION_COOKIE)
+    redirect('/signin')
+  }
+  const token = await signSession({ uid: admin.id, role: 'admin', oid: admin.organizationId ?? 'org_goldoak', name: admin.name })
+  cookies().set(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: SESSION_DAYS * 86400 })
+  redirect('/admin')
 }

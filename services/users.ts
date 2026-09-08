@@ -2,6 +2,7 @@ import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { toOrganization, toOrganizationSummary, toPublicUser } from '@/lib/db/mappers'
 import { newId } from '@/lib/ids'
+import { ensureMembership } from '@/services/memberships'
 import type { Organization, OrganizationSummary, PublicUser, Role } from '@/types/platform'
 
 /** The organisation web sign-ups are attached to when no agency was chosen. GoldOak by default. */
@@ -24,6 +25,44 @@ export async function findUserForSignIn(email: string, tab: 'agency' | 'client')
   const row = rows[0]
   if (!row) return null
   return { ...toPublicUser(row), passwordHash: String(row.password_hash) }
+}
+
+/** One identity per email, whatever the role. Sign-in uses this and then picks a membership. */
+export async function findUserWithSecret(email: string): Promise<UserWithSecret | null> {
+  await ensureSchema()
+  const sql = getSql()
+  const rows = await sql`SELECT * FROM users WHERE lower(email) = lower(${email}) LIMIT 1`
+  const row = rows[0]
+  if (!row) return null
+  return { ...toPublicUser(row), passwordHash: String(row.password_hash) }
+}
+
+export async function isLocked(userId: string): Promise<boolean> {
+  const sql = getSql()
+  const rows = await sql`SELECT locked_until FROM users WHERE id = ${userId} AND locked_until > now() LIMIT 1`
+  return rows.length > 0
+}
+
+/** Counts a failed sign-in; five in a row lock the account for 15 minutes. */
+export async function recordFailedLogin(userId: string): Promise<void> {
+  const sql = getSql()
+  await sql`UPDATE users SET failed_logins = failed_logins + 1, locked_until = CASE WHEN failed_logins + 1 >= 5 THEN now() + interval '15 minutes' ELSE locked_until END WHERE id = ${userId}`
+}
+
+export async function recordLogin(userId: string): Promise<void> {
+  const sql = getSql()
+  await sql`UPDATE users SET failed_logins = 0, locked_until = NULL, last_login_at = now(), last_seen_at = now() WHERE id = ${userId}`
+}
+
+export async function markPasswordChanged(userId: string, passwordHash: string): Promise<void> {
+  const sql = getSql()
+  await sql`UPDATE users SET password_hash = ${passwordHash}, must_change_password = false, password_changed_at = now(), updated_at = now() WHERE id = ${userId}`
+}
+
+/** Sets a temporary password that must be replaced at the next sign-in. */
+export async function setTemporaryPassword(userId: string, passwordHash: string): Promise<void> {
+  const sql = getSql()
+  await sql`UPDATE users SET password_hash = ${passwordHash}, must_change_password = true, updated_at = now() WHERE id = ${userId}`
 }
 
 export async function findUserByPhone(phone: string): Promise<PublicUser | null> {
@@ -49,7 +88,7 @@ export async function getUser(id: string): Promise<PublicUser | null> {
 
 /** A safe stand-in when an organisation row is missing (never persisted). */
 export function placeholderOrganization(id: string, name = 'Agency'): Organization {
-  return { id, name, shortName: name, phone: '', email: '', whatsapp: '', code: null, active: true, greeting: null, licenceLabel: null, status: 'active', type: null, address: null, description: null, logoPath: null, contactName: null }
+  return { id, name, shortName: name, phone: '', email: '', whatsapp: '', code: null, active: true, greeting: null, licenceLabel: null, status: 'active', type: null, address: null, description: null, logoPath: null, contactName: null, website: null, branding: {}, aiSettings: {}, reminderDays: [30, 14, 7, 1] }
 }
 
 export async function getOrganization(id: string): Promise<Organization | null> {
@@ -144,6 +183,18 @@ export async function updateOrganization(id: string, input: Partial<Organization
     WHERE id = ${id}`
 }
 
+export async function updateBranding(id: string, branding: Record<string, string>, reminderDays: number[]): Promise<void> {
+  const sql = getSql()
+  const clean: Record<string, string> = {}
+  for (const [k, v] of Object.entries(branding)) if (v) clean[k] = v
+  await sql`UPDATE organizations SET branding = ${sql.json(clean as never)}, reminder_days = ${sql.json(reminderDays as never)}, website = COALESCE(${clean.website ?? null}, website), updated_at = now() WHERE id = ${id}`
+}
+
+export async function updateAiSettings(id: string, settings: Organization['aiSettings']): Promise<void> {
+  const sql = getSql()
+  await sql`UPDATE organizations SET ai_settings = ${sql.json(settings as never)}, updated_at = now() WHERE id = ${id}`
+}
+
 /* ---------- Clients ---------- */
 
 export async function emailOrPhoneTaken(email: string | null, phone: string | null): Promise<'email' | 'phone' | null> {
@@ -168,6 +219,9 @@ interface CreateClientUserInput {
   businessName: string | null
   clientType: 'individual' | 'sme' | 'corporate'
   notes: string | null
+  /** True when the password was generated for them (invitation, WhatsApp sign-up). */
+  temporaryPassword?: boolean
+  invitedBy?: string | null
 }
 
 /** Creates a client user and their client record under an organisation (the default one unless given). */
@@ -179,14 +233,31 @@ export async function createClientUser(input: CreateClientUserInput): Promise<{ 
   const clientId = newId('cli')
   const clientName = input.businessName?.trim() || input.name
 
-  await sql`INSERT INTO users (id, role, organization_id, name, email, phone, password_hash)
-    VALUES (${userId}, 'client', ${orgId}, ${input.name}, ${input.email}, ${input.phone}, ${input.passwordHash})`
+  await sql`INSERT INTO users (id, role, organization_id, name, email, phone, password_hash, must_change_password)
+    VALUES (${userId}, 'client', ${orgId}, ${input.name}, ${input.email}, ${input.phone}, ${input.passwordHash}, ${input.temporaryPassword ?? false})`
   await sql`INSERT INTO clients (id, organization_id, user_id, name, type, phone, email, stage, notes)
     VALUES (${clientId}, ${orgId}, ${userId}, ${clientName}, ${input.clientType}, ${input.phone}, ${input.email}, 'understand', ${input.notes})`
+  await ensureMembership({ userId, organizationId: orgId, role: 'client', clientId, invitedBy: input.invitedBy ?? null })
 
   const user = await getUser(userId)
   if (!user) throw new Error('User was not created')
   return { user, clientId }
+}
+
+/**
+ * Adds an existing platform identity to another agency as a client, creating
+ * the agency's own client record. The person's other agencies never see it.
+ */
+export async function attachExistingUserAsClient(input: { userId: string; organizationId: string; name: string; clientType: 'individual' | 'sme' | 'corporate'; phone: string | null; email: string | null; notes: string | null; invitedBy: string | null }): Promise<string> {
+  await ensureSchema()
+  const sql = getSql()
+  const existing = await sql`SELECT id FROM clients WHERE user_id = ${input.userId} AND organization_id = ${input.organizationId} LIMIT 1`
+  if (existing[0]) return String(existing[0].id)
+  const clientId = newId('cli')
+  await sql`INSERT INTO clients (id, organization_id, user_id, name, type, phone, email, stage, notes)
+    VALUES (${clientId}, ${input.organizationId}, ${input.userId}, ${input.name}, ${input.clientType}, ${input.phone}, ${input.email}, 'understand', ${input.notes})`
+  await ensureMembership({ userId: input.userId, organizationId: input.organizationId, role: 'client', clientId, invitedBy: input.invitedBy, status: 'invited' })
+  return clientId
 }
 
 export async function touchLastSeen(userId: string): Promise<void> {
@@ -221,6 +292,7 @@ interface CreateStaffInput {
   title: string | null
   passwordHash: string
   createdBy: string | null
+  temporaryPassword?: boolean
 }
 
 export async function createStaffUser(input: CreateStaffInput): Promise<PublicUser> {
@@ -228,8 +300,9 @@ export async function createStaffUser(input: CreateStaffInput): Promise<PublicUs
   if (!STAFF_ROLES.includes(input.role)) throw new Error('Invalid staff role')
   const sql = getSql()
   const id = newId('usr')
-  await sql`INSERT INTO users (id, role, organization_id, name, email, phone, password_hash, title, created_by)
-    VALUES (${id}, ${input.role}, ${input.organizationId}, ${input.name}, ${input.email}, ${input.phone}, ${input.passwordHash}, ${input.title}, ${input.createdBy})`
+  await sql`INSERT INTO users (id, role, organization_id, name, email, phone, password_hash, title, created_by, must_change_password)
+    VALUES (${id}, ${input.role}, ${input.organizationId}, ${input.name}, ${input.email}, ${input.phone}, ${input.passwordHash}, ${input.title}, ${input.createdBy}, ${input.temporaryPassword ?? false})`
+  if (input.role !== 'admin') await ensureMembership({ userId: id, organizationId: input.organizationId, role: input.role, invitedBy: input.createdBy })
   const user = await getUser(id)
   if (!user) throw new Error('User was not created')
   return user

@@ -11,7 +11,15 @@ export async function getSession(): Promise<SessionPayload | null> {
 export async function requireSession(area: Area): Promise<SessionPayload> {
   const session = await getSession()
   if (!session) redirect(`/signin?as=${area === 'client' ? 'client' : 'agency'}`)
+  if (session.mcp) redirect('/account/password?first=1')
   if (!canAccess(session.role, area)) redirect(homeFor(session.role))
+  return session
+}
+
+/** Any signed-in person, including one who still has to change a temporary password. */
+export async function requireAnySession(): Promise<SessionPayload> {
+  const session = await getSession()
+  if (!session) redirect('/signin')
   return session
 }
 
