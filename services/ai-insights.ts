@@ -58,26 +58,74 @@ export interface AiOverview {
   daily: { day: string; answers: number; failures: number }[]
 }
 
+/**
+ * A dashboard must never hang because one aggregate is slow. Each query runs on
+ * its own with a short deadline; anything that misses it is reported as empty
+ * and logged, so the page still renders and the gap is visible rather than
+ * silent. (Written after the first version stalled the whole console.)
+ */
+async function guarded<T>(label: string, run: () => Promise<T>, fallback: T, ms = 6000): Promise<T> {
+  try {
+    return await Promise.race([
+      run(),
+      new Promise<T>((_, reject) => setTimeout(() => reject(new Error('timed out')), ms)),
+    ])
+  } catch (error) {
+    console.error(`ai overview: ${label} failed`, error instanceof Error ? error.message : error)
+    return fallback
+  }
+}
+
+const median = (values: number[]): number | null => {
+  if (!values.length) return null
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted[Math.floor(sorted.length / 2)]
+}
+
 export async function aiOverview(): Promise<AiOverview> {
   await ensureSchema()
   const sql = getSql()
-  const [totals, channels, models, daily, convos] = await Promise.all([
-    sql`SELECT
+
+  const totals = await guarded(
+    'totals',
+    () => sql`SELECT
         count(*) FILTER (WHERE at > now() - interval '1 day') AS a24,
         count(*) FILTER (WHERE at > now() - interval '7 days') AS a7,
         count(*) FILTER (WHERE at > now() - interval '1 day' AND NOT ok) AS f24,
         count(*) FILTER (WHERE at > now() - interval '1 day' AND escalated) AS e24,
         count(*) FILTER (WHERE at > now() - interval '1 day' AND fallback_used) AS fb24,
-        count(DISTINCT organization_id) FILTER (WHERE at > now() - interval '30 days') AS orgs,
-        percentile_disc(0.5) WITHIN GROUP (ORDER BY latency_ms) FILTER (WHERE at > now() - interval '1 day' AND latency_ms IS NOT NULL) AS med
+        count(DISTINCT organization_id) FILTER (WHERE at > now() - interval '30 days') AS orgs
       FROM ai_events`,
-    sql`SELECT coalesce(channel, 'other') AS channel, count(*) AS n FROM ai_events WHERE at > now() - interval '7 days' GROUP BY 1 ORDER BY n DESC`,
-    sql`SELECT coalesce(model, 'unknown') AS model, count(*) AS n, count(*) FILTER (WHERE NOT ok) AS failures
+    [] as Record<string, unknown>[],
+  )
+  const latencies = await guarded(
+    'latency',
+    () => sql`SELECT latency_ms FROM ai_events WHERE at > now() - interval '1 day' AND latency_ms IS NOT NULL ORDER BY at DESC LIMIT 500`,
+    [] as Record<string, unknown>[],
+  )
+  const channels = await guarded(
+    'channels',
+    () => sql`SELECT coalesce(channel, 'other') AS channel, count(*) AS n FROM ai_events WHERE at > now() - interval '7 days' GROUP BY 1 ORDER BY n DESC`,
+    [] as Record<string, unknown>[],
+  )
+  const models = await guarded(
+    'models',
+    () => sql`SELECT coalesce(model, 'unknown') AS model, count(*) AS n, count(*) FILTER (WHERE NOT ok) AS failures
         FROM ai_events WHERE at > now() - interval '7 days' GROUP BY 1 ORDER BY n DESC LIMIT 8`,
-    sql`SELECT to_char(date_trunc('day', at), 'YYYY-MM-DD') AS day, count(*) AS n, count(*) FILTER (WHERE NOT ok) AS failures
+    [] as Record<string, unknown>[],
+  )
+  const daily = await guarded(
+    'daily',
+    () => sql`SELECT to_char(date_trunc('day', at), 'YYYY-MM-DD') AS day, count(*) AS n, count(*) FILTER (WHERE NOT ok) AS failures
         FROM ai_events WHERE at > now() - interval '14 days' GROUP BY 1 ORDER BY 1`,
-    sql`SELECT count(DISTINCT phone) AS n FROM conversation_messages WHERE at > now() - interval '7 days'`,
-  ])
+    [] as Record<string, unknown>[],
+  )
+  const convos = await guarded(
+    'conversations',
+    () => sql`SELECT count(DISTINCT phone) AS n FROM conversation_messages WHERE at > now() - interval '7 days'`,
+    [] as Record<string, unknown>[],
+  )
+
   const t = totals[0] ?? {}
   const a24 = Number(t.a24 ?? 0)
   const f24 = Number(t.f24 ?? 0)
@@ -87,7 +135,7 @@ export async function aiOverview(): Promise<AiOverview> {
     failures24h: f24,
     escalations24h: Number(t.e24 ?? 0),
     fallbacks24h: Number(t.fb24 ?? 0),
-    medianLatencyMs: t.med == null ? null : Number(t.med),
+    medianLatencyMs: median(latencies.map((r) => Number(r.latency_ms)).filter((n) => Number.isFinite(n))),
     successRate: a24 === 0 ? 1 : (a24 - f24) / a24,
     agenciesServed: Number(t.orgs ?? 0),
     conversations7d: Number(convos[0]?.n ?? 0),
