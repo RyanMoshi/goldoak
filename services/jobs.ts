@@ -1,3 +1,4 @@
+import { runInBackground } from '@/lib/background'
 import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { newId } from '@/lib/ids'
@@ -44,7 +45,33 @@ export async function enqueue(input: EnqueueInput): Promise<string | null> {
   const rows = await sql`INSERT INTO jobs (id, organization_id, type, payload, run_after, idempotency_key, max_attempts)
     VALUES (${id}, ${input.organizationId ?? null}, ${input.type}, ${sql.json(input.payload as never)}, now() + (${input.delaySeconds ?? 0} || ' seconds')::interval, ${input.idempotencyKey ?? null}, ${input.maxAttempts ?? 4})
     ON CONFLICT (idempotency_key) DO NOTHING RETURNING id`
-  return rows[0] ? String(rows[0].id) : null
+  const id2 = rows[0] ? String(rows[0].id) : null
+  if (id2 && !(input.delaySeconds && input.delaySeconds > 0)) kickQueue()
+  return id2
+}
+
+let kicking = false
+
+/**
+ * Drains due jobs right after the current response is sent, so an email or a
+ * WhatsApp message queued by a request goes out within seconds rather than at
+ * the next scheduled run. The scheduled worker remains the safety net for
+ * anything that fails here. Handlers are loaded lazily to avoid an import cycle.
+ */
+export function kickQueue(): void {
+  if (kicking) return
+  kicking = true
+  runInBackground(async () => {
+    try {
+      const { registerJobHandlers } = await import('@/services/jobs/handlers')
+      registerJobHandlers()
+      await runJobs(10, 45_000)
+    } catch (error) {
+      console.error('queue kick failed', error instanceof Error ? error.message : error)
+    } finally {
+      kicking = false
+    }
+  })
 }
 
 export interface RunSummary {
