@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { Smartphone } from 'lucide-react'
+import { MessageCircle, Smartphone } from 'lucide-react'
 import { Badge } from '@/components/platform/ui/Badge'
 import { Card } from '@/components/platform/ui/Card'
 import { EmptyState } from '@/components/platform/ui/EmptyState'
@@ -28,8 +28,18 @@ export default async function AdminChannelsPage() {
       <Card className="p-4">
         <p className="label-caps text-ink-muted">Shared Super Agent line</p>
         <p className="mt-1 text-[14px] text-ink">
-          {shared ? <span className="font-mono">+{shared}</span> : 'not configured'} · gateway {whatsappConfigured() ? 'configured' : 'off'} · routes by account, join code or agency choice.
+          {shared ? 'connected' : 'not configured'} · gateway {whatsappConfigured() ? 'configured' : 'off'} · routes by account, join code or agency choice.
         </p>
+        {shared ? (
+          <a
+            href={`https://wa.me/${shared}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-2 inline-flex h-9 items-center gap-2 rounded-control border border-line bg-surface px-3 text-[13px] font-semibold text-ink hover:border-ink-muted focus-ring"
+          >
+            <MessageCircle className="size-4" aria-hidden="true" /> Chat on WhatsApp
+          </a>
+        ) : null}
       </Card>
       {channels.length === 0 ? (
         <Card flush>

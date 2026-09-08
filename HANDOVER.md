@@ -345,3 +345,36 @@ rest.
 - `GET /api/admin/inspect` with `x-admin-token` — identities and memberships,
   agencies, recent emails, jobs, channels, conversations and the audit trail.
   Read-only; never returns password hashes or message content.
+
+---
+
+## 18. The state you are being handed
+
+The production database was reset on 8 September 2026 with the guarded endpoint
+above. Nothing from the build survives it: no test agencies, clients,
+conversations, documents, quotes, invoices, campaigns, emails or audit history.
+
+What exists now:
+
+| | |
+|---|---|
+| **Platform administrator** | `admin@goldoak.co.ke` — one account, belongs to no agency, holds a **temporary password that must be changed at first sign-in** |
+| **GoldOak Insurance Agency** | Created afterwards through the ordinary agency onboarding in `/admin` — the same path any other agency takes. Join code `GOLDOAK` |
+| **GoldOak agency administrator** | `ryanmoshi77@gmail.com` — also on a **temporary password that must be changed at first sign-in** |
+| Everything else | Empty, waiting for real data |
+
+The two temporary passwords were handed over separately and are not written
+anywhere in this repository. If either is lost:
+
+- **GoldOak agency admin** — the platform administrator issues a new one from
+  `/admin` → the account row → **New password**.
+- **Platform administrator** — the same button works on its own row; or set a
+  new `ADMIN_PASSWORD` on the deployment and call `POST /api/admin/seed`.
+
+### What GoldOak should do first
+
+1. Sign in at `/signin` (Agency tab) and set a real password.
+2. Work through `/agency/onboarding`: branding, WhatsApp number, assistant
+   knowledge, team, clients.
+3. Send itself a test email from `/agency/emails` and a test quotation to
+   confirm the branding looks right on both.
