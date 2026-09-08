@@ -14,7 +14,7 @@ import { registerJobHandlers } from '@/services/jobs/handlers'
 import { getUpload, markUploadReviewed } from '@/services/uploads'
 import { getContact, setMode } from '@/services/conversations'
 import { agentReply, resumeAssistant } from '@/services/handoff'
-import { codeTaken, emailOrPhoneTaken, getUser, setUserActive, setUserRole, updateAiSettings, updateBranding, updateOrganization, userInOrganization } from '@/services/users'
+import { codeTaken, emailOrPhoneTaken, getUser, phoneTakenByOther, setUserActive, setUserRole, updateAiSettings, updateBranding, updateOrganization, userInOrganization } from '@/services/users'
 import { runAgencyCommand } from '@/services/agency/commands'
 import { completeTask } from '@/services/agency/dashboard'
 import { addPolicy, createClient, messageClient, updateClaimStage, updateClientStage, updateQuoteStage } from '@/services/journey'
@@ -214,10 +214,12 @@ export async function inviteStaffAction(formData: FormData): Promise<TeamActionS
   const phone = phoneInput ? normalizePhone(phoneInput) : null
   if (phoneInput && !phone) return { error: 'Enter a valid mobile number.', field: 'phone' }
   try {
-    const taken = await emailOrPhoneTaken(email, phone)
-    if (taken === 'email') return { error: 'An account with that email already exists.', field: 'email' }
-    if (taken === 'phone') return { error: 'That phone number is already on another account.', field: 'phone' }
-    const { user, temporaryPassword, emailed } = await inviteStaff({ organizationId: session.oid, actor: { id: session.uid, name: session.name }, name, email, phone, title, role })
+    if (await phoneTakenByOther(phone, email)) return { error: 'That phone number is already on another account.', field: 'phone' }
+    const { user, temporaryPassword, emailed, attached } = await inviteStaff({ organizationId: session.oid, actor: { id: session.uid, name: session.name }, name, email, phone, title, role })
+    if (attached) {
+      revalidatePath('/agency/team')
+      return { success: `${user.name} already uses Super Agent and has been added to your agency. They sign in with their existing password${emailed ? ' (we emailed them)' : ''}.` }
+    }
     revalidatePath('/agency/team')
     return { success: emailed ? `${user.name} has been emailed a temporary password (${temporaryPassword}) and will choose their own at first sign-in.` : `${user.name}'s temporary password is ${temporaryPassword}. Email could not be sent, so share it privately; they must change it at first sign-in.` }
   } catch (error) {

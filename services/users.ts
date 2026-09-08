@@ -197,6 +197,14 @@ export async function updateAiSettings(id: string, settings: Organization['aiSet
 
 /* ---------- Clients ---------- */
 
+/** True when the phone belongs to a different identity than the one with this email. */
+export async function phoneTakenByOther(phone: string | null, email: string): Promise<boolean> {
+  if (!phone) return false
+  const sql = getSql()
+  const rows = await sql`SELECT 1 FROM users WHERE phone = ${phone} AND lower(email) <> lower(${email}) LIMIT 1`
+  return rows.length > 0
+}
+
 export async function emailOrPhoneTaken(email: string | null, phone: string | null): Promise<'email' | 'phone' | null> {
   const sql = getSql()
   if (email) {

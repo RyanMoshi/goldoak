@@ -10,7 +10,7 @@ import { listMemberships } from '@/services/memberships'
 import { normalizePhone } from '@/lib/format'
 import { audit } from '@/services/audit'
 import { linkContact } from '@/services/conversations'
-import { codeTaken, createOrganization, emailOrPhoneTaken, getOrganization, getUser, setUserActive, updateOrganization } from '@/services/users'
+import { codeTaken, createOrganization, emailOrPhoneTaken, findUserByEmail, getOrganization, getUser, phoneTakenByOther, setUserActive, updateOrganization } from '@/services/users'
 
 export interface AdminActionState {
   error?: string
@@ -48,7 +48,8 @@ export async function createOrganizationAction(formData: FormData): Promise<Admi
     if (taken === 'phone') return { error: 'That phone number is already on another account.', field: 'phone' }
 
     const org = await createOrganization({ name, shortName, code, phone, email, greeting })
-    const { user: admin, temporaryPassword, emailed } = await inviteStaff({ organizationId: org.id, actor: { id: session.uid, name: session.name }, name: adminName, email: adminEmail, phone: adminPhone, title: 'Agency admin', role: 'agency_admin' })
+    const { user: admin, temporaryPassword, emailed, attached } = await inviteStaff({ organizationId: org.id, actor: { id: session.uid, name: session.name }, name: adminName, email: adminEmail, phone: adminPhone, title: 'Agency admin', role: 'agency_admin' })
+    if (attached) return { success: `${org.name} is live with join code ${code}. ${admin.name} already had an account and has been added as its agency admin; they sign in with their existing password.` }
     await audit({ organizationId: org.id, actorUserId: session.uid, action: 'organization.created', target: org.id, detail: { name, code, adminUserId: admin.id } })
     revalidatePath('/admin')
     return { success: `${org.name} is live with join code ${code}. ${admin.name} ${emailed ? 'has been emailed' : 'could not be emailed; share'} the temporary password ${temporaryPassword}; they choose their own at first sign-in.` }
@@ -92,11 +93,12 @@ export async function createAgencyAccountAction(formData: FormData): Promise<Adm
   try {
     const org = await getOrganization(organizationId)
     if (!org) return { error: 'That agency does not exist.', field: 'organization' }
-    const taken = await emailOrPhoneTaken(email, phone)
-    if (taken === 'email') return { error: 'An account with that email already exists.', field: 'email' }
-    if (taken === 'phone') return { error: 'That phone number is already on another account.', field: 'phone' }
-    const { user, temporaryPassword, emailed } = await inviteStaff({ organizationId, actor: { id: session.uid, name: session.name }, name, email, phone, title, role })
+    if (await phoneTakenByOther(phone, email)) return { error: 'That phone number is already on another account.', field: 'phone' }
+    const existingAdmin = await findUserByEmail(email)
+    if (existingAdmin?.role === 'admin') return { error: 'That email is a platform administrator already.', field: 'email' }
+    const { user, temporaryPassword, emailed, attached } = await inviteStaff({ organizationId, actor: { id: session.uid, name: session.name }, name, email, phone, title, role })
     revalidatePath('/admin')
+    if (attached) return { success: `${user.name} already had an account and has been added to ${org.shortName} as ${role === 'agency_admin' ? 'agency admin' : 'agency staff'}. They sign in with their existing password${emailed ? ' (emailed)' : ''}.` }
     return { success: `${user.name} (${org.shortName}) ${emailed ? 'has been emailed' : 'could not be emailed; share'} the temporary password ${temporaryPassword}. They choose their own at first sign-in.` }
   } catch (error) {
     console.error('createAgencyAccount failed', error instanceof Error ? error.message : error)

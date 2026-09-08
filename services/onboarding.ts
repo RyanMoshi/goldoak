@@ -5,7 +5,7 @@ import { newId } from '@/lib/ids'
 import { sendWhatsApp } from '@/lib/whatsapp/provider'
 import { audit } from '@/services/audit'
 import { sendTemplateEmail } from '@/services/emails'
-import { ensureMembership } from '@/services/memberships'
+import { ensureMembership, getMembership, setMembershipRole } from '@/services/memberships'
 import { notify } from '@/services/notifications'
 import { attachExistingUserAsClient, createClientUser, createStaffUser, findUserByEmail, getOrganization, setTemporaryPassword } from '@/services/users'
 import type { Organization, PublicUser } from '@/types/platform'
@@ -137,12 +137,38 @@ export interface InviteStaffInput {
 
 export interface InviteStaffResult {
   user: PublicUser
-  /** Returned once so the inviter can pass it on privately if email fails. */
-  temporaryPassword: string
+  /** Returned once so the inviter can pass it on privately if email fails. Null when an existing identity was attached. */
+  temporaryPassword: string | null
   emailed: boolean
+  /** True when the email already had a Super Agent identity and was added to this agency instead of created. */
+  attached: boolean
+}
+
+const ROLE_LABEL: Record<InviteStaffInput['role'], string> = { agency_admin: 'agency admin', agency: 'agency staff', admin: 'platform administrator' }
+
+/**
+ * Same email, another agency: the identity is reused and a membership is added
+ * (or its role updated) for this agency. The person keeps their password and
+ * is told by email and WhatsApp. Platform administrators are never attached.
+ */
+async function attachExistingStaff(existing: PublicUser, input: InviteStaffInput): Promise<InviteStaffResult> {
+  if (existing.role === 'admin' || input.role === 'admin') throw new Error('Platform administrators cannot be attached to an agency')
+  const org = await getOrganization(input.organizationId)
+  if (!org) throw new Error('Agency not found')
+  const current = await getMembership(existing.id, input.organizationId)
+  if (current) await setMembershipRole(existing.id, input.organizationId, input.role)
+  else await ensureMembership({ userId: existing.id, organizationId: input.organizationId, role: input.role, invitedBy: input.actor?.id ?? null })
+  const body = `${input.actor?.name ?? 'The platform'} has added you to ${org.name} on Super Agent as ${ROLE_LABEL[input.role]}. Sign in with your existing email and password; if several agencies are on your account you will be asked which one to open. Forgotten your password? Use "Forgot your password?" on the sign-in page.`
+  const outcome = await sendTemplateEmail({ key: 'staff-notification', to: existing.email, organizationId: input.organizationId, userId: existing.id, vars: { first_name: existing.name.split(' ')[0], title: `You have been added to ${org.name}`, body, action_url: `${SITE}/signin?as=agency` }, category: 'security', relatedType: 'user', relatedId: existing.id })
+  const phone = input.phone ?? existing.phone
+  if (phone) await sendWhatsApp(phone, `You have been added to ${org.name} on Super Agent as ${ROLE_LABEL[input.role]}. Sign in with your existing password at ${SITE}/signin?as=agency`, input.organizationId).catch(() => null)
+  await audit({ organizationId: input.organizationId, actorUserId: input.actor?.id ?? null, action: 'user.attached', target: existing.id, detail: { role: input.role, previousRole: current?.role ?? null, emailed: outcome } })
+  return { user: existing, temporaryPassword: null, emailed: outcome === 'queued' || outcome === 'sent', attached: true }
 }
 
 export async function inviteStaff(input: InviteStaffInput): Promise<InviteStaffResult> {
+  const existing = await findUserByEmail(input.email.toLowerCase())
+  if (existing) return attachExistingStaff(existing, input)
   const temporaryPassword = generateTempPassword()
   const user = await createStaffUser({ role: input.role, organizationId: input.organizationId, name: input.name, email: input.email.toLowerCase(), phone: input.phone, title: input.title, passwordHash: await hashPassword(temporaryPassword), createdBy: input.actor?.id ?? null, temporaryPassword: true })
   const org = input.role === 'admin' ? null : await getOrganization(input.organizationId)
@@ -150,7 +176,7 @@ export async function inviteStaff(input: InviteStaffInput): Promise<InviteStaffR
   const outcome = await sendTemplateEmail({ key: 'temp-password', to: user.email, organizationId: input.role === 'admin' ? null : input.organizationId, userId: user.id, vars: { first_name: user.name.split(' ')[0], email: user.email, temporary_password: temporaryPassword, login_url: `${SITE}/signin?as=agency`, role_label: `${roleLabel}${org ? ` at ${org.name}` : ''}` }, category: 'security', relatedType: 'user', relatedId: user.id })
   if (input.phone) await sendWhatsApp(input.phone, `Your Super Agent login is ready.\nUsername: ${user.email}\nTemporary password: ${temporaryPassword}\nSign in at ${SITE}/signin?as=agency and choose your own password.`, input.role === 'admin' ? null : input.organizationId).catch(() => null)
   await audit({ organizationId: input.role === 'admin' ? null : input.organizationId, actorUserId: input.actor?.id ?? null, action: 'user.invited', target: user.id, detail: { role: input.role, emailed: outcome } })
-  return { user, temporaryPassword, emailed: outcome === 'queued' || outcome === 'sent' }
+  return { user, temporaryPassword, emailed: outcome === 'queued' || outcome === 'sent', attached: false }
 }
 
 /** Issues a new temporary password (admin-triggered reset) and emails it. */
