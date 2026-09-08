@@ -88,7 +88,7 @@ export async function getUser(id: string): Promise<PublicUser | null> {
 
 /** A safe stand-in when an organisation row is missing (never persisted). */
 export function placeholderOrganization(id: string, name = 'Agency'): Organization {
-  return { id, name, shortName: name, phone: '', email: '', whatsapp: '', code: null, active: true, greeting: null, licenceLabel: null, status: 'active', type: null, address: null, description: null, logoPath: null, contactName: null, website: null, branding: {}, aiSettings: {}, reminderDays: [30, 14, 7, 1] }
+  return { id, name, shortName: name, phone: '', email: '', whatsapp: '', code: null, active: true, greeting: null, licenceLabel: null, status: 'active', type: null, address: null, description: null, logoPath: null, contactName: null, website: null, branding: {}, aiSettings: {}, reminderDays: [30, 14, 7, 1], settings: {}, onboarding: {} }
 }
 
 export async function getOrganization(id: string): Promise<Organization | null> {

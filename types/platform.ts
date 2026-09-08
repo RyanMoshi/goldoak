@@ -1,3 +1,5 @@
+import type { AgencySettings } from '@/types/billing'
+
 /* ---------- Tenancy and identity ---------- */
 
 /** admin = platform super admin; agency_admin = runs an agency; agency = agency staff; client = end user. */
@@ -33,6 +35,10 @@ export interface Organization {
   aiSettings: AiSettings
   /** Days before expiry on which renewal reminders go out. */
   reminderDays: number[]
+  /** Billing defaults: currency, tax, numbering, terms, payment instructions. */
+  settings: AgencySettings
+  /** Which onboarding steps this agency has completed. */
+  onboarding: Record<string, boolean>
 }
 
 export interface AiSettings {

@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { requireAgencyAdmin, requireSession } from '@/lib/auth/server'
 import { normalizePhone } from '@/lib/format'
 import { channelForOrganization, connectChannel, disconnectChannel, restartChannel } from '@/lib/whatsapp/channels'
+import { dismissOnboarding } from '@/services/agency-onboarding'
 import { inviteClient, inviteStaff, resetToTemporaryPassword } from '@/services/onboarding'
 import { audit } from '@/services/audit'
 import { createBusiness, reviewBusinessClaim } from '@/services/businesses'
@@ -484,4 +485,12 @@ export async function disconnectWhatsAppAction(): Promise<ActionState> {
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not disconnect.' }
   }
+}
+
+/** Hides the setup checklist from Today. The page itself stays at /agency/onboarding. */
+export async function dismissOnboardingAction(): Promise<ActionState> {
+  const session = await requireSession('agency')
+  await dismissOnboarding(session.oid)
+  revalidatePath('/agency/today')
+  return { success: 'Hidden. Finish setting up any time from Settings.' }
 }

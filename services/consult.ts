@@ -1,4 +1,5 @@
-import { aiConfigured, aiModelLabel, chat } from '@/lib/ai/provider'
+import { aiConfigured, aiModelLabel, aiVendor, chat } from '@/lib/ai/provider'
+import { cachedGlobalPolicy, recordAiEvent } from '@/services/ai-insights'
 import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { toConsultation } from '@/lib/db/mappers'
@@ -62,7 +63,7 @@ function agencyLayer(org: Organization | null): string[] {
   return lines
 }
 
-function systemPrompt(input: ConsultInput): string {
+function systemPrompt(input: ConsultInput, policy?: { groundRules: string; knowledge: string; bannedPhrases: string }): string {
   const org = input.organization
   const orgName = org?.shortName ?? 'the agency'
   const useCatalogue = org?.aiSettings?.useGeneralCatalogue !== false
@@ -81,6 +82,9 @@ function systemPrompt(input: ConsultInput): string {
       ? `- On WhatsApp the person can reply 3 for insurance assistance (quote, question, claim), 5 to upload a document, 6 to check a request or 7 to talk to a ${orgName} adviser. Mention these only when useful.`
       : '- On the website the person can ask for cover, report a claim or upload a document from their account, or reach an adviser.',
   ]
+  if (policy?.groundRules?.trim()) lines.push('', 'Platform rules set by the operator (these override agency settings):', policy.groundRules.trim())
+  if (policy?.bannedPhrases?.trim()) lines.push('', 'Never use these words or phrases:', policy.bannedPhrases.trim())
+  if (policy?.knowledge?.trim()) lines.push('', 'Shared platform knowledge (applies to every agency):', policy.knowledge.trim())
   if (useCatalogue) lines.push('', 'General insurance knowledge (product types; not a list of what any specific agency sells):', catalogueText())
   if (input.user) {
     lines.push('', `Person: ${input.user.name}${input.client ? `, client record "${input.client.name}" (${input.client.type}), journey stage ${input.client.stage}` : ' (registered, no client record yet)'}.`)
@@ -95,6 +99,7 @@ function systemPrompt(input: ConsultInput): string {
 }
 
 async function askModel(input: ConsultInput): Promise<ConsultResult | null> {
+  const policy = await cachedGlobalPolicy()
   const history = (input.history ?? []).slice(-8).filter((m) => m.role === 'user' || m.role === 'assistant')
   const messages = history.map((m) => ({ role: m.role === 'user' ? ('user' as const) : ('assistant' as const), content: m.body.slice(0, 1200) }))
   messages.push({ role: 'user', content: input.question.slice(0, 2000) })
@@ -155,14 +160,32 @@ function catalogueAnswer(input: ConsultInput): ConsultResult {
 
 export async function consult(input: ConsultInput): Promise<ConsultResult> {
   let result: ConsultResult | null = null
+  let error: string | null = null
+  const started = Date.now()
   if (aiConfigured()) {
     try {
       result = await askModel(input)
-    } catch (error) {
-      console.error('consult model failed', error instanceof Error ? error.message : error)
+      if (!result) error = 'no model answered'
+    } catch (e) {
+      error = e instanceof Error ? e.message : 'model call failed'
+      console.error('consult model failed', error)
     }
   }
+  const answered = Boolean(result)
   if (!result) result = catalogueAnswer(input)
+  recordAiEvent({
+    organizationId: input.organization?.id ?? null,
+    userId: input.user?.id ?? null,
+    kind: 'consult',
+    channel: input.channel,
+    model: aiModelLabel(),
+    vendor: aiVendor(),
+    ok: answered,
+    fallbackUsed: !answered,
+    escalated: result.escalate,
+    latencyMs: Date.now() - started,
+    error,
+  })
   await saveConsultation(input, result)
   return result
 }

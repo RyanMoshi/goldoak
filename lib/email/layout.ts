@@ -22,6 +22,8 @@ export interface EmailContent {
   cta?: { label: string; url: string }
   closing?: string
   securityNote?: string
+  /** Extra footer line, e.g. the unsubscribe notice on a promotional email. */
+  footerExtra?: { text: string; linkLabel?: string; linkUrl?: string }
 }
 
 export function renderEmail(brand: Branding, content: EmailContent): { html: string; text: string } {
@@ -91,6 +93,7 @@ export function renderEmail(brand: Branding, content: EmailContent): { html: str
     <p style="margin:0 0 4px;font:12px/18px Arial,Helvetica,sans-serif;color:#6b7570;">${[brand.supportPhone, brand.supportEmail, brand.website.replace(/^https?:\/\//, '')].filter(Boolean).map(e).join(' &nbsp;·&nbsp; ')}</p>
     ${brand.address ? `<p style="margin:0 0 4px;font:12px/18px Arial,Helvetica,sans-serif;color:#6b7570;">${e(brand.address)}</p>` : ''}
     <p style="margin:10px 0 0;font:11px/16px Arial,Helvetica,sans-serif;color:#8a968f;">${e(brand.footerNote)} Please do not share codes or passwords from our emails with anyone. ${e(brand.poweredBy)}</p>
+    ${content.footerExtra ? `<p style="margin:8px 0 0;font:11px/16px Arial,Helvetica,sans-serif;color:#8a968f;">${e(content.footerExtra.text)}${content.footerExtra.linkUrl ? ` <a href="${e(content.footerExtra.linkUrl)}" style="color:#8a968f;text-decoration:underline;">${e(content.footerExtra.linkLabel ?? content.footerExtra.linkUrl)}</a>` : ''}</p>` : ''}
   </td></tr>
 </table>
 </td></tr></table>
@@ -117,6 +120,7 @@ export function renderEmail(brand: Branding, content: EmailContent): { html: str
       }
     }),
     content.cta ? `${content.cta.label}: ${content.cta.url}\n` : '',
+    content.footerExtra ? `${content.footerExtra.text} ${content.footerExtra.linkUrl ?? ''}`.trim() : '',
     content.closing ? strip(content.closing) : '',
     '',
     `Warm regards, the ${brand.shortName} team`,

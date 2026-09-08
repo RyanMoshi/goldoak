@@ -6,7 +6,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
   const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value)
 
-  const area: Area | null = pathname.startsWith('/admin') ? 'admin' : pathname.startsWith('/agency') ? 'agency' : pathname.startsWith('/portal') ? 'client' : null
+  // /superagent is the AI product console: platform-level, so it sits in the admin area.
+  const area: Area | null = pathname.startsWith('/admin') || pathname.startsWith('/superagent') ? 'admin' : pathname.startsWith('/agency') ? 'agency' : pathname.startsWith('/portal') ? 'client' : null
 
   if (pathname.startsWith('/account') || pathname === '/choose-agency') {
     if (!session) return redirectToSignIn(request, 'client')
@@ -34,5 +35,5 @@ function redirectToSignIn(request: NextRequest, as: 'agency' | 'client') {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/agency/:path*', '/portal/:path*', '/account/:path*', '/choose-agency', '/signin', '/signup', '/agencies/signup'],
+  matcher: ['/admin/:path*', '/superagent/:path*', '/agency/:path*', '/portal/:path*', '/account/:path*', '/choose-agency', '/signin', '/signup', '/agencies/signup'],
 }

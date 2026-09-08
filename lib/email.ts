@@ -19,6 +19,8 @@ export interface RawEmail {
   /** Display name for the From header; the address stays the configured SMTP account. */
   fromName?: string
   replyTo?: string
+  /** Files to attach, e.g. an invoice PDF. Kept small; large files go behind a link. */
+  attachments?: { filename: string; content: Buffer; contentType?: string }[]
 }
 
 export interface DeliveryResult {
@@ -54,6 +56,7 @@ export async function deliverEmail(input: RawEmail): Promise<DeliveryResult> {
       subject: input.subject,
       text: input.text,
       html: input.html ?? `<pre style="font-family:system-ui,sans-serif;white-space:pre-wrap">${escapeHtml(input.text)}</pre>`,
+      attachments: input.attachments?.map((a) => ({ filename: a.filename, content: a.content, contentType: a.contentType ?? 'application/pdf' })),
     })
     return { ok: true, messageId: info.messageId }
   } catch (error) {

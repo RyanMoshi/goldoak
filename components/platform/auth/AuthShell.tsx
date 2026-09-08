@@ -50,4 +50,4 @@ export function Field({ label, htmlFor, error, hint, children }: { label: string
 }
 
 export const inputClass =
-  'h-11 w-full rounded-control border border-line bg-surface px-3 text-[15px] text-ink placeholder:text-ink-faint focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest aria-[invalid=true]:border-error'
+  'h-11 w-full rounded-control border border-line bg-surface px-3 text-[16px] text-ink placeholder:text-ink-faint focus:border-forest focus:outline-none focus:ring-1 focus:ring-forest disabled:cursor-not-allowed disabled:bg-surface-2 aria-[invalid=true]:border-error sm:text-[15px]'

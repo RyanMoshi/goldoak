@@ -324,6 +324,73 @@ export const TEMPLATES: Record<string, TemplateDefinition> = {
     subject: (v) => s(v, 'title'),
     content: (v) => ({ preheader: s(v, 'body').slice(0, 120), heading: s(v, 'title'), greeting: `Hello ${s(v, 'first_name', 'there')},`, blocks: [{ type: 'paragraph', text: s(v, 'body') }], cta: s(v, 'action_url') ? { label: s(v, 'action_label', 'Open my account'), url: s(v, 'action_url') } : undefined }),
   },
+  'quote-sent': {
+    key: 'quote-sent',
+    label: 'Quotation sent',
+    category: 'updates',
+    variables: ['first_name', 'agency_name', 'quote_number', 'total', 'valid_until', 'agent_name', 'message', 'document_url'],
+    customisable: ['subject', 'heading', 'body'],
+    subject: (v, b) => `Your quotation ${s(v, 'quote_number')} from ${b.name}`,
+    content: (v, b) => {
+      const blocks: Block[] = [
+        { type: 'paragraph', text: s(v, 'body', `${s(v, 'agent_name', 'Your adviser')} has prepared quotation ${s(v, 'quote_number')} for you.`) },
+        { type: 'details', rows: [['Quotation', s(v, 'quote_number')], ['Total', s(v, 'total')], ['Valid until', s(v, 'valid_until', 'see the attached document')]] },
+      ]
+      if (s(v, 'message')) blocks.push({ type: 'notice', text: s(v, 'message') })
+      blocks.push({ type: 'paragraph', text: 'The full quotation is attached as a PDF. Premiums are indicative until the insurer confirms cover.' })
+      return {
+        preheader: `Quotation ${s(v, 'quote_number')} · ${s(v, 'total')}`,
+        heading: s(v, 'heading', `Your quotation from ${b.shortName}`),
+        greeting: `Hello ${s(v, 'first_name', 'there')},`,
+        blocks,
+        cta: s(v, 'document_url') ? { label: 'View the quotation', url: s(v, 'document_url') } : undefined,
+        closing: `To accept, reply to this email quoting ${s(v, 'quote_number')}.`,
+      }
+    },
+  },
+  'invoice-sent': {
+    key: 'invoice-sent',
+    label: 'Invoice sent',
+    category: 'account',
+    variables: ['first_name', 'agency_name', 'invoice_number', 'total', 'due_date', 'payment_instructions', 'message', 'document_url'],
+    customisable: ['subject', 'heading', 'body'],
+    subject: (v, b) => `Invoice ${s(v, 'invoice_number')} from ${b.name}`,
+    content: (v, b) => {
+      const blocks: Block[] = [
+        { type: 'paragraph', text: s(v, 'body', `Please find invoice ${s(v, 'invoice_number')} from ${b.name} attached.`) },
+        { type: 'details', rows: [['Invoice', s(v, 'invoice_number')], ['Amount due', s(v, 'total')], ['Payable by', s(v, 'due_date', 'on receipt')]] },
+      ]
+      if (s(v, 'payment_instructions')) blocks.push({ type: 'notice', text: s(v, 'payment_instructions') })
+      if (s(v, 'message')) blocks.push({ type: 'paragraph', text: s(v, 'message') })
+      return {
+        preheader: `Invoice ${s(v, 'invoice_number')} · ${s(v, 'total')}`,
+        heading: s(v, 'heading', `Invoice ${s(v, 'invoice_number')}`),
+        greeting: `Hello ${s(v, 'first_name', 'there')},`,
+        blocks,
+        cta: s(v, 'document_url') ? { label: 'View the invoice', url: s(v, 'document_url') } : undefined,
+        closing: 'Thank you for your business.',
+      }
+    },
+  },
+  'invoice-reminder': {
+    key: 'invoice-reminder',
+    label: 'Invoice reminder',
+    category: 'reminders',
+    variables: ['first_name', 'agency_name', 'invoice_number', 'total', 'due_date', 'days_overdue', 'document_url'],
+    customisable: ['subject', 'heading', 'body'],
+    subject: (v, b) => `Reminder: invoice ${s(v, 'invoice_number')} is due`,
+    content: (v, b) => ({
+      preheader: `Invoice ${s(v, 'invoice_number')} is awaiting payment.`,
+      heading: s(v, 'heading', `A friendly reminder about invoice ${s(v, 'invoice_number')}`),
+      greeting: `Hello ${s(v, 'first_name', 'there')},`,
+      blocks: [
+        { type: 'paragraph', text: s(v, 'body', `Our records show invoice ${s(v, 'invoice_number')} from ${b.name} is still outstanding.`) },
+        { type: 'details', rows: [['Invoice', s(v, 'invoice_number')], ['Amount outstanding', s(v, 'total')], ['Due date', s(v, 'due_date')]] },
+        { type: 'paragraph', text: 'If you have already paid, please ignore this note and accept our thanks.' },
+      ],
+      cta: s(v, 'document_url') ? { label: 'View the invoice', url: s(v, 'document_url') } : undefined,
+    }),
+  },
   'staff-notification': {
     key: 'staff-notification',
     label: 'Staff notification',

@@ -23,6 +23,19 @@ export function registerJobHandlers(): void {
     await afterUploadProcessed(uploadId)
   })
 
+  // One batch of a campaign, then queue the next. Every send sits inside a
+  // job with its own retry, and the request that launched it never waits.
+  registerJob('campaign-batch', async (job) => {
+    const campaignId = String(job.payload.campaignId ?? '')
+    if (!campaignId) return
+    const { sendBatch } = await import('@/services/campaigns')
+    const { enqueue } = await import('@/services/jobs')
+    const more = await sendBatch(campaignId)
+    if (more) {
+      const round = Number(job.payload.round ?? 0) + 1
+      await enqueue({ type: 'campaign-batch', organizationId: job.organizationId, payload: { campaignId, round }, idempotencyKey: `campaign:${campaignId}:${round}`, maxAttempts: 3 })
+    }
+  })
   registerJob('memory-summary', async (job) => {
     const phone = String(job.payload.phone ?? '')
     if (phone) await refreshSummary(phone)

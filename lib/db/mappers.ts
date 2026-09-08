@@ -1,3 +1,4 @@
+import type { AgencySettings } from '@/types/billing'
 import type {
   ActivityItem,
   AuditEntry,
@@ -69,6 +70,8 @@ export function toOrganization(r: Row): Organization {
     website: strOrNull(r.website),
     branding: obj(r.branding) as Record<string, string>,
     aiSettings: obj(r.ai_settings) as Organization['aiSettings'],
+    settings: (r.settings as AgencySettings) ?? {},
+    onboarding: (r.onboarding as Record<string, boolean>) ?? {},
     reminderDays: Array.isArray(r.reminder_days) ? (r.reminder_days as unknown[]).map(Number).filter((n) => Number.isFinite(n) && n >= 0) : [30, 14, 7, 1],
   }
 }

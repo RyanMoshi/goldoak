@@ -23,6 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <nav aria-label="Platform sections" className="hidden items-center gap-1 md:flex">
             {[
               ['/admin', 'Agencies'],
+              ['/superagent', 'Super Agent'],
               ['/admin/conversations', 'Conversations'],
               ['/admin/channels', 'WhatsApp'],
               ['/admin/emails', 'Emails'],

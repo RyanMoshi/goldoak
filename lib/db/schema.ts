@@ -485,4 +485,163 @@ CREATE TABLE IF NOT EXISTS otps (
   created_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS otps_email_idx ON otps(email, purpose, created_at DESC);
+
+-- ============================================================
+-- v5: quotes and invoices, campaigns, AI telemetry, onboarding
+-- ============================================================
+
+-- Per-agency defaults: currency, tax, terms, payment instructions, numbering.
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS settings jsonb NOT NULL DEFAULT '{}'::jsonb;
+-- Which onboarding steps this agency has completed.
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS onboarding jsonb NOT NULL DEFAULT '{}'::jsonb;
+
+-- Quotes and invoices share one table: kind decides the wording and the rules.
+CREATE TABLE IF NOT EXISTS billing_documents (
+  id                   text PRIMARY KEY,
+  organization_id      text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  client_id            text REFERENCES clients(id) ON DELETE SET NULL,
+  kind                 text NOT NULL CHECK (kind IN ('quote', 'invoice')),
+  number               text NOT NULL,
+  status               text NOT NULL DEFAULT 'draft',
+  customer_name        text NOT NULL,
+  customer_email       text,
+  customer_phone       text,
+  customer_address     text,
+  issue_date           date NOT NULL DEFAULT current_date,
+  due_date             date,
+  currency             text NOT NULL DEFAULT 'KES',
+  subtotal             numeric(14,2) NOT NULL DEFAULT 0,
+  discount_total       numeric(14,2) NOT NULL DEFAULT 0,
+  tax_total            numeric(14,2) NOT NULL DEFAULT 0,
+  total                numeric(14,2) NOT NULL DEFAULT 0,
+  amount_paid          numeric(14,2) NOT NULL DEFAULT 0,
+  notes                text,
+  terms                text,
+  payment_instructions text,
+  reference            text,
+  share_token          text,
+  created_by           text REFERENCES users(id) ON DELETE SET NULL,
+  sent_at              timestamptz,
+  paid_at              timestamptz,
+  decided_at           timestamptz,
+  created_at           timestamptz NOT NULL DEFAULT now(),
+  updated_at           timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS billing_documents_number_idx ON billing_documents(organization_id, number);
+CREATE INDEX IF NOT EXISTS billing_documents_org_idx ON billing_documents(organization_id, kind, created_at DESC);
+CREATE INDEX IF NOT EXISTS billing_documents_client_idx ON billing_documents(client_id);
+CREATE UNIQUE INDEX IF NOT EXISTS billing_documents_share_idx ON billing_documents(share_token) WHERE share_token IS NOT NULL;
+
+CREATE TABLE IF NOT EXISTS billing_lines (
+  id               text PRIMARY KEY,
+  document_id      text NOT NULL REFERENCES billing_documents(id) ON DELETE CASCADE,
+  position         integer NOT NULL DEFAULT 0,
+  description      text NOT NULL,
+  detail           text,
+  quantity         numeric(12,2) NOT NULL DEFAULT 1,
+  unit_price       numeric(14,2) NOT NULL DEFAULT 0,
+  discount_percent numeric(6,2) NOT NULL DEFAULT 0,
+  tax_percent      numeric(6,2) NOT NULL DEFAULT 0,
+  amount           numeric(14,2) NOT NULL DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS billing_lines_doc_idx ON billing_lines(document_id, position);
+
+-- Document numbering per agency and kind, so numbers never collide or reuse.
+CREATE TABLE IF NOT EXISTS number_sequences (
+  organization_id  text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  kind             text NOT NULL,
+  period           text NOT NULL,
+  next_number      integer NOT NULL DEFAULT 1,
+  PRIMARY KEY (organization_id, kind, period)
+);
+
+-- Promotional and transactional campaigns over WhatsApp and email.
+CREATE TABLE IF NOT EXISTS campaigns (
+  id               text PRIMARY KEY,
+  organization_id  text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  name             text NOT NULL,
+  channel          text NOT NULL CHECK (channel IN ('whatsapp', 'email', 'both')),
+  status           text NOT NULL DEFAULT 'draft',
+  audience         jsonb NOT NULL DEFAULT '{}'::jsonb,
+  subject          text,
+  body             text NOT NULL DEFAULT '',
+  cta_label        text,
+  cta_url          text,
+  template_key     text,
+  scheduled_at     timestamptz,
+  started_at       timestamptz,
+  finished_at      timestamptz,
+  cancelled_at     timestamptz,
+  created_by       text REFERENCES users(id) ON DELETE SET NULL,
+  total_recipients integer NOT NULL DEFAULT 0,
+  sent_count       integer NOT NULL DEFAULT 0,
+  failed_count     integer NOT NULL DEFAULT 0,
+  skipped_count    integer NOT NULL DEFAULT 0,
+  created_at       timestamptz NOT NULL DEFAULT now(),
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS campaigns_org_idx ON campaigns(organization_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS campaign_recipients (
+  id               text PRIMARY KEY,
+  campaign_id      text NOT NULL REFERENCES campaigns(id) ON DELETE CASCADE,
+  organization_id  text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  client_id        text REFERENCES clients(id) ON DELETE SET NULL,
+  user_id          text REFERENCES users(id) ON DELETE SET NULL,
+  name             text NOT NULL,
+  email            text,
+  phone            text,
+  channel          text NOT NULL,
+  status           text NOT NULL DEFAULT 'pending',
+  error            text,
+  sent_at          timestamptz,
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS campaign_recipients_unique_idx ON campaign_recipients(campaign_id, channel, coalesce(email, ''), coalesce(phone, ''));
+CREATE INDEX IF NOT EXISTS campaign_recipients_status_idx ON campaign_recipients(campaign_id, status);
+
+-- People who asked not to be marketed to, per agency and channel.
+CREATE TABLE IF NOT EXISTS suppressions (
+  id               text PRIMARY KEY,
+  organization_id  text REFERENCES organizations(id) ON DELETE CASCADE,
+  channel          text NOT NULL CHECK (channel IN ('email', 'whatsapp')),
+  address          text NOT NULL,
+  reason           text,
+  created_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS suppressions_unique_idx ON suppressions(coalesce(organization_id, ''), channel, address);
+
+-- Every model call: which agency, which model, how long, did it work.
+CREATE TABLE IF NOT EXISTS ai_events (
+  id               text PRIMARY KEY,
+  organization_id  text REFERENCES organizations(id) ON DELETE SET NULL,
+  user_id          text REFERENCES users(id) ON DELETE SET NULL,
+  kind             text NOT NULL,
+  channel          text,
+  model            text,
+  vendor           text,
+  fallback_used    boolean NOT NULL DEFAULT false,
+  ok               boolean NOT NULL DEFAULT true,
+  escalated        boolean NOT NULL DEFAULT false,
+  latency_ms       integer,
+  tokens_in        integer,
+  tokens_out       integer,
+  error            text,
+  at               timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS ai_events_at_idx ON ai_events(at DESC);
+CREATE INDEX IF NOT EXISTS ai_events_org_idx ON ai_events(organization_id, at DESC);
+
+-- Platform-wide AI policy and knowledge written by the super admin.
+CREATE TABLE IF NOT EXISTS ai_policies (
+  id               text PRIMARY KEY,
+  scope            text NOT NULL DEFAULT 'global',
+  organization_id  text REFERENCES organizations(id) ON DELETE CASCADE,
+  ground_rules     text,
+  knowledge        text,
+  banned_phrases   text,
+  updated_by       text,
+  updated_at       timestamptz NOT NULL DEFAULT now()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS ai_policies_scope_idx ON ai_policies(scope, coalesce(organization_id, ''));
 `
