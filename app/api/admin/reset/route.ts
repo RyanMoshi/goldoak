@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
-import { hashPassword } from '@/lib/auth/password'
+import { generateTempPassword, hashPassword } from '@/lib/auth/password'
 import { newId } from '@/lib/ids'
 
 export const runtime = 'nodejs'
@@ -62,7 +62,7 @@ export async function POST(request: Request) {
   const provided = request.headers.get('x-admin-token') ?? ''
   if (!expected || provided !== expected) return NextResponse.json({ error: 'Unauthorised' }, { status: 401 })
 
-  let body: { confirm?: string; keepOrganizationIds?: string[]; adminEmail?: string; adminPassword?: string } = {}
+  let body: { confirm?: string; keepOrganizationIds?: string[]; adminEmail?: string; adminPassword?: string; resetAdminPassword?: boolean } = {}
   try {
     body = (await request.json()) as typeof body
   } catch {
@@ -121,6 +121,19 @@ export async function POST(request: Request) {
     : await sql`DELETE FROM users WHERE role <> 'admin' RETURNING id`
   const removedOrgs = keep.length ? await sql`DELETE FROM organizations WHERE NOT (id = ANY(${keep})) RETURNING id` : await sql`DELETE FROM organizations RETURNING id`
 
+  // Optionally hand the platform administrator a fresh temporary password, so
+  // the person taking the system over sets their own on first sign-in and no
+  // password from the build survives the handover. Returned once, here only.
+  let temporaryAdminPassword: string | null = null
+  if (body.resetAdminPassword) {
+    const existing = await sql`SELECT id, email FROM users WHERE role = 'admin' ORDER BY created_at LIMIT 1`
+    if (existing[0]) {
+      temporaryAdminPassword = generateTempPassword()
+      await sql`UPDATE users SET password_hash = ${await hashPassword(temporaryAdminPassword)}, must_change_password = true,
+        failed_logins = 0, locked_until = NULL WHERE id = ${String(existing[0].id)}`
+    }
+  }
+
   // Make sure a platform administrator still exists to sign in with.
   let adminNote = 'existing platform administrator kept'
   const remaining = await sql`SELECT id FROM users WHERE role = 'admin' LIMIT 1`
@@ -143,6 +156,7 @@ export async function POST(request: Request) {
     organizationsRemoved: removedOrgs.length,
     organizationsKept: keep,
     admin: adminNote,
+    temporaryAdminPassword,
     next: 'Create each agency at /admin (or POST /api/admin/seed with an organization), then remove ALLOW_DB_RESET from the deployment.',
   })
 }
