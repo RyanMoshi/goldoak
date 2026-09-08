@@ -6,6 +6,16 @@ import { requireSession } from '@/lib/auth/server'
 
 export const dynamic = 'force-dynamic'
 
+const SECTIONS: [string, string][] = [
+  ['/admin', 'Agencies'],
+  ['/superagent', 'Super Agent'],
+  ['/admin/conversations', 'Conversations'],
+  ['/admin/channels', 'WhatsApp'],
+  ['/admin/emails', 'Emails'],
+  ['/admin/templates', 'Templates'],
+  ['/admin/system', 'System'],
+]
+
 /** Platform admin: a plain, single-column shell. */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await requireSession('admin')
@@ -20,16 +30,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
               <span className="mt-1 text-[9.5px] font-bold uppercase tracking-[0.14em] text-gold">Platform admin</span>
             </span>
           </Link>
-          <nav aria-label="Platform sections" className="hidden items-center gap-1 md:flex">
-            {[
-              ['/admin', 'Agencies'],
-              ['/superagent', 'Super Agent'],
-              ['/admin/conversations', 'Conversations'],
-              ['/admin/channels', 'WhatsApp'],
-              ['/admin/emails', 'Emails'],
-              ['/admin/templates', 'Templates'],
-              ['/admin/system', 'System'],
-            ].map(([href, label]) => (
+          <nav aria-label="Platform sections" className="hidden min-w-0 items-center gap-1 lg:flex">
+            {SECTIONS.map(([href, label]) => (
               <Link key={href} href={href} className="inline-flex h-9 items-center rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
                 {label}
               </Link>
@@ -49,6 +51,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </form>
           </div>
         </div>
+        <nav aria-label="Platform sections" className="mx-auto max-w-5xl overflow-x-auto px-4 sm:px-6 lg:hidden">
+          <ul className="flex min-w-max gap-1 pb-2">
+            {SECTIONS.map(([href, label]) => (
+              <li key={href}>
+                <Link href={href} className="inline-flex h-9 items-center rounded-control px-3 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
+                  {label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
       </header>
       <main className="mx-auto w-full max-w-5xl px-4 py-6 sm:px-6 sm:py-8">{children}</main>
     </div>

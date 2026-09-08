@@ -100,8 +100,9 @@ export function OrganizationSettings({ organization, botNumber, canEdit, siteUrl
               <div>
                 <dt className="text-white/60">Onboarding link (put it on your website, posters, business cards)</dt>
                 <dd className="mt-0.5 flex items-center gap-2">
-                  <a href={joinLink} target="_blank" rel="noopener noreferrer" className="truncate font-mono text-[12px] text-white underline decoration-white/40 underline-offset-2">
-                    {joinLink}
+                  {/* The number itself is never shown: the link opens WhatsApp, and Copy puts the real URL on the clipboard. */}
+                  <a href={joinLink} target="_blank" rel="noopener noreferrer" className="truncate text-[13px] font-semibold text-white underline decoration-white/40 underline-offset-2">
+                    Open the WhatsApp link
                   </a>
                   <CopyButton label="link" value={joinLink} copied={copied} onCopy={copy} />
                 </dd>
