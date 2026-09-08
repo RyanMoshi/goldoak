@@ -36,7 +36,10 @@ export async function GET(request: Request) {
       await sql`SELECT c.phone, c.organization_id, c.mode, c.workflow, c.step, c.last_inbound_at, c.updated_at, (SELECT count(*) FROM conversation_messages m WHERE m.phone = c.phone) AS messages FROM whatsapp_contacts c ORDER BY c.updated_at DESC LIMIT 15`;
     const counts =
       await sql`SELECT (SELECT count(*) FROM clients) AS clients, (SELECT count(*) FROM conversation_messages) AS messages, (SELECT count(*) FROM audit_log WHERE at > now() - interval '1 day') AS audit_24h`;
+    const audit =
+      await sql`SELECT at, organization_id, actor_user_id, action, target, detail FROM audit_log ORDER BY at DESC LIMIT 20`;
     return NextResponse.json({
+      audit,
       users,
       organizations,
       emails,

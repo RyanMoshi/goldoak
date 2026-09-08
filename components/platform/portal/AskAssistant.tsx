@@ -128,7 +128,7 @@ export function AskAssistant({ initialMessages, initialPending, agencyName }: Pr
             ) : null}
             <div className={cn('max-w-[88%] rounded-card px-3.5 py-2.5 text-[13.5px] leading-5 shadow-sm sm:max-w-[75%]', m.role === 'user' ? 'bg-forest text-white' : 'bg-surface text-ink')}>
               <p className="whitespace-pre-wrap break-words">{m.body}</p>
-              <p className={cn('mt-1 font-mono text-[10px]', m.role === 'user' ? 'text-white/60' : 'text-ink-faint')}>{new Date(m.at).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
+              <p suppressHydrationWarning className={cn('mt-1 font-mono text-[10px]', m.role === 'user' ? 'text-white/60' : 'text-ink-faint')}>{new Date(m.at).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
             </div>
             {m.role === 'user' ? (
               <span className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-gold/20 text-gold-700">

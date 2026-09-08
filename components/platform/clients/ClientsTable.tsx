@@ -30,7 +30,7 @@ export function ClientsTable({ clients }: { clients: ClientListRow[] }) {
   return (
     <>
       {/* Phones: one card per client */}
-      <ul className="grid gap-3 md:hidden">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:hidden">
         {clients.map((c) => {
           const stage = stageBadge(c.stage)
           return (

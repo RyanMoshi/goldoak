@@ -29,7 +29,7 @@ export function QuotesTable({ rows }: { rows: QuoteRow[] }) {
   }
   return (
     <>
-      <ul className="grid gap-3 md:hidden">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:hidden">
         {rows.map((q) => {
           const meta = stageMeta[q.stage]
           const replied = q.submissions.filter((s) => s.status === 'received' || s.status === 'ready').length

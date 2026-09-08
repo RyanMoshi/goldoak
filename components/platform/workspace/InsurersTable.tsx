@@ -17,7 +17,7 @@ export function InsurersTable({ rows }: { rows: InsurerRow[] }) {
   }
   return (
     <>
-      <ul className="grid gap-3 md:hidden">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:hidden">
         {rows.map((r) => (
           <li key={r.insurer} className="rounded-card border border-line bg-surface p-4">
             <div className="flex items-start justify-between gap-3">

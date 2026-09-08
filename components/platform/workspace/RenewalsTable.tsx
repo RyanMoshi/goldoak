@@ -27,7 +27,7 @@ export function RenewalsTable({ rows }: { rows: RenewalRow[] }) {
   }
   return (
     <>
-      <ul className="grid gap-3 md:hidden">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:hidden">
         {rows.map((p) => {
           const w = window(p.daysToExpiry)
           return (
