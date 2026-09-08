@@ -31,3 +31,8 @@ Set `ANTHROPIC_API_KEY` (model `ANTHROPIC_MODEL`, default `claude-opus-5`, adapt
 
 ## Grounding rules (in the system prompt)
 No firm premiums, no claim promises, no invented terms; say "I don't have enough information…"; assistant is not a licensed adviser; escalate complaints, disputes, live claim decisions and firm prices with `[HANDOFF]`. Every extracted document field must be confirmed by the person before it counts.
+
+## Resilience and neutrality (v4, September 2026)
+- `chat()` tries `AI_MODEL` then every model in `AI_FALLBACK_MODELS` (default `nvidia/nemotron-3.5-lightning-30b-a3b`) when the endpoint answers 429/5xx/404/410 or times out; NVIDIA's shared endpoint returns 503 "temporarily overloaded" at busy times. Nemotron-3 models get `chat_template_kwargs.enable_thinking=false` so they answer instead of reasoning aloud. Models 404 "not found for account" are not enabled on this key (kimi-k2.6, mistral-large-2, nemotron-nano, ultra-253b, gemma).
+- When every model fails, `catalogueAnswer()` picks the best catalogue entries by name and phrase match and says so ("Our assistant is busy right now, so here is general information").
+- Per-tenant layer: `organizations.ai_settings` (`assistantName`, `tone`, `services`, `faqs`, `escalation`, `doNotSay`, `useGeneralCatalogue`) edited at `/agency/ai`. Fixed ground rules forbid mentioning, recommending or comparing other agencies and revealing anything about another tenant (GoldOak included); "who built you" → "the Super Agent platform".

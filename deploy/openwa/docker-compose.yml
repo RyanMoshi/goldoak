@@ -1,0 +1,60 @@
+# Super Agent WhatsApp gateway (OpenWA) for a small VPS, so production never
+# depends on a laptop. Two containers: OpenWA (WhatsApp Web automation, REST
+# API on 8080 inside the network) and Caddy (automatic HTTPS on your domain).
+#
+#   1. Point a DNS A record (e.g. wa.yourdomain.com) at the VPS.
+#   2. cp .env.example .env and fill it in.
+#   3. docker compose up -d
+#   4. Open https://wa.yourdomain.com/qr?key=<OPENWA_API_KEY> once to pair the phone.
+#   5. Set OPENWA_BASE_URL=https://wa.yourdomain.com on Vercel and redeploy.
+#
+# Sessions persist in the ./sessions volume, so restarts do not need a new QR.
+
+services:
+  openwa:
+    image: openwa/wa-automate:latest
+    restart: unless-stopped
+    command: >
+      --socket
+      --api-host 0.0.0.0
+      --port 8080
+      --key ${OPENWA_API_KEY}
+      --session-id ${OPENWA_SESSION_ID:-goldoak}
+      --session-data-path /sessions
+      --webhook ${WEBHOOK_URL}
+      --webhook-timeout 10000
+      --auto-reject-calls
+      --disable-spins
+      --kill-client-on-logout false
+      --headful false
+    environment:
+      - TZ=Africa/Nairobi
+    volumes:
+      - ./sessions:/sessions
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:8080/healthcheck']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      - DOMAIN=${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - openwa
+
+volumes:
+  caddy_data:
+  caddy_config:

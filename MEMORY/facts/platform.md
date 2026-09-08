@@ -68,3 +68,10 @@ The WhatsApp bot (`lib/whatsapp/bot.ts`) calls the same services, never the acti
 - References: `QR-2026-00012`, `CLM-2026-00003`; documents `REG/SUM/CLM/QTE/RPT-2026-00001`.
 - Ids are prefixed (`usr_`, `org_`, `cli_`, `pol_`, `qr_`, `qs_`, `clm_`, `tsk_`, `act_`, `ntf_`, `msg_`, `con_`, `doc_`, `aud_`).
 - Navigation items live in `data/platform/navigation.ts` (`adminOnly` flag, `agencyMobileTabs`).
+
+## v4 additions (September 2026)
+- Services: `memberships.ts` (identity ↔ agency), `onboarding.ts` (`inviteClient`, `inviteStaff` incl. attaching an existing identity, `resetToTemporaryPassword`, `announceApproval`), `emails.ts`, `otp.ts`, `webchat.ts`, `lib/whatsapp/channels.ts`, `lib/email/{branding,layout,templates}.ts`.
+- Pages: `/account/password`, `/choose-agency`, `/verify-email`, `/agency/{whatsapp,ai,emails,templates}`, `/admin/{emails,templates,channels}`; `loading.tsx` skeletons for agency/portal/admin; branded first-load screen (`components/site/AppLoader.tsx`, session-scoped, reduced-motion aware).
+- Admin: impersonation ("View as" + banner), read-only `GET /api/admin/inspect` (x-admin-token) for operations.
+- Schema bootstrap (`lib/db/migrate.ts`) applies the whole schema in one request and records a fingerprint in `schema_meta`; cold instances cost one query. (Before this, 98 round trips made sign-in take two minutes.)
+- Organisation fields: `branding`, `ai_settings`, `reminder_days`, `website`. User fields: `must_change_password`, `password_changed_at`, `email_verified_at`, `email_prefs`, `last_login_at`, `failed_logins`, `locked_until`.

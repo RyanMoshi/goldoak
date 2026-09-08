@@ -19,11 +19,12 @@
 - [brand.md](facts/brand.md) — Colours, logo, typography, platform tokens
 - [api.md](facts/api.md) — API endpoints: forms, public assistant, uploads, documents (PDF), health, seed/purge, cron, jobs, webhooks
 - [data.md](facts/data.md) — Static site content in `lib/`
-- [email.md](facts/email.md) — Nodemailer SMTP for the site forms
+- [email.md](facts/email.md) — Email platform: branding per tenant, templates and overrides, queue, log, preferences, OTP
 
 ### Playbooks
 - [dev-setup.md](playbooks/dev-setup.md) — First-time setup, env pull, dev server
 - [deploy-vercel.md](playbooks/deploy-vercel.md) — Deploy, env vars, verify live
+- [logins-and-onboarding.md](playbooks/logins-and-onboarding.md) — Sign-in procedures per role, onboarding agencies/clients, start afresh, env vars, verify a deploy
 - [bootstrap-admin.md](playbooks/bootstrap-admin.md) — Bootstrap, approve/create agencies, invite staff, start afresh, run the live tests
 - [whatsapp-openwa.md](playbooks/whatsapp-openwa.md) — Connect the OpenWA gateway, register the webhook, test the bot
 - [add-feature.md](playbooks/add-feature.md) — Add a page, service, server action, table, notification

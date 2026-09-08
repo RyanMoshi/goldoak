@@ -76,3 +76,6 @@ Deployed at `https://goldoak.vercel.app/` (Vercel project `goldoak`, GitHub `Rya
 | [whatsapp-openwa.md](playbooks/whatsapp-openwa.md) | Connect the OpenWA gateway, move it to a server, test the bot |
 | [add-feature.md](playbooks/add-feature.md) | Adding pages, services, actions, tables, flows, jobs |
 | [fix-build.md](playbooks/fix-build.md) | Build failures and fixes |
+
+## State after v4 (8 September 2026)
+Live at https://goldoak.vercel.app. Verified in production with puppeteer: super admin sign-in (3 s, was 127 s), agency creation, temporary passwords by email + WhatsApp, forced first-login change, attaching an existing identity to another agency, agency picker, tenant isolation (Otto Test Agency cannot see GoldOak clients), client invitation (email + WhatsApp delivered), portal chat persisting across reload, all admin/agency/portal/public pages at 375/768/1366 px with no horizontal overflow. Test tenant "Otto Test Agency" (code OTTO, ottoalexis61@gmail.com) and GoldOak agency admin ryanmoshi77@gmail.com exist; remove/deactivate the test tenant when done. Remaining outside the code: rotate `AUTH_SECRET`, run the purge, and move the OpenWA gateway to a VPS (`deploy/openwa/`).
