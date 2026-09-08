@@ -1,0 +1,1 @@
+{"error":"Reset stopped part-way; nothing further was deleted.","detail":"column \"organization_id\" does not exist","deletedSoFar":{"campaign_recipients":0,"campaigns":0,"suppressions":0}}

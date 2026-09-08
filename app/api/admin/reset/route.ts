@@ -113,7 +113,19 @@ export async function POST(request: Request) {
   let removedUsers: { id: unknown }[] = []
   let removedOrgs: { id: unknown }[] = []
   try {
+    // Not every table carries organization_id: line items, one-time codes and
+    // webhook receipts hang off a parent that cascades. When an agency is being
+    // kept, those tables are left to their parent rather than filtered on a
+    // column they do not have.
+    const scoped = await sql`SELECT table_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND column_name = 'organization_id'`
+    const tenantScoped = new Set(scoped.map((r) => String(r.table_name)))
+
     for (const table of TENANT_TABLES) {
+      if (keep.length && !tenantScoped.has(table)) {
+        deleted[table] = 0
+        continue
+      }
       const rows = keep.length
         ? await sql.unsafe(`DELETE FROM ${table} WHERE organization_id IS NULL OR organization_id <> ALL($1) RETURNING 1`, [keep])
         : await sql.unsafe(`DELETE FROM ${table} RETURNING 1`)
