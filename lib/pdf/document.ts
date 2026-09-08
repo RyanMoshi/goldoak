@@ -138,6 +138,27 @@ export function ensureSpace(doc: Doc, needed: number): void {
   if (doc.y + needed > bottomLimit(doc)) doc.addPage()
 }
 
+/**
+ * Draws the chrome without letting pdfkit paginate.
+ *
+ * The header and footer sit outside the text margins on purpose. pdfkit adds a
+ * new page whenever text is written past the bottom margin, so stamping a
+ * footer there silently appended a blank page per page — a three-page quote
+ * came out as twelve. Zeroing the margins for the duration of the draw keeps
+ * the chrome where it belongs and the page count honest.
+ */
+function withoutPageBreaks(doc: Doc, draw: () => void): void {
+  const { top, bottom } = doc.page.margins
+  doc.page.margins.top = 0
+  doc.page.margins.bottom = 0
+  try {
+    draw()
+  } finally {
+    doc.page.margins.top = top
+    doc.page.margins.bottom = bottom
+  }
+}
+
 function drawHeader(doc: Doc, frame: PdfFrame) {
   const p = frame.palette!
   const width = doc.page.width
@@ -196,11 +217,15 @@ function drawFooter(doc: Doc, frame: PdfFrame, page: number, total: number) {
 
 function finish(doc: Doc, frame: PdfFrame) {
   const range = doc.bufferedPageRange()
-  for (let i = range.start; i < range.start + range.count; i++) {
+  const total = range.count
+  for (let i = range.start; i < range.start + total; i++) {
     doc.switchToPage(i)
-    drawHeader(doc, frame)
-    drawFooter(doc, frame, i - range.start + 1, range.count)
+    withoutPageBreaks(doc, () => {
+      drawHeader(doc, frame)
+      drawFooter(doc, frame, i - range.start + 1, total)
+    })
   }
+  doc.flushPages()
 }
 
 /* ---------- Body helpers ---------- */
