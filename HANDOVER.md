@@ -14,7 +14,7 @@ branding, documents and AI configuration, and none can see another's.
 
 | | What it is | Where it lives | Who gets in |
 |---|---|---|---|
-| **Super Admin** | The platform operator. Oversees every agency, every user, every channel and the platform's health. Belongs to no agency. | `/admin` | The bootstrap administrator account |
+| **Super Admin** | The platform operator. Oversees every agency, every user, every channel and the platform's health. Belongs to no agency, and links to no agency workspace. | `/super-admin`, signing in at `/super-admin/login` | The bootstrap administrator account |
 | **Super Agent** | The AI product that serves all agencies. Managed on its own terms: usage, models, shared knowledge, failures. | `/superagent` | Super Admin |
 | **Agency** | One insurance agency: its people, clients, conversations, documents, money. GoldOak is one of these, with no special treatment. | `/agency/*` | That agency's admins and staff |
 | **Client** | A customer of one agency. Sees only their own cover. | `/portal/*` | The client |
@@ -28,12 +28,13 @@ through the ordinary agency sign-in.
 
 ## 2. Signing in
 
-Everyone signs in at **https://goldoak.vercel.app/signin**. The tab decides
-which kind of membership counts, not which page you get:
+Agencies and clients sign in at **https://goldoak.vercel.app/signin**, where the
+tab decides which kind of membership counts. The platform operator has a
+separate door at **/super-admin/login** which accepts nobody else:
 
 | Who | Tab | Lands on |
 |---|---|---|
-| Super Admin | Agency | `/admin` |
+| Super Admin | Agency | `/super-admin` |
 | Agency admin or staff (GoldOak or any other) | Agency | `/agency/today` for that agency |
 | Client | Client | `/portal` |
 
@@ -70,7 +71,7 @@ administrator's password, set a new `ADMIN_PASSWORD` and call it again.
 
 ## 3. What the Super Admin can do
 
-At `/admin`:
+At `/super-admin`:
 
 - **Agencies** — create an agency and its first administrator, approve agencies
   that signed themselves up, activate or suspend.
@@ -115,10 +116,10 @@ success, agency — never message content.
 ## 5. Onboarding an agency
 
 **Self-serve:** the agency completes `/agencies/signup`, verifies its email with
-a one-time code, and waits. The Super Admin is emailed, approves at `/admin`, and
+a one-time code, and waits. The Super Admin is emailed, approves at `/super-admin`, and
 the agency admin gets an approval email.
 
-**Operator-created:** `/admin` → create the agency and its first administrator.
+**Operator-created:** `/super-admin` → create the agency and its first administrator.
 A friendly temporary password (e.g. `Mango4827`) is emailed and, where a number
 is known, sent on WhatsApp.
 
@@ -359,7 +360,7 @@ What exists now:
 | | |
 |---|---|
 | **Platform administrator** | `admin@goldoak.co.ke` — one account, belongs to no agency, holds a **temporary password that must be changed at first sign-in** |
-| **GoldOak Insurance Agency** | Created afterwards through the ordinary agency onboarding in `/admin` — the same path any other agency takes. Join code `GOLDOAK` |
+| **GoldOak Insurance Agency** | Created afterwards through the ordinary agency onboarding in `/super-admin` — the same path any other agency takes. Join code `GOLDOAK` |
 | **GoldOak agency administrator** | `ryanmoshi77@gmail.com` — also on a **temporary password that must be changed at first sign-in** |
 | Everything else | Empty, waiting for real data |
 
@@ -367,7 +368,7 @@ The two temporary passwords were handed over separately and are not written
 anywhere in this repository. If either is lost:
 
 - **GoldOak agency admin** — the platform administrator issues a new one from
-  `/admin` → the account row → **New password**.
+  `/super-admin` → the account row → **New password**.
 - **Platform administrator** — the same button works on its own row; or set a
   new `ADMIN_PASSWORD` on the deployment and call `POST /api/admin/seed`.
 
@@ -378,3 +379,35 @@ anywhere in this repository. If either is lost:
    knowledge, team, clients.
 3. Send itself a test email from `/agency/emails` and a test quotation to
    confirm the branding looks right on both.
+
+---
+
+## 19. What changed in the September 2026 rework
+
+**Three separate products, three separate doors.**
+
+| | Address | Sign in at |
+|---|---|---|
+| Super Admin (the platform operator) | `/super-admin` | `/super-admin/login` |
+| Super Agent (the AI product console) | `/superagent` | `/super-admin/login` — it is platform-level |
+| An agency workspace | `/agency/today` (alias `/agent/dashboard`) | `/signin`, Agency tab (alias `/agent/login`) |
+| A client portal | `/portal` | `/signin`, Client tab |
+
+The platform console carries **no link into any agency workspace**, and neither
+does the Super Agent console — verified in production at phone, tablet and
+desktop widths. An agency admin who visits `/superagent` is redirected away.
+
+**The AI.** `lib/ai/gateway.ts` routes by task rather than by model: chat,
+reason, vision and ocr each have a model chain, and every model is tried across
+all three NVIDIA keys before the chain moves on. Keys live only in the
+environment. Primary chat model is Nemotron 3.5 Lightning; Nemotron 3 Super,
+Kimi K3 and DeepSeek V4 Pro back it up.
+
+**What the assistant knows about GoldOak** comes from `lib/company.ts` and
+`lib/insights.ts`, both extracted from the company's own profile documents and
+published website. Facts the company has not supplied — the IRA licence number,
+company registration, KRA PIN and the Principal Officer's name — are listed in
+`PENDING` and the assistant says it does not have them rather than guessing.
+
+**The public site** has a floating dock on every page: WhatsApp to a human, and
+the assistant in a chat that keeps its thread for the session.
