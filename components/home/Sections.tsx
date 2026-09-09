@@ -38,7 +38,7 @@ export function Hero() {
   return (
     <section className="relative overflow-hidden bg-forest text-white">
       <div aria-hidden="true" className="pointer-events-none absolute -right-24 -top-24 size-[28rem] rounded-full bg-gold/10 blur-3xl" />
-      <div className="relative mx-auto w-full max-w-6xl px-4 py-20 sm:px-6 sm:py-28 lg:py-32">
+      <div className="relative mx-auto w-full max-w-6xl px-4 pt-28 pb-20 sm:px-6 sm:pt-32 sm:pb-28 lg:pt-36 lg:pb-32">
         <div className="max-w-3xl">
           <Eyebrow on="forest">{company.regulatoryNote}</Eyebrow>
           <h1 className="mt-5 font-serif text-[34px] font-medium leading-[1.1] tracking-[-0.01em] sm:text-[52px] lg:text-[60px]">

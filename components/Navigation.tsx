@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Menu, X, Phone, ChevronDown, ArrowRight, Sparkles } from 'lucide-react'
+import { Menu, X, Phone, ArrowRight, Sparkles } from 'lucide-react'
 import Logo from './Logo'
 import { mainNav } from '@/lib/navigation'
 import { contact } from '@/lib/contact'
@@ -11,7 +11,7 @@ import { contact } from '@/lib/contact'
 const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false)
   const [isScrolled, setIsScrolled] = useState(false)
-  const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const menuRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
 
   useEffect(() => {
@@ -24,8 +24,28 @@ const Navigation = () => {
 
   useEffect(() => {
     setIsOpen(false)
-    setOpenDropdown(null)
   }, [pathname])
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsOpen(false)
+      }
+    }
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isOpen])
+
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = ''
+    }
+    return () => { document.body.style.overflow = '' }
+  }, [isOpen])
 
   const isActive = (href: string) => {
     if (href === '/') return pathname === '/'
@@ -33,165 +53,95 @@ const Navigation = () => {
   }
 
   return (
-    <nav
-      className={`sticky top-0 z-50 transition-all duration-300 ${
-        isScrolled
-          ? 'bg-primary/95 backdrop-blur-md shadow-lg'
-          : 'bg-primary'
-      }`}
-      role="navigation"
-      aria-label="Main navigation"
-    >
-      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
-        <div className="flex justify-between items-center py-4">
-          <Link href="/" className="flex-shrink-0" aria-label="GoldOak - Home">
-            <Logo variant="gold" size="lg" logoType="sidename" />
+    <div className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 flex justify-center" ref={menuRef}>
+      {/* Floating Pill Header */}
+      <div
+        className={`flex items-center justify-between w-full max-w-5xl rounded-full px-4 py-2.5 transition-all duration-300 ${
+          isScrolled
+            ? 'bg-forest/80 backdrop-blur-xl shadow-lg shadow-forest/20'
+            : 'bg-forest/60 backdrop-blur-md'
+        }`}
+      >
+        {/* Logo */}
+        <Link href="/" className="flex-shrink-0" aria-label="GoldOak - Home">
+          <Logo variant="gold" size="sm" logoType="icon" />
+        </Link>
+
+        {/* Right side: CTA + Hamburger */}
+        <div className="flex items-center gap-3">
+          <Link
+            href="/contact"
+            className="hidden sm:inline-flex items-center gap-1.5 bg-gold text-forest px-4 py-2 rounded-full text-[13px] font-bold hover:bg-gold-500 transition-colors"
+          >
+            Start a Risk Review
+            <ArrowRight className="w-3.5 h-3.5" />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-0.5">
-            {mainNav.map((item) => (
-              <div
-                key={item.name}
-                className="relative"
-                onMouseEnter={() => item.children && setOpenDropdown(item.name)}
-                onMouseLeave={() => setOpenDropdown(null)}
-              >
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
-                    isActive(item.href)
-                      ? 'text-white bg-white/10'
-                      : 'text-white hover:text-white hover:bg-white/5'
-                  }`}
-                >
-                  {item.name}
-                  {item.children && (
-                    <ChevronDown className={`w-3 h-3 transition-transform ${openDropdown === item.name ? 'rotate-180' : ''}`} />
-                  )}
-                </Link>
+          <button
+            onClick={() => setIsOpen(!isOpen)}
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            aria-label={isOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isOpen}
+          >
+            {isOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
 
-                {item.children && openDropdown === item.name && (
-                  <div className="absolute top-full left-0 pt-2 z-50">
-                    <div className="bg-white rounded-xl shadow-xl border border-gray-100 py-2 min-w-[220px]">
-                      {item.children.map((child) => (
-                        <Link
-                          key={child.name}
-                          href={child.href}
-                          className="block px-4 py-2.5 text-sm text-gray-700 hover:text-primary hover:bg-navy-50 transition-colors"
-                        >
-                          {child.name}
-                        </Link>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+      {/* Dropdown Menu */}
+      <div
+        className={`absolute top-full left-1/2 -translate-x-1/2 w-full max-w-5xl mt-2 rounded-2xl bg-forest/95 backdrop-blur-xl shadow-xl shadow-forest/30 border border-white/10 transition-all duration-300 origin-top ${
+          isOpen ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
+        }`}
+      >
+        <div className="p-6">
+          {/* Nav Links */}
+          <div className="space-y-1">
+            {mainNav.map((item) => (
+              <Link
+                key={item.name}
+                href={item.href}
+                className={`block px-4 py-3 rounded-xl text-[15px] font-medium transition-colors ${
+                  isActive(item.href)
+                    ? 'bg-white/10 text-gold'
+                    : 'text-white/80 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {item.name}
+              </Link>
             ))}
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center space-x-3">
-            <a
-              href={`tel:${contact.phoneRaw}`}
-              className="flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm"
-            >
-              <Phone className="w-4 h-4" />
-              <span>{contact.phone}</span>
-            </a>
+          {/* Divider */}
+          <div className="my-4 border-t border-white/10" />
+
+          {/* Bottom Actions */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <Link
               href="/super-agent"
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                isActive('/super-agent') ? 'text-white bg-white/10' : 'text-secondary hover:text-white hover:bg-white/5'
-              }`}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 text-secondary hover:bg-white/10 transition-colors font-semibold text-[15px]"
             >
               <Sparkles className="w-4 h-4" />
               Super Agent
             </Link>
+            <a
+              href={`tel:${contact.phoneRaw}`}
+              className="flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-white/5 text-white hover:bg-white/10 transition-colors font-medium text-[15px]"
+            >
+              <Phone className="w-4 h-4" />
+              {contact.phone}
+            </a>
             <Link
               href="/contact"
-              className="bg-secondary text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-gold-500 transition-all duration-300 text-sm inline-flex items-center gap-2 group"
+              className="sm:hidden flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-gold text-forest font-bold text-[15px] hover:bg-gold-500 transition-colors"
             >
               Start a Risk Review
-              <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="w-4 h-4" />
             </Link>
-          </div>
-
-          {/* Mobile Menu Button */}
-          <button
-            onClick={() => setIsOpen(!isOpen)}
-            className="lg:hidden p-3 rounded-xl text-white hover:text-secondary hover:bg-white/10 transition-all duration-300"
-            aria-label={isOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={isOpen}
-          >
-            {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
-        </div>
-
-        {/* Mobile Navigation */}
-        <div
-          className={`lg:hidden transition-all duration-300 overflow-hidden ${
-            isOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0'
-          }`}
-          role="menu"
-        >
-          <div className="border-t border-white/20 py-6 space-y-1">
-            {mainNav.map((item) => (
-              <div key={item.name}>
-                <Link
-                  href={item.href}
-                  className={`block py-3 px-4 rounded-xl font-medium transition-all duration-200 text-white hover:text-secondary hover:bg-white/5 ${
-                    isActive(item.href) ? 'bg-white/10 text-secondary' : ''
-                  }`}
-                  role="menuitem"
-                >
-                  {item.name}
-                </Link>
-                {item.children && (
-                  <div className="pl-6 space-y-1">
-                    {item.children.map((child) => (
-                      <Link
-                        key={child.name}
-                        href={child.href}
-                        className="block py-2 px-4 rounded-lg text-sm text-gray-300 hover:text-secondary hover:bg-white/5 transition-colors"
-                        role="menuitem"
-                      >
-                        {child.name}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-
-            <div className="pt-4 border-t border-white/20 space-y-3">
-              <Link
-                href="/super-agent"
-                className="flex items-center gap-3 py-3 px-4 text-secondary hover:bg-white/5 rounded-xl transition-colors"
-                role="menuitem"
-              >
-                <Sparkles className="w-5 h-5" />
-                <span className="font-semibold">Super Agent</span>
-              </Link>
-              <a
-                href={`tel:${contact.phoneRaw}`}
-                className="flex items-center gap-3 py-3 px-4 text-white hover:bg-white/5 rounded-xl transition-colors"
-              >
-                <Phone className="w-5 h-5" />
-                <span className="font-medium">{contact.phone}</span>
-              </a>
-              <Link
-                href="/contact"
-                className="bg-secondary text-white w-full text-center justify-center py-3 px-4 rounded-xl font-semibold hover:bg-gold-500 transition-colors inline-flex items-center gap-2"
-              >
-                Start a Risk Review
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
           </div>
         </div>
       </div>
-    </nav>
+    </div>
   )
 }
 
