@@ -3,9 +3,9 @@
 This is the last piece that still depends on your laptop. Everything else — the
 app, database, storage, email, AI, background jobs — already runs without it.
 
-You already have a Google Cloud account with the `dropex-logistics` project in
-it, so this is the path of least friction: the console is familiar, the command
-line is good, and instances come up in about a minute. Budget half an hour.
+You already have a Google Cloud account, so this is the path of least friction:
+the console is familiar, the command line is good, and instances come up in
+about a minute. Budget half an hour.
 
 ---
 
@@ -28,12 +28,12 @@ page rather than trusting this paragraph.
 
 ---
 
-## 1. Choose a project
+## 1. Create the GoldOak project
 
-The link you sent points at `dropex-logistics`. That is a different business,
-and putting the gateway there mixes GoldOak's WhatsApp session into another
-project's billing, IAM and audit logs. **A separate project is worth the two
-minutes**, and it can sit under the same billing account:
+The gateway gets its own project, `goldoak-gateway`, under your existing
+billing account. Keeping it separate from anything else in the account means
+GoldOak's WhatsApp session, its billing, its permissions and its audit logs all
+sit in one place with nothing unrelated beside them. It takes two minutes:
 
 ```bash
 gcloud projects create goldoak-gateway --name="GoldOak Gateway"
@@ -41,9 +41,9 @@ gcloud config set project goldoak-gateway
 gcloud billing projects link goldoak-gateway --billing-account=<YOUR-BILLING-ID>
 ```
 
-If you would rather keep everything in `dropex-logistics`, nothing below
-changes except the project name. Run `gcloud config set project
-dropex-logistics` instead.
+If you would rather put the gateway in a project you already have, nothing
+below changes except the name. Run `gcloud config set project <that project>`
+instead.
 
 Then enable the API that everything else needs:
 
