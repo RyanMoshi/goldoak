@@ -178,7 +178,7 @@ Step 'Waiting for the instance to accept SSH'
 Note 'The first connection generates a key and can take a couple of minutes'
 $sshOk = $false
 foreach ($i in 1..20) {
-  if ((G compute ssh $Instance --zone=$Zone --project=$Project --tunnel-through-iap=false --command='true' -- -o StrictHostKeyChecking=no -o ConnectTimeout=15).ok) {
+  if ((G compute ssh $Instance --zone=$Zone --project=$Project --quiet --tunnel-through-iap=false --command='true' -- -o StrictHostKeyChecking=no -o ConnectTimeout=15).ok) {
     $sshOk = $true; break
   }
   Start-Sleep -Seconds 15
@@ -194,7 +194,7 @@ $tmp = Join-Path ([System.IO.Path]::GetTempPath()) ("goldoak-env-" + [guid]::New
 $body = "DOMAIN=$Domain`nOPENWA_API_KEY=$apiKey`nOPENWA_SESSION_ID=$sessionId`nWEBHOOK_URL=$WebhookUrl`n"
 [System.IO.File]::WriteAllText($tmp, $body, (New-Object System.Text.UTF8Encoding($false)))
 try {
-  & gcloud compute scp $tmp "${Instance}:~/gateway.env" --zone=$Zone --project=$Project 2>$null | Out-Null
+  & gcloud compute scp --quiet $tmp "${Instance}:~/gateway.env" --zone=$Zone --project=$Project 2>$null | Out-Null
   if ($LASTEXITCODE -ne 0) { Die 'Could not copy the configuration to the instance.' }
 } finally {
   Remove-Item $tmp -Force -ErrorAction SilentlyContinue
@@ -212,7 +212,7 @@ sudo bash /tmp/setup.sh
 
 Step 'Running the setup on the instance'
 Note 'Docker, swap, the gateway and HTTPS. Several minutes on an e2-micro.'
-& gcloud compute ssh $Instance --zone=$Zone --project=$Project --command=$remote
+& gcloud compute ssh $Instance --zone=$Zone --project=$Project --quiet --command=$remote
 if ($LASTEXITCODE -ne 0) {
   Warn 'The setup script reported a problem. The output above says where it stopped.'
   Warn "You can re-run it any time:  gcloud compute ssh $Instance --zone=$Zone --command='sudo bash /tmp/setup.sh'"
