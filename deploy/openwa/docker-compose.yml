@@ -29,6 +29,10 @@ services:
       --headful false
     environment:
       - TZ=Africa/Nairobi
+    # Loopback only: the host can health-check and debug the gateway without
+    # the API being reachable from the internet. Caddy still fronts it on 443.
+    ports:
+      - '127.0.0.1:8080:8080'
     volumes:
       - ./sessions:/sessions
     healthcheck:

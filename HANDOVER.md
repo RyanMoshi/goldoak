@@ -282,13 +282,23 @@ Everything runs without a laptop **except the WhatsApp gateway**:
 | Email | SMTP |
 | AI | NVIDIA NIM |
 | PDF generation | Vercel functions |
-| **WhatsApp gateway** | **currently a laptop** — see `deploy/openwa/README.md` |
+| **WhatsApp gateway** | **a laptop today; moving to Oracle Cloud** — see `deploy/oracle/README.md` |
 
 The WhatsApp gateway (OpenWA) still runs on the development laptop behind a
 tunnel, kept alive by two scheduled tasks. While it is off, WhatsApp messages
-are not received; everything else keeps working. `deploy/openwa/` contains a
-ready-to-run Docker Compose and Caddy setup to move it to any small VPS, after
-which the laptop is not needed at all.
+are not received; everything else keeps working.
+
+The move off the laptop is decided and prepared. `deploy/oracle/README.md` is
+the walkthrough — an Oracle Cloud Always Free Ampere instance, which has no
+expiry and enough capacity for a headless browser — and `deploy/oracle/setup.sh`
+does the machine setup in one idempotent command: Docker, the firewall Oracle
+ships closed, swap, the compose stack from `deploy/openwa/` behind Caddy with
+an automatic certificate, a watchdog every two minutes, and a nightly backup of
+the WhatsApp session folder. `deploy/HOSTING.md` records why Oracle was chosen
+over the alternatives, including the five repositories that were rejected.
+
+Once a real message has gone through the new gateway, disable the two scheduled
+tasks on the laptop and nothing in production depends on your machine.
 
 ---
 

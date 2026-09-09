@@ -93,24 +93,31 @@ months, at which point the gateway silently becomes a bill.
 
 ## Setting it up
 
-`deploy/openwa/` already contains everything: a Docker Compose file for the
-gateway, a Caddy configuration for automatic HTTPS, and an `.env.example`.
+The decision is made: the gateway goes to Oracle Cloud Always Free.
+
+**The full walkthrough is `deploy/oracle/README.md`.** It covers the account,
+the region, the instance shape, the two firewalls, the domain, and the one
+command that does the rest. Read it there rather than following a condensed
+version here.
+
+The short shape of it: create an Ampere instance running Ubuntu, reserve its
+public IP, allow ports 80 and 443 on the subnet's security list, point a name
+at it, then SSH in and run
 
 ```bash
-# on the Oracle instance (Ubuntu 22.04+, ARM or x86)
-sudo apt update && sudo apt install -y docker.io docker-compose-plugin
-sudo usermod -aG docker $USER && newgrp docker
-git clone https://github.com/RyanMoshi/goldoak.git
-cd goldoak/deploy/openwa
-cp .env.example .env && nano .env      # DOMAIN, OPENWA_API_KEY, OPENWA_SESSION_ID, WEBHOOK_URL
-docker compose up -d
-docker compose logs -f openwa          # wait for the QR, then pair the phone
+curl -fsSL https://raw.githubusercontent.com/RyanMoshi/goldoak/main/deploy/oracle/setup.sh -o setup.sh
+less setup.sh
+sudo bash setup.sh
 ```
 
-Open ports 80 and 443 in both the Oracle security list **and** the instance
-firewall (`sudo iptables -I INPUT -p tcp --dport 443 -j ACCEPT`, then persist)
-— Oracle images ship with a restrictive local firewall, which is the most
-common reason a new instance appears unreachable.
+`deploy/oracle/setup.sh` installs Docker, opens the local firewall Oracle ships
+closed, adds swap, starts the compose stack from `deploy/openwa/` behind Caddy
+with an automatic certificate, installs a two-minute watchdog, and takes a
+nightly backup of the WhatsApp session folder. It is idempotent — running it
+twice changes nothing the second time.
+
+The gateway image publishes an **arm64** build, verified against the Docker Hub
+tag API, so it runs natively on Ampere rather than under emulation.
 
 Then on Vercel set `OPENWA_BASE_URL=https://<your domain>` (keeping the same
 `OPENWA_API_KEY`, `OPENWA_SESSION_ID` and `OPENWA_WEBHOOK_SECRET`), redeploy,
