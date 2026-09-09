@@ -46,8 +46,8 @@ export function Hero() {
             <br />
             <span className="text-gold">Service, sustained.</span>
           </h1>
-          <p className="mt-6 max-w-2xl text-[16px] leading-7 text-white/80 sm:text-[18px] sm:leading-8">{company.positioning}</p>
-          <p className="mt-4 max-w-2xl text-[15px] leading-7 text-white/65">{company.whatWeDo}</p>
+          <p className="mt-6 max-w-2xl text-[16px] leading-7 text-white/90 sm:text-[18px] sm:leading-8">{company.positioning}</p>
+          <p className="mt-4 max-w-2xl text-[15px] leading-7 text-white/80">{company.whatWeDo}</p>
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
@@ -64,13 +64,13 @@ export function Hero() {
             </a>
           </div>
 
-          <p className="mt-8 text-[14px] italic leading-6 text-white/55">“{company.promise}”</p>
+          <p className="mt-8 text-[14px] italic leading-6 text-white/70">“{company.promise}”</p>
         </div>
 
         <dl className="mt-14 grid grid-cols-2 gap-x-6 gap-y-8 border-t border-white/15 pt-8 lg:grid-cols-4">
           {figures.map((f) => (
             <div key={f.label}>
-              <dt className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/50">{f.label}</dt>
+              <dt className="text-[12px] font-semibold uppercase tracking-[0.08em] text-white/65">{f.label}</dt>
               <dd data-numeric className="mt-1 font-serif text-[30px] font-bold leading-none text-gold sm:text-[36px]">
                 {f.value}
               </dd>

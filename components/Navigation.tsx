@@ -42,14 +42,14 @@ const Navigation = () => {
       role="navigation"
       aria-label="Main navigation"
     >
-      <div className="container-custom">
+      <div className="mx-auto w-full max-w-6xl px-4 sm:px-6">
         <div className="flex justify-between items-center py-4">
           <Link href="/" className="flex-shrink-0" aria-label="GoldOak - Home">
             <Logo variant="gold" size="lg" logoType="sidename" />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center space-x-1">
+          <div className="hidden lg:flex items-center space-x-0.5">
             {mainNav.map((item) => (
               <div
                 key={item.name}
@@ -59,10 +59,10 @@ const Navigation = () => {
               >
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                  className={`flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
                     isActive(item.href)
                       ? 'text-white bg-white/10'
-                      : 'text-gray-200 hover:text-white hover:bg-white/5'
+                      : 'text-white hover:text-white hover:bg-white/5'
                   }`}
                 >
                   {item.name}
@@ -94,14 +94,14 @@ const Navigation = () => {
           <div className="hidden lg:flex items-center space-x-3">
             <a
               href={`tel:${contact.phoneRaw}`}
-              className="flex items-center gap-2 text-gray-200 hover:text-white transition-colors text-sm"
+              className="flex items-center gap-2 text-white/80 hover:text-white transition-colors text-sm"
             >
               <Phone className="w-4 h-4" />
               <span>{contact.phone}</span>
             </a>
             <Link
               href="/super-agent"
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
                 isActive('/super-agent') ? 'text-white bg-white/10' : 'text-secondary hover:text-white hover:bg-white/5'
               }`}
             >
@@ -110,7 +110,7 @@ const Navigation = () => {
             </Link>
             <Link
               href="/contact"
-              className="bg-secondary text-white px-6 py-2.5 rounded-lg font-semibold hover:bg-gold-500 transition-all duration-300 text-sm inline-flex items-center gap-2 group"
+              className="bg-secondary text-white px-5 py-2.5 rounded-lg font-semibold hover:bg-gold-500 transition-all duration-300 text-sm inline-flex items-center gap-2 group"
             >
               Start a Risk Review
               <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
