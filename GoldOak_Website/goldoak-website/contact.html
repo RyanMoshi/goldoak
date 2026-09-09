@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contact | GoldOak Insurance Agency</title>
+<meta name="description" content="Contact GoldOak Insurance Agency in Nairobi by WhatsApp, phone or email for an insurance quotation.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600&family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<link rel="icon" href="assets/tree.png">
+</head>
+<body>
+<header class="site">
+  <a class="brand" href="index.html">
+    <img src="assets/tree.png" alt="">
+    <span><b>GoldOak</b><em>Insurance Agency</em></span>
+  </a>
+  <button class="burger" aria-label="Menu" aria-expanded="false">Menu</button>
+  <nav><a href="index.html">Home</a><a href="about.html">About</a><a href="solutions.html">Solutions</a><a href="how-we-work.html">How we work</a><a href="claims.html">Claims</a><a href="insights.html">Insights</a><a href="contact.html" class="on">Contact</a></nav>
+  <a class="wa" href="https://wa.me/254729911311">Get a quote</a>
+</header>
+
+<div class="pagehead"><div class="wrap">
+  <h1>Talk to us</h1><div class="rule"></div>
+  <p>The fastest route is WhatsApp. Send us what you have and we will come back with
+  comparable terms from more than one insurer.</p>
+</div></div>
+<section><div class="wrap">
+  <div class="grid g2">
+    <div>
+      <h2>Request a quote</h2>
+      <form action="https://formspree.io/f/REPLACE_WITH_YOUR_FORM_ID" method="POST">
+        <label for="name">Your name</label>
+        <input id="name" name="name" required>
+        <label for="phone">Phone number</label>
+        <input id="phone" name="phone" type="tel" required>
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email">
+        <label for="cover">Cover you are interested in</label>
+        <select id="cover" name="cover">
+          <option>Medical</option><option>Life or education</option>
+          <option>Motor</option><option>Property</option>
+          <option>Group, corporate or WIBA</option><option>Business or specialist</option>
+          <option>Not sure yet</option>
+        </select>
+        <label for="msg">Anything we should know</label>
+        <textarea id="msg" name="message"></textarea>
+        <p class="consent"><input id="ok" name="consent" type="checkbox" required>
+        <label for="ok" style="font-weight:300">I agree that GoldOak may use these
+        details to respond to my enquiry, as set out in the
+        <a href="privacy.html">privacy notice</a>.</label></p>
+        <button class="btn" type="submit">Send enquiry</button>
+      </form>
+    </div>
+    <div>
+      <h2>Direct</h2>
+      <p><a class="btn" href="https://wa.me/254729911311">Message us on WhatsApp</a></p>
+      <p><strong>Phone</strong><br><a href="tel:+254729911311">+254 729 911 311</a></p>
+      <p><strong>Email</strong><br><a href="mailto:info@goldoak.co.ke">info@goldoak.co.ke</a></p>
+      <p><strong>Office</strong><br>Milimani Road<br>Nairobi, Kenya</p>
+      <p><strong>Hours</strong><br>Monday to Friday, 8.00am to 5.00pm<br>
+      Claims by phone at any time</p>
+    </div>
+  </div>
+</div></section>
+
+<footer class="site">
+  <div class="wrap foot">
+    <div>
+      <img class="mark" src="assets/lockup-green.png" alt="GoldOak Insurance Agency">
+      <p>An independent insurance agency working with several of Kenya's leading
+      insurers. Licensed by the Insurance Regulatory Authority. Trading since 2020.</p>
+    </div>
+    <div>
+      <h4>Get in touch</h4>
+      <p><a href="tel:+254729911311">+254 729 911 311</a><br>
+      <a href="mailto:info@goldoak.co.ke">info@goldoak.co.ke</a><br>
+      Milimani Road, Nairobi</p>
+      <p><a class="btn small" href="https://wa.me/254729911311">Message us on WhatsApp</a></p>
+    </div>
+    <div>
+      <h4>Pages</h4>
+      <p><a href="index.html">Home</a><br><a href="about.html">About</a><br><a href="solutions.html">Solutions</a><br><a href="how-we-work.html">How we work</a><br><a href="claims.html">Claims</a><br><a href="insights.html">Insights</a><br><a href="contact.html">Contact</a></p>
+    </div>
+  </div>
+  <div class="wrap legal">
+    <p>&copy; 2026 GoldOak Insurance Agency Limited. Licensed by the Insurance
+    Regulatory Authority of Kenya.</p>
+    <p>Information on this site is general and does not constitute an offer of
+    insurance. Cover is subject to insurer acceptance and to the full policy wording.
+    <a href="privacy.html">Privacy notice</a></p>
+  </div>
+</footer>
+<script>
+document.querySelector('.burger').addEventListener('click', function(){
+  var open = document.body.classList.toggle('nav-open');
+  this.setAttribute('aria-expanded', open);
+});
+</script>
+</body>
+</html>

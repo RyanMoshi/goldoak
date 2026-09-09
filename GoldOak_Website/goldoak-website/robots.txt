@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://goldoak.co.ke/sitemap.xml
