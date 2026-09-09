@@ -6,6 +6,7 @@ import { toConsultation } from '@/lib/db/mappers'
 import { newId } from '@/lib/ids'
 import { claimsSteps, company, howWeWork, PENDING, productLines, serviceCharter, specialistLines } from '@/lib/company'
 import { contact } from '@/lib/contact'
+import { insightDigest } from '@/lib/insights'
 import { solutionCategories, solutionDetails } from '@/lib/solutions'
 import type { Client, Consultation, ConversationMessage, Organization, Policy, PublicUser } from '@/types/platform'
 
@@ -115,7 +116,10 @@ function companyBriefing(): string {
     'Service standards we commit to: ' + serviceCharter.slice(0, 4).map((c) => `${c.commitment} ${c.standard.toLowerCase()}`).join('; ') + '.',
     'Claims: ' + claimsSteps.map((c) => c.title).join(' → ') + '. We act as the client’s representative to the insurer.',
     '',
-    `Contact: ${contact.phone}, ${contact.email}, ${company.city}. Advice costs the client nothing; we are paid commission by the insurer.`,
+    `Contact: ${contact.phone}, ${contact.email}, ${company.address}. Advice costs the client nothing; we are paid commission by the insurer.`,
+    '',
+    'Questions we have already answered publicly (use this wording; it is ours):',
+    insightDigest(),
     '',
     'We do NOT have these on file yet, so never state them — say they can be confirmed by calling the office: ' + PENDING.map((x) => x.field).join(', ') + '.',
   ]

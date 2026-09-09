@@ -24,6 +24,8 @@ export const company = {
   business: 'Insurance agency / intermediary',
   markets: 'Kenya — nationwide',
   city: 'Nairobi, Kenya',
+  /** From GoldOak's published website; the company profile left this as a placeholder. */
+  address: 'Milimani Road, Nairobi',
 
   /** The one-sentence description of what the agency does, from the profile. */
   whatWeDo:
@@ -377,7 +379,6 @@ export const PENDING: { field: string; note: string }[] = [
   { field: 'IRA licence number', note: 'Marked "[ insert licence number ]" in the profile. Shown on quotations and on request once supplied.' },
   { field: 'Company registration number', note: 'Marked "[ insert company registration ]" in the profile.' },
   { field: 'KRA PIN', note: 'Marked "[ insert PIN ]" in the profile.' },
-  { field: 'Head office street address', note: 'Marked "[ insert physical address ], Nairobi" in the profile.' },
   { field: 'Principal Officer name', note: 'The foreword is signed "[ Name ], Principal Officer & Managing Director".' },
 ]
 

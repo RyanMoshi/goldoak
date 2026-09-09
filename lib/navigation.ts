@@ -22,6 +22,7 @@ export const mainNav: NavItem[] = [
   },
   { name: 'How We Work', href: '/how-we-work' },
   { name: 'Claims', href: '/claims' },
+  { name: 'Insights', href: '/insights' },
   { name: 'Contact', href: '/contact' },
 ]
 
