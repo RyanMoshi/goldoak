@@ -20,7 +20,7 @@ export async function saveTemplateAction(formData: FormData): Promise<EmailActio
   try {
     await saveTemplateOverride(scope === 'global' ? null : session.oid, key, reset ? {} : { subject: String(formData.get('subject') ?? ''), heading: String(formData.get('heading') ?? ''), body: String(formData.get('body') ?? '') }, session.uid)
     await audit({ organizationId: scope === 'global' ? null : session.oid, actorUserId: session.uid, action: reset ? 'email-template.reset' : 'email-template.updated', target: key })
-    revalidatePath(scope === 'global' ? '/admin/templates' : '/agency/templates')
+    revalidatePath(scope === 'global' ? '/super-admin/templates' : '/agency/templates')
     return { success: reset ? 'Back to the default wording.' : 'Saved. New emails use this wording.' }
   } catch (error) {
     return { error: error instanceof Error ? error.message : 'Could not save the template.' }

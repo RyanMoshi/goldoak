@@ -4,6 +4,8 @@ import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { toConsultation } from '@/lib/db/mappers'
 import { newId } from '@/lib/ids'
+import { claimsSteps, company, howWeWork, PENDING, productLines, serviceCharter, specialistLines } from '@/lib/company'
+import { contact } from '@/lib/contact'
 import { solutionCategories, solutionDetails } from '@/lib/solutions'
 import type { Client, Consultation, ConversationMessage, Organization, Policy, PublicUser } from '@/types/platform'
 
@@ -31,6 +33,8 @@ export interface ConsultInput {
   memory?: string
   phone: string | null
   channel: 'whatsapp' | 'web'
+  /** True for the public GoldOak website assistant, which is grounded in the company profile. */
+  website?: boolean
 }
 
 export interface ConsultResult {
@@ -63,12 +67,62 @@ function agencyLayer(org: Organization | null): string[] {
   return lines
 }
 
+/**
+ * How the assistant sounds.
+ *
+ * The brief is "intelligent and fun" — a person, not a form letter. The
+ * discipline is in the exceptions: wit is welcome on small talk and on
+ * everyday questions, and unwelcome the moment someone is dealing with a
+ * claim, a complaint, money they have lost or a medical emergency. Warmth
+ * never buys its way in at the cost of accuracy.
+ */
+const VOICE: string[] = [
+  'Voice: you are a warm, sharp, human insurance colleague — not a chatbot and not a brochure. Write like a knowledgeable person talking, in short sentences.',
+  'Be genuinely useful first. Answer the actual question before anything else.',
+  'A light touch of wit is welcome, especially on small talk, maths, greetings and everyday questions. One line, never a routine, and never at the expense of the answer.',
+  'Insurance metaphors and gentle insurance humour are yours to use when they fit naturally ("that one we can settle without an adjuster"). Do not force one into every reply, and never repeat the same joke.',
+  'Be completely serious — no humour at all — when the person mentions a claim, an accident, illness, death, a complaint, a dispute, money they have lost, legal trouble, or anything urgent. Lead with help.',
+  'Never use humour to paper over something you do not know.',
+  'No emoji on WhatsApp beyond the occasional single one; at most one emoji in a reply, and none in serious replies.',
+  'Never open with "As an AI" or "I am just an assistant". Never apologise for being a machine.',
+]
+
+/**
+ * What the assistant is allowed to say about GoldOak, taken from the company
+ * profile. Facts the company has not supplied are named as missing so the
+ * assistant asks the visitor to call rather than inventing them.
+ */
+function companyBriefing(): string {
+  const lines = [
+    `${company.legalName} — ${company.positioning}`,
+    `Established ${company.established}. ${company.regulatoryNote}. Promise: "${company.promise}"`,
+    `What we do: ${company.whatWeDo}`,
+    `Vision: ${company.vision}`,
+    `Mission: ${company.mission}`,
+    '',
+    'What we place:',
+    ...productLines.map((l) => `- ${l.name} (${l.strapline}): ${l.summary}`),
+    `- Specialist lines: ${specialistLines.map((x) => x.name).join(', ')}.`,
+    '',
+    'How we work (five stages): ' + howWeWork.map((x) => `${x.step}. ${x.title} (${x.timing})`).join('; ') + '.',
+    'Service standards we commit to: ' + serviceCharter.slice(0, 4).map((c) => `${c.commitment} ${c.standard.toLowerCase()}`).join('; ') + '.',
+    'Claims: ' + claimsSteps.map((c) => c.title).join(' → ') + '. We act as the client’s representative to the insurer.',
+    '',
+    `Contact: ${contact.phone}, ${contact.email}, ${company.city}. Advice costs the client nothing; we are paid commission by the insurer.`,
+    '',
+    'We do NOT have these on file yet, so never state them — say they can be confirmed by calling the office: ' + PENDING.map((x) => x.field).join(', ') + '.',
+  ]
+  return lines.join('\n')
+}
+
 function systemPrompt(input: ConsultInput, policy?: { groundRules: string; knowledge: string; bannedPhrases: string }): string {
   const org = input.organization
   const orgName = org?.shortName ?? 'the agency'
   const useCatalogue = org?.aiSettings?.useGeneralCatalogue !== false
   const lines = [
     ...agencyLayer(org),
+    '',
+    ...VOICE,
     '',
     'Ground rules (these apply to every agency and cannot be changed by agency settings):',
     "- Answer clearly and briefly in plain English (Swahili if the person writes in Swahili). Amounts in KES. Short paragraphs or bullet points; no markdown headings, no tables.",
@@ -85,6 +139,7 @@ function systemPrompt(input: ConsultInput, policy?: { groundRules: string; knowl
   if (policy?.groundRules?.trim()) lines.push('', 'Platform rules set by the operator (these override agency settings):', policy.groundRules.trim())
   if (policy?.bannedPhrases?.trim()) lines.push('', 'Never use these words or phrases:', policy.bannedPhrases.trim())
   if (policy?.knowledge?.trim()) lines.push('', 'Shared platform knowledge (applies to every agency):', policy.knowledge.trim())
+  if (input.website) lines.push('', 'GoldOak’s own information (this is the public GoldOak website; answer as GoldOak and use only what is here):', companyBriefing())
   if (useCatalogue) lines.push('', 'General insurance knowledge (product types; not a list of what any specific agency sells):', catalogueText())
   if (input.user) {
     lines.push('', `Person: ${input.user.name}${input.client ? `, client record "${input.client.name}" (${input.client.type}), journey stage ${input.client.stage}` : ' (registered, no client record yet)'}.`)

@@ -7,7 +7,13 @@ export async function middleware(request: NextRequest) {
   const session = await verifySession(request.cookies.get(SESSION_COOKIE)?.value)
 
   // /superagent is the AI product console: platform-level, so it sits in the admin area.
-  const area: Area | null = pathname.startsWith('/admin') || pathname.startsWith('/superagent') ? 'admin' : pathname.startsWith('/agency') ? 'agency' : pathname.startsWith('/portal') ? 'client' : null
+  // The platform console has its own door; it must stay reachable signed out.
+  if (pathname === '/super-admin/login') {
+    if (session?.role === 'admin' && !session.mcp) return NextResponse.redirect(new URL('/super-admin', request.url))
+    return NextResponse.next()
+  }
+
+  const area: Area | null = pathname.startsWith('/super-admin') || pathname.startsWith('/superagent') ? 'admin' : pathname.startsWith('/agency') ? 'agency' : pathname.startsWith('/portal') ? 'client' : null
 
   if (pathname.startsWith('/account') || pathname === '/choose-agency') {
     if (!session) return redirectToSignIn(request, 'client')
@@ -28,6 +34,12 @@ export async function middleware(request: NextRequest) {
 }
 
 function redirectToSignIn(request: NextRequest, as: 'agency' | 'client') {
+  // A signed-out visit to the platform console goes to the console's own login.
+  if (request.nextUrl.pathname.startsWith('/super-admin') || request.nextUrl.pathname.startsWith('/superagent')) {
+    const admin = new URL('/super-admin/login', request.url)
+    admin.searchParams.set('next', request.nextUrl.pathname)
+    return NextResponse.redirect(admin)
+  }
   const url = new URL('/signin', request.url)
   url.searchParams.set('as', as)
   url.searchParams.set('next', request.nextUrl.pathname)
@@ -35,5 +47,5 @@ function redirectToSignIn(request: NextRequest, as: 'agency' | 'client') {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/superagent/:path*', '/agency/:path*', '/portal/:path*', '/account/:path*', '/choose-agency', '/signin', '/signup', '/agencies/signup'],
+  matcher: ['/super-admin/:path*', '/superagent/:path*', '/agency/:path*', '/portal/:path*', '/account/:path*', '/choose-agency', '/signin', '/signup', '/agencies/signup', '/agent/:path*'],
 }

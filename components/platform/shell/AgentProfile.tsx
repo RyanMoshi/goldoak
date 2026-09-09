@@ -84,11 +84,6 @@ export function AgentProfile({ agent, compact = false, placement = 'above', on =
               Team
             </MenuLink>
           ) : null}
-          {agent.role === 'admin' ? (
-            <MenuLink href="/admin" icon={Settings} onSelect={close}>
-              Platform admin
-            </MenuLink>
-          ) : null}
           {memberships > 1 ? (
             <MenuLink href="/choose-agency" icon={Repeat} onSelect={close}>
               Switch agency

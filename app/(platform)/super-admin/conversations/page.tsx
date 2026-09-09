@@ -16,7 +16,7 @@ export default async function AdminConversationsPage() {
       <div>
         <p className="label-caps flex items-center gap-2 text-gold-700">
           <span aria-hidden="true" className="size-1.5 rounded-full bg-gold" />
-          <Link href="/admin" className="hover:underline">
+          <Link href="/super-admin" className="hover:underline">
             Platform
           </Link>
           <span aria-hidden="true">/</span>

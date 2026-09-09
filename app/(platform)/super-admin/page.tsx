@@ -23,7 +23,7 @@ export default async function AdminPage() {
     { label: 'Agency users', value: counts.staff },
     { label: 'Clients', value: counts.clients },
     { label: 'Policies in force', value: counts.policies },
-    { label: 'Waiting on WhatsApp', value: counts.handoffs, href: '/admin/conversations' },
+    { label: 'Waiting on WhatsApp', value: counts.handoffs, href: '/super-admin/conversations' },
     { label: 'WhatsApp · AI', value: `${provider ? provider.name : 'off'} · ${aiModelLabel().replace(/^.*\//, '')}` },
   ]
 
@@ -39,10 +39,10 @@ export default async function AdminPage() {
           <p className="mt-1 text-[15px] text-ink-muted">You create agencies and their first admin. Agency admins invite their own staff. Clients sign up themselves on the website or on WhatsApp.</p>
         </div>
         <div className="flex shrink-0 gap-2">
-          <Link href="/admin/system" className="inline-flex h-10 items-center gap-2 rounded-control border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-ink-muted focus-ring">
+          <Link href="/super-admin/system" className="inline-flex h-10 items-center gap-2 rounded-control border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-ink-muted focus-ring">
             <Activity className="size-4" aria-hidden="true" /> System
           </Link>
-          <Link href="/admin/conversations" className="inline-flex h-10 items-center gap-2 rounded-control border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-ink-muted focus-ring">
+          <Link href="/super-admin/conversations" className="inline-flex h-10 items-center gap-2 rounded-control border border-line bg-surface px-4 text-sm font-semibold text-ink hover:border-ink-muted focus-ring">
             <MessageSquare className="size-4" aria-hidden="true" /> All conversations
           </Link>
         </div>

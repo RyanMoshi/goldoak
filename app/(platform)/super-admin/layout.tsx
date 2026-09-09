@@ -1,19 +1,19 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, LogOut } from 'lucide-react'
+import { LogOut } from 'lucide-react'
 import { signOutAction } from '@/lib/auth/actions'
 import { requireSession } from '@/lib/auth/server'
 
 export const dynamic = 'force-dynamic'
 
 const SECTIONS: [string, string][] = [
-  ['/admin', 'Agencies'],
+  ['/super-admin', 'Agencies'],
   ['/superagent', 'Super Agent'],
-  ['/admin/conversations', 'Conversations'],
-  ['/admin/channels', 'WhatsApp'],
-  ['/admin/emails', 'Emails'],
-  ['/admin/templates', 'Templates'],
-  ['/admin/system', 'System'],
+  ['/super-admin/conversations', 'Conversations'],
+  ['/super-admin/channels', 'WhatsApp'],
+  ['/super-admin/emails', 'Emails'],
+  ['/super-admin/templates', 'Templates'],
+  ['/super-admin/system', 'System'],
 ]
 
 /** Platform admin: a plain, single-column shell. */
@@ -23,7 +23,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="min-h-dvh bg-canvas text-ink">
       <header className="sticky top-0 z-20 border-b border-line bg-surface/95 backdrop-blur-sm">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/admin" className="flex items-center gap-2.5 rounded-control focus-ring" aria-label="Platform admin home">
+          <Link href="/super-admin" className="flex items-center gap-2.5 rounded-control focus-ring" aria-label="Platform admin home">
             <Image src="/assets/Gold Icon.png" alt="" width={36} height={36} className="size-9 rounded-[8px]" priority />
             <span className="flex flex-col leading-none">
               <span className="font-serif text-[15px] font-bold tracking-[0.06em] text-forest">SUPER AGENT</span>
@@ -39,10 +39,6 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           </nav>
           <div className="flex items-center gap-1">
             <span className="hidden text-[13px] text-ink-muted lg:inline">{session.name}</span>
-            <Link href="/agency/today" className="inline-flex h-9 items-center gap-2 rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
-              <LayoutDashboard className="size-4" aria-hidden="true" strokeWidth={1.75} />
-              <span className="hidden sm:inline">Agency workspace</span>
-            </Link>
             <form action={signOutAction}>
               <button type="submit" className="inline-flex h-9 items-center gap-2 rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring" aria-label="Sign out">
                 <LogOut className="size-4" aria-hidden="true" strokeWidth={1.75} />

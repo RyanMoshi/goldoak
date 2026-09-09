@@ -75,7 +75,7 @@ export async function verifySession(token: string | undefined | null): Promise<S
 }
 
 export function homeFor(role: Role): string {
-  if (role === 'admin') return '/admin'
+  if (role === 'admin') return '/super-admin'
   if (role === 'agency_admin' || role === 'agency') return '/agency/today'
   return '/portal'
 }

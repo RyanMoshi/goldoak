@@ -51,7 +51,7 @@ export async function createOrganizationAction(formData: FormData): Promise<Admi
     const { user: admin, temporaryPassword, emailed, attached } = await inviteStaff({ organizationId: org.id, actor: { id: session.uid, name: session.name }, name: adminName, email: adminEmail, phone: adminPhone, title: 'Agency admin', role: 'agency_admin' })
     if (attached) return { success: `${org.name} is live with join code ${code}. ${admin.name} already had an account and has been added as its agency admin; they sign in with their existing password.` }
     await audit({ organizationId: org.id, actorUserId: session.uid, action: 'organization.created', target: org.id, detail: { name, code, adminUserId: admin.id } })
-    revalidatePath('/admin')
+    revalidatePath('/super-admin')
     return { success: `${org.name} is live with join code ${code}. ${admin.name} ${emailed ? 'has been emailed' : 'could not be emailed; share'} the temporary password ${temporaryPassword}; they choose their own at first sign-in.` }
   } catch (error) {
     console.error('createOrganization failed', error instanceof Error ? error.message : error)
@@ -65,7 +65,7 @@ export async function setOrganizationActiveAction(organizationId: string, active
   try {
     await updateOrganization(organizationId, { active })
     await audit({ organizationId, actorUserId: session.uid, action: active ? 'organization.activated' : 'organization.deactivated', target: organizationId })
-    revalidatePath('/admin')
+    revalidatePath('/super-admin')
     return { success: active ? 'Agency reactivated.' : 'Agency deactivated. Its staff can still sign in but it no longer receives new WhatsApp contacts.' }
   } catch (error) {
     console.error('setOrganizationActive failed', error instanceof Error ? error.message : error)
@@ -97,7 +97,7 @@ export async function createAgencyAccountAction(formData: FormData): Promise<Adm
     const existingAdmin = await findUserByEmail(email)
     if (existingAdmin?.role === 'admin') return { error: 'That email is a platform administrator already.', field: 'email' }
     const { user, temporaryPassword, emailed, attached } = await inviteStaff({ organizationId, actor: { id: session.uid, name: session.name }, name, email, phone, title, role })
-    revalidatePath('/admin')
+    revalidatePath('/super-admin')
     if (attached) return { success: `${user.name} already had an account and has been added to ${org.shortName} as ${role === 'agency_admin' ? 'agency admin' : 'agency staff'}. They sign in with their existing password${emailed ? ' (emailed)' : ''}.` }
     return { success: `${user.name} (${org.shortName}) ${emailed ? 'has been emailed' : 'could not be emailed; share'} the temporary password ${temporaryPassword}. They choose their own at first sign-in.` }
   } catch (error) {
@@ -112,7 +112,7 @@ export async function resetAgencyPasswordAction(userId: string): Promise<AdminAc
     const user = await getUser(userId)
     if (!user) return { error: 'Account not found.' }
     const { temporaryPassword, emailed } = await resetToTemporaryPassword(user, { id: session.uid, name: session.name }, user.organizationId)
-    revalidatePath('/admin')
+    revalidatePath('/super-admin')
     return { success: emailed ? `A temporary password (${temporaryPassword}) was emailed to ${user.email}.` : `Temporary password: ${temporaryPassword}. Email could not be sent; share it privately.` }
   } catch (error) {
     console.error('resetAgencyPassword failed', error instanceof Error ? error.message : error)
@@ -126,7 +126,7 @@ export async function setAgencyActiveAction(userId: string, active: boolean): Pr
   try {
     await setUserActive(userId, active)
     await audit({ organizationId: null, actorUserId: session.uid, action: active ? 'user.activated' : 'user.deactivated', target: userId })
-    revalidatePath('/admin')
+    revalidatePath('/super-admin')
     return { success: active ? 'Account reactivated.' : 'Account deactivated. They can no longer sign in.' }
   } catch (error) {
     console.error('setAgencyActive failed', error instanceof Error ? error.message : error)
@@ -142,7 +142,7 @@ export async function assignConversationAction(phone: string, organizationId: st
     if (!org) return { error: 'That agency does not exist.' }
     await linkContact(phone.replace(/\D/g, ''), { organizationId })
     await audit({ organizationId, actorUserId: session.uid, action: 'conversation.routed', target: phone })
-    revalidatePath('/admin/conversations')
+    revalidatePath('/super-admin/conversations')
     return { success: `Routed to ${org.name}.` }
   } catch (error) {
     console.error('assignConversation failed', error instanceof Error ? error.message : error)
@@ -159,7 +159,7 @@ export async function approveOrganizationAction(organizationId: string): Promise
     await updateOrganization(organizationId, { status: 'active', active: true })
     await audit({ organizationId, actorUserId: session.uid, action: 'organization.approved', target: organizationId })
     await announceApproval({ ...org, status: 'active', active: true })
-    revalidatePath('/admin')
+    revalidatePath('/super-admin')
     return { success: `${org.name} approved and told.` }
   } catch (error) {
     console.error('approveOrganization failed', error instanceof Error ? error.message : error)
@@ -175,7 +175,7 @@ export async function retryJobAction(jobId: string): Promise<AdminActionState> {
     await retryJob(jobId)
     registerJobHandlers()
     await runJobs(3, 120_000)
-    revalidatePath('/admin/system')
+    revalidatePath('/super-admin/system')
     return { success: 'Job queued again.' }
   } catch (error) {
     console.error('retryJob failed', error instanceof Error ? error.message : error)
@@ -204,7 +204,7 @@ export async function impersonateAction(userId: string): Promise<AdminActionStat
 
 export async function stopImpersonationAction(): Promise<void> {
   const session = await getSession()
-  if (!session?.imp) redirect('/admin')
+  if (!session?.imp) redirect('/super-admin')
   const admin = await getUser(session.imp)
   await audit({ organizationId: session.oid, actorUserId: session.imp, action: 'auth.impersonation-ended', target: session.uid })
   if (!admin || admin.role !== 'admin') {
@@ -213,5 +213,5 @@ export async function stopImpersonationAction(): Promise<void> {
   }
   const token = await signSession({ uid: admin.id, role: 'admin', oid: admin.organizationId ?? 'org_goldoak', name: admin.name })
   cookies().set(SESSION_COOKIE, token, { httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', path: '/', maxAge: SESSION_DAYS * 86400 })
-  redirect('/admin')
+  redirect('/super-admin')
 }

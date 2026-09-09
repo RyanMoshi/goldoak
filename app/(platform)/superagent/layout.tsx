@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { LayoutDashboard, LogOut, ShieldCheck } from 'lucide-react'
+import { LogOut, ShieldCheck } from 'lucide-react'
 import { signOutAction } from '@/lib/auth/actions'
 import { requireSession } from '@/lib/auth/server'
 
@@ -37,13 +37,9 @@ export default async function SuperAgentLayout({ children }: { children: React.R
           </Link>
           <div className="flex items-center gap-1">
             <span className="hidden text-[13px] text-ink-muted xl:inline">{session.name}</span>
-            <Link href="/admin" className="inline-flex h-9 items-center gap-2 rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
+            <Link href="/super-admin" className="inline-flex h-9 items-center gap-2 rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
               <ShieldCheck className="size-4" aria-hidden="true" strokeWidth={1.75} />
               <span className="hidden sm:inline">Platform admin</span>
-            </Link>
-            <Link href="/agency/today" className="inline-flex h-9 items-center gap-2 rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring">
-              <LayoutDashboard className="size-4" aria-hidden="true" strokeWidth={1.75} />
-              <span className="hidden lg:inline">Workspace</span>
             </Link>
             <form action={signOutAction}>
               <button type="submit" className="inline-flex h-9 items-center gap-2 rounded-control px-2.5 text-[13px] font-semibold text-ink-muted hover:bg-surface-2 hover:text-ink focus-ring" aria-label="Sign out">

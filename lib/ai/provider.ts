@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import { gatewayConfig, keyPool, modelChain, routingSummary, type AiTask } from '@/lib/ai/gateway'
 
 /**
  * One door to the language models. The rest of the code never knows which
@@ -27,16 +28,21 @@ export interface ChatOptions {
 
 export type AiVendor = 'anthropic' | 'nvidia' | 'none'
 
-const NVIDIA_BASE = process.env.NVIDIA_BASE_URL ?? 'https://integrate.api.nvidia.com/v1'
-const CHAT_MODEL = process.env.AI_MODEL ?? 'nvidia/nemotron-3-super-120b-a12b'
-const VISION_MODEL = process.env.AI_VISION_MODEL ?? 'meta/llama-3.2-11b-vision-instruct'
-const OCR_MODEL = process.env.AI_OCR_MODEL ?? 'nvidia/nemotron-parse'
+const NVIDIA_BASE = gatewayConfig.baseUrl
+const CHAT_MODEL = modelChain('chat')[0]
+const VISION_MODEL = modelChain('vision')[0]
+const OCR_MODEL = modelChain('ocr')[0]
 const ANTHROPIC_MODEL = process.env.ANTHROPIC_MODEL ?? 'claude-opus-5'
 
 export function aiVendor(): AiVendor {
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic'
-  if (process.env.NVIDIA_API_KEY) return 'nvidia'
+  if (apiKeys().length) return 'nvidia'
   return 'none'
+}
+
+/** How many keys the pool holds. Surfaced on the Super Agent console. */
+export function aiKeyCount(): number {
+  return apiKeys().length
 }
 
 export function aiConfigured(): boolean {
@@ -59,22 +65,21 @@ function clean(text: string): string {
   return text.replace(/<think>[\s\S]*?<\/think>/g, '').replace(/^\s*Here's a thinking process:[\s\S]*?\n\n(?=\S)/, '').trim()
 }
 
-/**
- * Models tried in order when the primary is overloaded, rate-limited or times
- * out (NVIDIA's shared endpoint returns 503 "temporarily overloaded" at busy
- * times). Comma-separated in AI_FALLBACK_MODELS; the default is a smaller
- * Nemotron that is rarely saturated.
- */
-const FALLBACK_MODELS = (process.env.AI_FALLBACK_MODELS ?? 'nvidia/nemotron-3.5-lightning-30b-a3b')
-  .split(',')
-  .map((m) => m.trim())
-  .filter(Boolean)
-
 type NvidiaOutcome = { text: string | null; retryable: boolean }
 
-async function nvidiaChat(body: Record<string, unknown>, timeoutMs: number): Promise<NvidiaOutcome> {
-  const key = process.env.NVIDIA_API_KEY
-  if (!key) return { text: null, retryable: false }
+/** The key pool for a task, from the gateway. */
+function apiKeys(task?: AiTask): string[] {
+  return keyPool(task)
+}
+
+export { routingSummary }
+
+/** Where the next request starts in the pool, so load is spread rather than always hitting key one. */
+let keyCursor = 0
+
+async function nvidiaChat(body: Record<string, unknown>, timeoutMs: number, key?: string): Promise<NvidiaOutcome> {
+  const apiKey = key ?? apiKeys()[0]
+  if (!apiKey) return { text: null, retryable: false }
   const { signal, clear } = withTimeout(timeoutMs)
   const model = String(body.model ?? '')
   // Nemotron 3 models reason out loud unless told not to; we want the answer only.
@@ -82,7 +87,7 @@ async function nvidiaChat(body: Record<string, unknown>, timeoutMs: number): Pro
   try {
     const res = await fetch(`${NVIDIA_BASE}/chat/completions`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify(payload),
       signal,
     })
@@ -103,23 +108,43 @@ async function nvidiaChat(body: Record<string, unknown>, timeoutMs: number): Pro
   }
 }
 
-/** Primary model first, then each fallback, until one answers. */
-async function nvidiaChatWithFallback(body: Record<string, unknown>, timeoutMs: number): Promise<string | null> {
-  const models = [String(body.model), ...FALLBACK_MODELS.filter((m) => m !== body.model)]
-  for (let i = 0; i < models.length; i++) {
-    // Fallbacks get a shorter budget so a saturated endpoint cannot stall the whole reply.
-    const outcome = await nvidiaChat({ ...body, model: models[i] }, i === 0 ? timeoutMs : Math.min(timeoutMs, 30_000))
-    if (outcome.text) {
-      if (i > 0) console.warn('nvidia chat answered by fallback model', models[i])
-      return outcome.text
+/**
+ * Tries the primary model on every key, then each fallback model on every key.
+ * A busy endpoint, an exhausted quota or a model missing from one account all
+ * look the same to the caller: an answer, from whichever combination worked.
+ */
+async function nvidiaChatWithFallback(body: Record<string, unknown>, timeoutMs: number, task: AiTask = 'chat'): Promise<string | null> {
+  const keys = apiKeys(task)
+  if (!keys.length) return null
+  const chain = modelChain(task)
+  const requested = String(body.model)
+  const models = gatewayConfig.fallbackEnabled ? [requested, ...chain.filter((m) => m !== requested)] : [requested]
+  const start = keyCursor++ % keys.length
+  let attempt = 0
+
+  for (let m = 0; m < models.length; m++) {
+    for (let k = 0; k < keys.length; k++) {
+      const key = keys[(start + k) % keys.length]
+      // Later attempts get a shorter budget so a saturated endpoint cannot stall the whole reply.
+      const budget = attempt === 0 ? timeoutMs : Math.min(timeoutMs, 30_000)
+      const outcome = await nvidiaChat({ ...body, model: models[m] }, budget, key)
+      attempt++
+      if (outcome.text) {
+        if (m > 0 || k > 0) console.warn(`nvidia chat answered on attempt ${attempt} with model ${models[m]}`)
+        return outcome.text
+      }
+      if (!outcome.retryable) {
+        // A refusal that is not about capacity (a bad request) will repeat on
+        // every key, so move to the next model rather than burning the pool.
+        break
+      }
     }
-    if (!outcome.retryable) return null
   }
   return null
 }
 
 export async function chat(options: ChatOptions): Promise<string | null> {
-  const timeoutMs = options.timeoutMs ?? 45_000
+  const timeoutMs = options.timeoutMs ?? gatewayConfig.timeoutMs
   const maxTokens = options.maxTokens ?? 700
   const vendor = aiVendor()
   if (vendor === 'none') return null
@@ -214,8 +239,7 @@ export async function describeImage(image: ImageInput, prompt: string, options: 
       return null
     }
   }
-  return (
-    await nvidiaChat(
+  return nvidiaChatWithFallback(
     {
       model: VISION_MODEL,
       messages: [{ role: 'user', content: [{ type: 'text', text: instruction }, { type: 'image_url', image_url: { url: `data:${image.mimetype};base64,${image.base64}` } }] }],
@@ -224,8 +248,8 @@ export async function describeImage(image: ImageInput, prompt: string, options: 
       stream: false,
     },
     options.timeoutMs ?? 90_000,
+    'vision',
   )
-  ).text
 }
 
 interface ParseBlock {
@@ -240,10 +264,11 @@ interface ParseBlock {
  */
 export async function ocrImage(image: ImageInput, timeoutMs = 90_000): Promise<string | null> {
   if (aiVendor() === 'nvidia') {
-    const raw = (await nvidiaChat(
+    const raw = await nvidiaChatWithFallback(
       { model: OCR_MODEL, messages: [{ role: 'user', content: [{ type: 'image_url', image_url: { url: `data:${image.mimetype};base64,${image.base64}` } }] }], max_tokens: 3000 },
       timeoutMs,
-    )).text
+      'ocr',
+    )
     if (raw) {
       try {
         const parsed = JSON.parse(raw) as ParseBlock[][] | ParseBlock[]

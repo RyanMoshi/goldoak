@@ -29,7 +29,7 @@ function setSessionCookie(token: string) {
 
 function safeNext(value: FormDataEntryValue | null, role: Role): string {
   const next = typeof value === 'string' ? value : ''
-  const prefixes = role === 'admin' ? ['/admin', '/agency'] : role === 'agency' || role === 'agency_admin' ? ['/agency'] : ['/portal']
+  const prefixes = role === 'admin' ? ['/super-admin', '/agency'] : role === 'agency' || role === 'agency_admin' ? ['/agency'] : ['/portal']
   return prefixes.some((p) => next.startsWith(p)) ? next : homeFor(role)
 }
 
@@ -340,3 +340,48 @@ export async function resetPasswordAction(formData: FormData): Promise<ResetStat
 }
 
 export { setUserPassword }
+
+/**
+ * Sign-in for the platform operator only.
+ *
+ * Separate from the tenant sign-in so the two consoles share no entry
+ * point. An agency or client password typed here fails with the same
+ * message as a wrong one — the form never reveals that the account exists
+ * elsewhere — and the attempt is written to the audit log either way.
+ */
+export async function superAdminSignInAction(formData: FormData): Promise<AuthState> {
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  const password = String(formData.get('password') ?? '')
+  if (!EMAIL.test(email)) return { error: 'Enter the email address on your account.', field: 'email' }
+  if (!password) return { error: 'Enter your password.', field: 'password' }
+
+  let token: string
+  let mustChange = false
+  try {
+    const user = await findUserWithSecret(email)
+    const meta = requestMeta()
+    if (user && (await isLocked(user.id))) {
+      await audit({ organizationId: null, actorUserId: user.id, action: 'auth.locked-attempt', target: user.id, detail: { ...meta, console: 'super-admin' } })
+      return { error: 'Too many failed attempts. This account is locked for 15 minutes.', field: 'password' }
+    }
+    const ok = user ? await verifyPassword(password, user.passwordHash) : false
+    // A non-admin who guesses correctly is refused here and told nothing.
+    if (!user || !ok || user.role !== 'admin' || !user.active) {
+      if (user) await recordFailedLogin(user.id)
+      await audit({ organizationId: null, actorUserId: user?.id ?? null, action: 'auth.failed', target: email, detail: { ...meta, console: 'super-admin' } })
+      return { error: 'That email and password do not match a platform administrator.', field: 'password' }
+    }
+    mustChange = user.mustChangePassword
+    token = await signSession({ uid: user.id, role: 'admin', oid: user.organizationId ?? DEFAULT_ORGANIZATION_ID, name: user.name, mcp: mustChange || undefined })
+    await recordLogin(user.id)
+    await audit({ organizationId: null, actorUserId: user.id, action: 'auth.signed-in', target: user.id, detail: { ...meta, console: 'super-admin' } })
+    void sendTemplateEmail({ key: 'security-login', to: user.email, organizationId: null, userId: user.id, vars: { first_name: user.name.split(' ')[0], login_time: new Date().toUTCString(), ip: meta.ip, device: meta.agent }, category: 'security' }).catch(() => null)
+  } catch (error) {
+    return friendly(error)
+  }
+
+  setSessionCookie(token)
+  if (mustChange) redirect('/account/password?first=1')
+  const next = String(formData.get('next') ?? '')
+  redirect(next.startsWith('/super-admin') || next.startsWith('/superagent') ? next : '/super-admin')
+}
