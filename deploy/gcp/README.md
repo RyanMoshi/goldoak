@@ -28,6 +28,40 @@ page rather than trusting this paragraph.
 
 ---
 
+## The short way: one command from your PC
+
+`deploy/gcp/create.ps1` does every step below for you — the project, the
+billing link, the API, the reserved IP, the firewall rule, the instance, and
+the setup on the machine — reading the gateway key straight out of
+`.env.local` so nothing is typed twice.
+
+```powershell
+winget install --id Google.CloudSDK -e
+# open a new terminal, then:
+powershell -ExecutionPolicy Bypass -File deploy\gcp\create.ps1
+```
+
+It signs you in through the browser if you are not already, stops with a clear
+message if the account has no billing attached, and is safe to run again:
+anything that already exists is left alone. When it finishes it prints the QR
+link for pairing the phone.
+
+Two options worth knowing:
+
+```powershell
+# a different zone, if one is out of capacity
+powershell -ExecutionPolicy Bypass -File deploy\gcp\create.ps1 -Zone us-west1-b
+
+# your own subdomain instead of a free sslip.io hostname
+powershell -ExecutionPolicy Bypass -File deploy\gcp\create.ps1 -Domain wa.goldoak.co.ke
+```
+
+The rest of this page is the same thing done by hand, one command at a time.
+Read it if you want to know what the script is doing, or if a step fails and
+you need to pick up from the middle.
+
+---
+
 ## 1. Create the GoldOak project
 
 The gateway gets its own project, `goldoak-gateway`, under your existing

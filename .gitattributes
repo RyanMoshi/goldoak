@@ -1,2 +1,4 @@
 # Shell scripts must keep LF endings — they run on Linux servers.
 *.sh text eol=lf
+# PowerShell scripts: CRLF and a BOM, so Windows PowerShell parses them correctly.
+*.ps1 text eol=crlf working-tree-encoding=UTF-8
