@@ -64,27 +64,36 @@ acceptable use policy, which is itself a reason for caution.
 
 ## What to use instead
 
-### Recommended: Oracle Cloud "Always Free"
+### The choice made: Google Cloud Compute Engine
 
-The only mainstream offer that is genuinely free with no time limit and enough
-capacity for this job:
+You already have a Google Cloud account, so this is the path with the least
+friction — familiar console, an excellent command line, instances up in about a
+minute, and one place to see the bill.
 
-- Up to 4 Ampere ARM vCPUs and 24 GB RAM across your free instances
-- 200 GB block storage, 10 TB egress a month
-- Full root, your own IPv4, Docker works normally
-- No expiry — unlike AWS and Azure, which are free for twelve months only
+- Always Free gives one `e2-micro`: 2 shared vCPUs, 1 GB RAM, 30 GB disk
+- Free only in `us-west1`, `us-central1` and `us-east1`
+- No expiry, unlike the AWS and Azure twelve-month tiers
+- Full root, Docker works normally
 
-**The catch worth knowing:** Oracle reclaims idle Always Free compute. As of
-2026 an instance under about 5% CPU for 24 hours can be stopped. A WhatsApp
-gateway with a headless browser sits well above that in practice, but pin it
-down anyway: keep the container running under `restart: unless-stopped`, and
-consider upgrading the account to Pay As You Go (which keeps the same free
-allowances but exempts you from idle reclamation and costs nothing if you stay
-inside them).
+**The two catches worth knowing.** 1 GB of RAM is tight for a headless browser,
+so the setup script gives the machine 4 GB of swap and resizing to an `e2-small`
+is one command if it is not enough. And Google bills every external IPv4
+address, so the gateway's IP costs roughly $3 a month; only the first 1 GB of
+North America egress is free, which text traffic will not approach.
 
-**Second choice:** Google Cloud's always-free `e2-micro` (0.25 vCPU burstable,
-1 GB RAM). It is free forever but tight for a headless browser; it would need a
-swap file and would be slow.
+### The stronger free machine: Oracle Cloud "Always Free"
+
+Kept ready in `deploy/oracle/` as the fallback, and on the numbers it is the
+better deal:
+
+- Up to 4 Ampere Arm vCPUs and 24 GB RAM across your free instances
+- 200 GB block storage, 10 TB egress a month, no charge for the IP
+- No expiry
+
+Its own catch is idle reclamation: an Always Free instance under about 5% CPU
+can be stopped. A gateway running a browser sits above that, and upgrading the
+account to Pay As You Go exempts it entirely while keeping the same free
+allowances.
 
 **Not recommended for this:** AWS and Azure free tiers expire after twelve
 months, at which point the gateway silently becomes a bill.
@@ -93,33 +102,46 @@ months, at which point the gateway silently becomes a bill.
 
 ## Setting it up
 
-The decision is made: the gateway goes to Oracle Cloud Always Free.
+**The gateway goes to Google Cloud, in an account you already have. The
+walkthrough is `deploy/gcp/README.md`.**
 
-**The full walkthrough is `deploy/oracle/README.md`.** It covers the account,
-the region, the instance shape, the two firewalls, the domain, and the one
-command that does the rest. Read it there rather than following a condensed
-version here.
+Google's Always Free compute is one `e2-micro`: two shared vCPUs, 1 GB of RAM,
+in `us-west1`, `us-central1` or `us-east1`. That is smaller than a headless
+browser really wants, so `deploy/gcp/setup.sh` sizes swap to 4 GB when it finds
+itself on one, and resizing to an `e2-small` is a single command if it proves
+too tight. Two honest caveats: Google bills every external IPv4 address, so the
+gateway's IP costs roughly $3 a month, and only the first 1 GB of North America
+egress is free. Text traffic is negligible against that; heavy media is not.
 
-The short shape of it: create an Ampere instance running Ubuntu, reserve its
-public IP, allow ports 80 and 443 on the subnet's security list, point a name
-at it, then SSH in and run
+The short shape of it: create an `e2-micro` running Ubuntu with the
+`goldoak-gateway` network tag, reserve its IP, add one firewall rule for 80 and
+443, point a name at it, then SSH in and run
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/RyanMoshi/goldoak/main/deploy/oracle/setup.sh -o setup.sh
+curl -fsSL https://raw.githubusercontent.com/RyanMoshi/goldoak/main/deploy/gcp/setup.sh -o setup.sh
 less setup.sh
 sudo bash setup.sh
 ```
 
-`deploy/oracle/setup.sh` installs Docker, opens the local firewall Oracle ships
-closed, adds swap, starts the compose stack from `deploy/openwa/` behind Caddy
-with an automatic certificate, installs a two-minute watchdog, and takes a
-nightly backup of the WhatsApp session folder. It is idempotent — running it
-twice changes nothing the second time.
+The script installs Docker, sizes swap to the machine, warns if DNS is not
+ready before Caddy asks for a certificate, starts the compose stack from
+`deploy/openwa/` behind automatic HTTPS, installs a watchdog that restarts the
+gateway after two failed health checks, and takes a nightly backup of the
+WhatsApp session folder. It is idempotent — running it twice changes nothing
+the second time.
 
-The gateway image publishes an **arm64** build, verified against the Docker Hub
-tag API, so it runs natively on Ampere rather than under emulation.
+### The fallback
 
-Then on Vercel set `OPENWA_BASE_URL=https://<your domain>` (keeping the same
+`deploy/oracle/` holds the same kit for Oracle Cloud Always Free — 4 Arm cores,
+24 GB of RAM, no external IP charge, no expiry. It is the better machine and it
+was the original recommendation; it is kept ready in case the `e2-micro` turns
+out to be too small. The gateway image publishes an **arm64** build, verified
+against the Docker Hub tag API, so it runs natively on Ampere. The gateway
+itself is identical on either provider — only the machine underneath differs.
+
+### Either way, finish on Vercel
+
+Set `OPENWA_BASE_URL=https://<your domain>` (keeping the same
 `OPENWA_API_KEY`, `OPENWA_SESSION_ID` and `OPENWA_WEBHOOK_SECRET`), redeploy,
 and confirm `GET /api/health` reports `"whatsapp":"openwa"`. Finally disable
 the two scheduled tasks on the laptop:

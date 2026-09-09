@@ -282,20 +282,30 @@ Everything runs without a laptop **except the WhatsApp gateway**:
 | Email | SMTP |
 | AI | NVIDIA NIM |
 | PDF generation | Vercel functions |
-| **WhatsApp gateway** | **a laptop today; moving to Oracle Cloud** — see `deploy/oracle/README.md` |
+| **WhatsApp gateway** | **a laptop today; moving to Google Cloud** — see `deploy/gcp/README.md` |
 
 The WhatsApp gateway (OpenWA) still runs on the development laptop behind a
 tunnel, kept alive by two scheduled tasks. While it is off, WhatsApp messages
 are not received; everything else keeps working.
 
-The move off the laptop is decided and prepared. `deploy/oracle/README.md` is
-the walkthrough — an Oracle Cloud Always Free Ampere instance, which has no
-expiry and enough capacity for a headless browser — and `deploy/oracle/setup.sh`
-does the machine setup in one idempotent command: Docker, the firewall Oracle
-ships closed, swap, the compose stack from `deploy/openwa/` behind Caddy with
-an automatic certificate, a watchdog every two minutes, and a nightly backup of
-the WhatsApp session folder. `deploy/HOSTING.md` records why Oracle was chosen
-over the alternatives, including the five repositories that were rejected.
+The move off the laptop is decided and prepared. `deploy/gcp/README.md` is the
+walkthrough — a Google Compute Engine `e2-micro` in the Always Free tier, in an
+account GoldOak already has — and `deploy/gcp/setup.sh` does the machine setup
+in one idempotent command: Docker, swap sized to the instance, the compose
+stack from `deploy/openwa/` behind Caddy with an automatic certificate, a
+watchdog that restarts the gateway after two failed health checks, and a
+nightly backup of the WhatsApp session folder.
+
+Two things to keep in view on that machine. The free `e2-micro` has 1 GB of RAM
+and the gateway runs a headless browser, so if it becomes unstable the fix is
+to resize to an `e2-small`, which is one command and about $13 a month. And
+Google bills every external IPv4 address, so the gateway's IP costs roughly $3
+a month even on the free tier.
+
+`deploy/oracle/` holds the same kit for Oracle Cloud Always Free — a far larger
+free machine with no IP charge — kept as the fallback. `deploy/HOSTING.md`
+compares the two and records why the five VPS repositories that were suggested
+were all rejected.
 
 Once a real message has gone through the new gateway, disable the two scheduled
 tasks on the laptop and nothing in production depends on your machine.
