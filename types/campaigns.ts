@@ -21,6 +21,14 @@ export interface CampaignAudience {
   clientIds?: string[]
   /** Include clients that have no login yet (lead records). */
   includeLeads?: boolean
+  /**
+   * Lists from the agency's number book to include. These are people the
+   * agency can message who are not clients yet, which is most of a marketing
+   * list. An empty array means every list.
+   */
+  numberLists?: string[]
+  /** Whether the number book is part of this audience at all. */
+  includeNumbers?: boolean
 }
 
 export interface Campaign {

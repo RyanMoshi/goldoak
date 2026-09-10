@@ -150,6 +150,20 @@ export async function resolveAudience(organizationId: string, audience: Campaign
       phone: r.phone ? String(r.phone) : r.user_phone ? String(r.user_phone) : null,
     })
   }
+
+  // The number book: people the agency can message who are not clients yet.
+  // Numbers already reached through a client record are left out, so a person
+  // who is in both places is messaged once.
+  if (audience.includeNumbers && !ids) {
+    const { reachableNumbers } = await import('@/services/numbers')
+    const already = new Set(out.map((m) => m.phone).filter(Boolean) as string[])
+    for (const n of await reachableNumbers(organizationId, audience.numberLists?.length ? audience.numberLists : null)) {
+      if (already.has(n.phone)) continue
+      already.add(n.phone)
+      out.push({ clientId: null, userId: null, name: n.name ?? 'there', email: null, phone: n.phone })
+    }
+  }
+
   return out
 }
 

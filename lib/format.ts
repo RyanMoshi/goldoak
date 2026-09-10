@@ -1,3 +1,5 @@
+import { prettyPhone, toE164 } from '@/lib/phone'
+
 const TIME_ZONE = 'Africa/Nairobi'
 const LOCALE = 'en-KE'
 const CURRENCY = 'KES'
@@ -88,19 +90,16 @@ export function initials(name: string): string {
 }
 
 /** Normalises Kenyan numbers to E.164 without the plus: 0712… → 254712…, +254… → 254… */
-export function normalizePhone(input: string): string | null {
-  const digits = input.replace(/[^\d+]/g, '')
-  if (!digits) return null
-  let n = digits.startsWith('+') ? digits.slice(1) : digits
-  if (n.startsWith('0') && n.length === 10) n = `254${n.slice(1)}`
-  if (n.length === 9 && /^[17]/.test(n)) n = `254${n}`
-  if (!/^\d{10,15}$/.test(n)) return null
-  return n
+/**
+ * E.164 digits, or null when the number is not valid anywhere in the world.
+ * A local format is read against the configured default country; anything
+ * written with + or 00 carries its own country code and is taken as given.
+ */
+export function normalizePhone(input: string, country?: string | null): string | null {
+  return toE164(input, country)
 }
 
+/** A number as a person should read it: grouped, with its country code. */
 export function formatPhone(e164: string): string {
-  if (e164.startsWith('254') && e164.length === 12) {
-    return `+254 ${e164.slice(3, 6)} ${e164.slice(6, 9)} ${e164.slice(9)}`
-  }
-  return `+${e164}`
+  return prettyPhone(e164)
 }

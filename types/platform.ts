@@ -24,6 +24,8 @@ export interface Organization {
   /** pending = self-registered, waiting for the platform admin; active = live. */
   status: 'pending' | 'active' | 'suspended'
   type: string | null
+  /** ISO country code, e.g. KE. Local phone numbers are read against it. */
+  country: string | null
   address: string | null
   description: string | null
   logoPath: string | null

@@ -28,7 +28,7 @@ const TYPES = [
   { id: 'corporate', label: 'Corporates' },
 ]
 
-export function CampaignComposer({ campaign }: { campaign?: Campaign }) {
+export function CampaignComposer({ campaign, numberLists = [] }: { campaign?: Campaign; numberLists?: { name: string; count: number }[] }) {
   const [state, setState] = useState<CampaignState>({})
   const [pending, startTransition] = useTransition()
   const [channel, setChannel] = useState<CampaignChannel>(campaign?.channel ?? 'email')
@@ -107,6 +107,31 @@ export function CampaignComposer({ campaign }: { campaign?: Campaign }) {
               <CheckboxField name="includeLeads" label="Include leads without a login" description="People you have recorded but who have not signed in yet." defaultChecked={campaign?.audience.includeLeads !== false} />
             </div>
           </div>
+          {numberLists.length ? (
+            <div className="mt-4 rounded-card border border-line bg-surface-2 p-4">
+              <CheckboxField
+                name="includeNumbers"
+                label="Also send to the number book"
+                description="Numbers you have imported who are not clients yet. Anyone already reached as a client is not messaged twice."
+                defaultChecked={campaign?.audience.includeNumbers === true}
+              />
+              <fieldset className="mt-3">
+                <legend className="label-caps text-ink-muted">Lists</legend>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  {numberLists.map((l) => (
+                    <CheckboxField
+                      key={l.name}
+                      name="numberLists"
+                      value={l.name}
+                      label={`${l.name} (${l.count.toLocaleString('en-KE')})`}
+                      defaultChecked={campaign?.audience.numberLists?.includes(l.name)}
+                    />
+                  ))}
+                </div>
+                <p className="mt-2 text-[12.5px] text-ink-faint">Leave every list unticked to use all of them.</p>
+              </fieldset>
+            </div>
+          ) : null}
           <button
             type="button"
             disabled={previewing}

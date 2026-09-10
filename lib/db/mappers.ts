@@ -64,6 +64,7 @@ export function toOrganization(r: Row): Organization {
     status: r.status === 'pending' || r.status === 'suspended' ? r.status : 'active',
     type: strOrNull(r.type),
     address: strOrNull(r.address),
+    country: r.country ? String(r.country) : null,
     description: strOrNull(r.description),
     logoPath: strOrNull(r.logo_path),
     contactName: strOrNull(r.contact_name),

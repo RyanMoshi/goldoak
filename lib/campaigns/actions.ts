@@ -33,6 +33,8 @@ function readAudience(formData: FormData): CampaignAudience {
     expiringWithinDays: Number.isFinite(expiring) && expiring > 0 ? expiring : null,
     clientIds: clientIds.length ? clientIds : undefined,
     includeLeads: formData.get('includeLeads') === 'on',
+    includeNumbers: formData.get('includeNumbers') === 'on',
+    numberLists: formData.getAll('numberLists').map(String).filter(Boolean),
   }
 }
 

@@ -449,6 +449,38 @@ CREATE TABLE IF NOT EXISTS platform_settings (
 -- A temporary gateway on a disposable runner saves it here on shutdown and
 -- restores it on start, so a restart never costs a re-scan. The platform
 -- cannot read what is stored: the passphrase lives only on the gateway.
+-- An agency's own number book, kept apart from clients on purpose. Campaign
+-- audiences are built from client records, which means a number can only be
+-- messaged once somebody has become a client. Marketing lists do not work that
+-- way: an agency buys, collects or is handed thousands of numbers long before
+-- any of them is a client. These rows are those numbers.
+CREATE TABLE IF NOT EXISTS contact_numbers (
+  id              text PRIMARY KEY,
+  organization_id text NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+  phone           text NOT NULL,
+  -- ISO country the number belongs to, so a book can be filtered by market.
+  country         text,
+  name            text,
+  list_name       text NOT NULL DEFAULT 'general',
+  status          text NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'unsubscribed', 'invalid', 'bounced')),
+  owner_user_id   text REFERENCES users(id) ON DELETE SET NULL,
+  source          text NOT NULL DEFAULT 'manual',
+  notes           text,
+  last_sent_at    timestamptz,
+  send_count      integer NOT NULL DEFAULT 0,
+  created_by      text,
+  created_at      timestamptz NOT NULL DEFAULT now(),
+  updated_at      timestamptz NOT NULL DEFAULT now()
+);
+-- One row per number per agency: importing the same list twice updates rather
+-- than duplicates, which is what makes a paste of ten thousand lines safe.
+CREATE UNIQUE INDEX IF NOT EXISTS contact_numbers_unique ON contact_numbers(organization_id, phone);
+CREATE INDEX IF NOT EXISTS contact_numbers_org_idx ON contact_numbers(organization_id, status);
+CREATE INDEX IF NOT EXISTS contact_numbers_list_idx ON contact_numbers(organization_id, list_name);
+CREATE INDEX IF NOT EXISTS contact_numbers_owner_idx ON contact_numbers(owner_user_id);
+-- Searching by name or number across thousands of rows.
+CREATE INDEX IF NOT EXISTS contact_numbers_search_idx ON contact_numbers(organization_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS gateway_session_backups (
   id         text PRIMARY KEY,
   payload    text NOT NULL,
@@ -462,6 +494,9 @@ ALTER TABLE organizations ADD COLUMN IF NOT EXISTS ai_settings jsonb NOT NULL DE
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS branding jsonb NOT NULL DEFAULT '{}'::jsonb;
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS reminder_days jsonb NOT NULL DEFAULT '[30,14,7,1]'::jsonb;
 ALTER TABLE organizations ADD COLUMN IF NOT EXISTS website text;
+-- Which country the agency works in. Numbers written in local form are read
+-- against this; anything written with a country code keeps its own.
+ALTER TABLE organizations ADD COLUMN IF NOT EXISTS country text;
 
 -- Every important email: who, which template, whether it arrived.
 CREATE TABLE IF NOT EXISTS email_log (
