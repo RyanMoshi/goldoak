@@ -437,9 +437,15 @@ async function handleMedia(message: InboundMessage, org: Organization, user: Pub
   let bytes: Uint8Array | null = null
   let mimetype = media.mimetype
   if (media.base64) bytes = new Uint8Array(Buffer.from(media.base64, 'base64'))
-  else if (media.omitted) {
+  else {
+    // Gateways either inline the bytes, hold them behind a URL, or keep them
+    // against the message id. Try whichever handle we were given.
     const provider = getProvider()
-    const fetched = media.chatId && provider?.downloadMedia ? await provider.downloadMedia(media.chatId, message.messageId).catch(() => null) : null
+    const fetched = media.url && provider?.downloadMediaUrl
+      ? await provider.downloadMediaUrl(media.url).catch(() => null)
+      : media.chatId && provider?.downloadMedia
+        ? await provider.downloadMedia(media.chatId, message.messageId).catch(() => null)
+        : null
     if (fetched) {
       bytes = fetched.bytes
       mimetype = fetched.mimetype.includes('octet') ? media.mimetype : fetched.mimetype

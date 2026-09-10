@@ -431,6 +431,9 @@ CREATE TABLE IF NOT EXISTS whatsapp_channels (
   updated_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS whatsapp_channels_org_idx ON whatsapp_channels(organization_id);
+-- WAHA joined the provider list once the gateway gained one session per agency.
+ALTER TABLE whatsapp_channels DROP CONSTRAINT IF EXISTS whatsapp_channels_provider_check;
+ALTER TABLE whatsapp_channels ADD CONSTRAINT whatsapp_channels_provider_check CHECK (provider IN ('waha', 'openwa', 'meta'));
 ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS channel_id text;
 ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS channel text NOT NULL DEFAULT 'whatsapp';
 

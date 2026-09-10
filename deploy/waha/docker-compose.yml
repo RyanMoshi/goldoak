@@ -1,0 +1,66 @@
+# Super Agent WhatsApp gateway (WAHA) - one container, many numbers.
+#
+# Every agency pairs its own phone as its own session, so nobody has to share
+# GoldOak's line. Sessions persist in ./sessions, so restarts never ask for a
+# new QR.
+#
+#   1. Point a DNS A record (e.g. wa.yourdomain.com) at this machine.
+#   2. cp .env.example .env and fill it in.
+#   3. docker compose up -d
+#   4. Agencies pair from their own dashboard: Workspace, WhatsApp, Connect.
+#   5. Set WAHA_BASE_URL=https://wa.yourdomain.com on Vercel and redeploy.
+#
+# The NOWEB engine talks WhatsApp over a WebSocket instead of driving a real
+# browser. That is what makes many sessions fit on a small machine: tens of
+# megabytes each rather than a Chromium apiece.
+
+services:
+  waha:
+    image: devlikeapro/waha:noweb
+    restart: unless-stopped
+    environment:
+      - TZ=Africa/Nairobi
+      - WHATSAPP_DEFAULT_ENGINE=NOWEB
+      # Every request from the platform carries this key.
+      - WHATSAPP_API_KEY=${WAHA_API_KEY}
+      # Bring saved sessions back up by themselves after a restart or reboot.
+      - WHATSAPP_RESTART_ALL_SESSIONS=True
+      - WHATSAPP_START_SESSION=${WAHA_SESSION:-default}
+      # Keep the full message history out of the gateway; the platform is the
+      # system of record and stores what it needs in Postgres.
+      - WHATSAPP_STORE_ENABLED=False
+      - WHATSAPP_SWAGGER_ENABLED=False
+    # Loopback only: the host can health-check and debug the gateway without
+    # the API being reachable from the internet. Caddy still fronts it on 443.
+    ports:
+      - '127.0.0.1:3000:3000'
+    volumes:
+      - ./sessions:/app/.sessions
+      - ./media:/app/.media
+    healthcheck:
+      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
+      interval: 60s
+      timeout: 10s
+      retries: 3
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '3' }
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - '80:80'
+      - '443:443'
+    environment:
+      - DOMAIN=${DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - waha
+
+volumes:
+  caddy_data:
+  caddy_config:

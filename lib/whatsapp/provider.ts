@@ -1,13 +1,16 @@
 import { MetaProvider } from '@/lib/whatsapp/providers/meta'
 import { OpenWAProvider } from '@/lib/whatsapp/providers/openwa'
+import { WahaProvider, wahaConfigured } from '@/lib/whatsapp/providers/waha'
 
 /**
  * WhatsApp is a channel, not the system. Providers only send messages and
  * describe inbound ones; everything else (who the person is, what they can
  * do) lives in services shared with the web dashboard.
  *
- * Selection order: OpenWA (self-hosted gateway) when OPENWA_* is set, else the
- * Meta Cloud API when WHATSAPP_* is set, else no provider (in-app only).
+ * Selection order: WAHA (the self-hosted gateway that holds one session per
+ * agency) when WAHA_* is set, then the older single-session OpenWA gateway,
+ * then the Meta Cloud API when WHATSAPP_* is set, else no provider (in-app
+ * only, which is how local development runs).
  */
 
 export type InboundMediaKind = 'image' | 'document' | 'audio' | 'video' | 'sticker' | 'other'
@@ -18,6 +21,8 @@ export interface InboundMedia {
   filename: string | null
   /** Inline bytes when the gateway included them. */
   base64?: string | null
+  /** Where the gateway is holding the bytes, when it sends a handle instead. */
+  url?: string | null
   /** True when the gateway kept the bytes and they must be fetched. */
   omitted?: boolean
   sizeBytes?: number | null
@@ -44,16 +49,19 @@ export interface OutboundDocument {
 }
 
 export interface WhatsAppProvider {
-  readonly name: 'openwa' | 'meta'
+  readonly name: 'waha' | 'openwa' | 'meta'
   sendText(toPhone: string, body: string): Promise<void>
   sendDocument?(toPhone: string, doc: OutboundDocument): Promise<void>
   sendImage?(toPhone: string, doc: OutboundDocument): Promise<void>
   downloadMedia?(chatId: string, messageId: string): Promise<{ bytes: Uint8Array; mimetype: string } | null>
+  /** Fetches media the gateway is holding at a URL it gave us. */
+  downloadMediaUrl?(url: string): Promise<{ bytes: Uint8Array; mimetype: string } | null>
   markRead?(chatId: string): Promise<void>
   typing?(chatId: string): Promise<void>
 }
 
 export function getProvider(): WhatsAppProvider | null {
+  if (wahaConfigured()) return new WahaProvider()
   if (process.env.OPENWA_BASE_URL && process.env.OPENWA_API_KEY && process.env.OPENWA_SESSION_ID) return new OpenWAProvider()
   if (process.env.WHATSAPP_ACCESS_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID) return new MetaProvider()
   return null
@@ -69,7 +77,10 @@ export async function providerForOrganization(organizationId?: string | null): P
     try {
       const { channelForOrganization } = await import('@/lib/whatsapp/channels')
       const channel = await channelForOrganization(organizationId)
-      if (channel?.provider === 'openwa' && channel.sessionId && channel.status === 'ready' && process.env.OPENWA_BASE_URL && process.env.OPENWA_API_KEY) return new OpenWAProvider(channel.sessionId)
+      if (channel?.sessionId && channel.status === 'ready') {
+        if (channel.provider === 'waha' && wahaConfigured()) return new WahaProvider(channel.sessionId)
+        if (channel.provider === 'openwa' && process.env.OPENWA_BASE_URL && process.env.OPENWA_API_KEY) return new OpenWAProvider(channel.sessionId)
+      }
     } catch (error) {
       console.error('channel lookup failed', error instanceof Error ? error.message : error)
     }
