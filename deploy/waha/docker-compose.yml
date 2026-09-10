@@ -25,7 +25,6 @@ services:
       - WHATSAPP_API_KEY=${WAHA_API_KEY}
       # Bring saved sessions back up by themselves after a restart or reboot.
       - WHATSAPP_RESTART_ALL_SESSIONS=True
-      - WHATSAPP_START_SESSION=${WAHA_SESSION:-default}
       # Keep the full message history out of the gateway; the platform is the
       # system of record and stores what it needs in Postgres.
       - WHATSAPP_STORE_ENABLED=False
@@ -38,7 +37,8 @@ services:
       - ./sessions:/app/.sessions
       - ./media:/app/.media
     healthcheck:
-      test: ['CMD', 'wget', '-qO-', 'http://localhost:3000/health']
+      # /health requires the key, so an unauthenticated probe would always fail.
+      test: ['CMD-SHELL', 'wget -q -O- --header="X-Api-Key: $$WAHA_API_KEY" http://localhost:3000/health || exit 1']
       interval: 60s
       timeout: 10s
       retries: 3

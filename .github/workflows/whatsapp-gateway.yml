@@ -85,7 +85,6 @@ jobs:
       - name: Start the gateway
         env:
           WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
-          WAHA_SESSION: ${{ secrets.WAHA_SESSION }}
         run: |
           docker run -d --name waha \
             -p 127.0.0.1:3000:3000 \
@@ -93,24 +92,26 @@ jobs:
             -e WHATSAPP_DEFAULT_ENGINE=NOWEB \
             -e WHATSAPP_API_KEY="$WAHA_API_KEY" \
             -e WHATSAPP_RESTART_ALL_SESSIONS=True \
-            -e WHATSAPP_START_SESSION="${WAHA_SESSION:-default}" \
             -e WHATSAPP_STORE_ENABLED=False \
             -e WHATSAPP_SWAGGER_ENABLED=False \
             -v "$PWD/sessions:/app/.sessions" \
             -v "$PWD/media:/app/.media" \
             devlikeapro/waha:noweb
 
+          # /health needs the key. Without it the gateway answers 401 and looks
+          # dead when it is perfectly fine.
           for i in $(seq 1 60); do
-            curl -fsS --max-time 5 http://127.0.0.1:3000/health >/dev/null 2>&1 && break
+            curl -fsS --max-time 5 -H "X-Api-Key: $WAHA_API_KEY" http://127.0.0.1:3000/health >/dev/null 2>&1 && break
             sleep 5
           done
-          curl -fsS --max-time 5 http://127.0.0.1:3000/health >/dev/null 2>&1 \
+          curl -fsS --max-time 5 -H "X-Api-Key: $WAHA_API_KEY" http://127.0.0.1:3000/health >/dev/null 2>&1 \
             || { echo '::error::The gateway never became healthy.'; docker logs waha | tail -50; exit 1; }
           echo "Gateway is up."
 
       - name: Open the tunnel
         id: tunnel
         env:
+          WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
           NGROK_DOMAIN: ${{ secrets.NGROK_DOMAIN }}
         run: |
@@ -142,7 +143,7 @@ jobs:
           fi
 
           for i in $(seq 1 20); do
-            curl -fsS --max-time 10 "$URL/health" >/dev/null 2>&1 && break
+            curl -fsS --max-time 10 -H "X-Api-Key: $WAHA_API_KEY" "$URL/health" >/dev/null 2>&1 && break
             sleep 5
           done
           echo "url=$URL" >> "$GITHUB_OUTPUT"
@@ -166,13 +167,15 @@ jobs:
           echo "The platform will send through $URL"
 
       - name: Hold the gateway open
+        env:
+          WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
         run: |
           # Stay alive until shortly before GitHub would kill the job, checking
           # the gateway as we go. The next scheduled run takes over from here.
           END=$(( $(date +%s) + 340 * 60 ))
           FAILS=0
           while [ "$(date +%s)" -lt "$END" ]; do
-            if curl -fsS --max-time 10 http://127.0.0.1:3000/health >/dev/null 2>&1; then
+            if curl -fsS --max-time 10 -H "X-Api-Key: $WAHA_API_KEY" http://127.0.0.1:3000/health >/dev/null 2>&1; then
               FAILS=0
             else
               FAILS=$(( FAILS + 1 ))
