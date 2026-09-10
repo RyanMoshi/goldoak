@@ -43,3 +43,11 @@ openwa-qr.*
 # user uploads and local logs
 /public/uploads
 .next-dev.log
+
+# WhatsApp gateway credentials. The compose file bind-mounts ./sessions, so a
+# stack started from inside a checkout would otherwise drop a live WhatsApp
+# login into the repository.
+sessions/
+.wwebjs_auth/
+browser-data/
+deploy/**/.env
