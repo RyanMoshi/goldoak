@@ -1,6 +1,6 @@
 'use client'
 
-import { Bot, RefreshCw, Send, UserRound } from 'lucide-react'
+import { Bot, Headphones, RefreshCw, Send, UserRound } from 'lucide-react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Card } from '@/components/platform/ui/Card'
 import { cn } from '@/lib/cn'
@@ -58,6 +58,17 @@ export function AskAssistant({ initialMessages, initialPending, agencyName }: Pr
       cancelled = true
       clearTimeout(t)
     }
+  }, [pending, refresh])
+
+  // An adviser can reply long after the assistant has finished, so the thread
+  // keeps checking quietly while the tab is open, not only while an answer is
+  // outstanding.
+  useEffect(() => {
+    if (pending) return
+    const t = setInterval(() => {
+      if (document.visibilityState === 'visible') void refresh()
+    }, 20_000)
+    return () => clearInterval(t)
   }, [pending, refresh])
 
   useEffect(() => {
@@ -122,11 +133,23 @@ export function AskAssistant({ initialMessages, initialPending, agencyName }: Pr
         {messages.map((m) => (
           <li key={m.id} className={cn('flex gap-2', m.role === 'user' ? 'justify-end' : 'justify-start')}>
             {m.role !== 'user' ? (
-              <span className="mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full bg-forest text-gold">
-                <Bot className="size-3.5" aria-hidden="true" />
+              <span
+                className={cn(
+                  'mt-1 inline-flex size-7 shrink-0 items-center justify-center rounded-full',
+                  m.role === 'agent' ? 'bg-gold text-forest' : 'bg-forest text-gold',
+                )}
+                title={m.role === 'agent' ? 'Your adviser' : 'The assistant'}
+              >
+                {m.role === 'agent' ? <Headphones className="size-3.5" aria-hidden="true" /> : <Bot className="size-3.5" aria-hidden="true" />}
               </span>
             ) : null}
-            <div className={cn('max-w-[88%] rounded-card px-3.5 py-2.5 text-[13.5px] leading-5 shadow-sm sm:max-w-[75%]', m.role === 'user' ? 'bg-forest text-white' : 'bg-surface text-ink')}>
+            <div
+              className={cn(
+                'max-w-[88%] rounded-card px-3.5 py-2.5 text-[13.5px] leading-5 shadow-sm sm:max-w-[75%]',
+                m.role === 'user' ? 'bg-forest text-white' : m.role === 'agent' ? 'border border-gold/40 bg-gold/10 text-ink' : 'bg-surface text-ink',
+              )}
+            >
+              {m.role === 'agent' ? <p className="label-caps mb-1 text-gold-700">From your adviser</p> : null}
               <p className="whitespace-pre-wrap break-words">{m.body}</p>
               <p suppressHydrationWarning className={cn('mt-1 font-mono text-[10px]', m.role === 'user' ? 'text-white/60' : 'text-ink-faint')}>{new Date(m.at).toLocaleString('en-KE', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
             </div>

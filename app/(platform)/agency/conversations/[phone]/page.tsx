@@ -3,13 +3,17 @@ import { notFound } from 'next/navigation'
 import { ConversationThread } from '@/components/platform/conversations/ConversationThread'
 import { requireSession } from '@/lib/auth/server'
 import { getConversation } from '@/services/conversations'
+import { isWebKey } from '@/services/webchat'
 
 export const metadata: Metadata = { title: 'Conversation' }
 export const dynamic = 'force-dynamic'
 
 export default async function ConversationPage({ params }: { params: { phone: string } }) {
   const session = await requireSession('agency')
-  const phone = params.phone.replace(/\D/g, '')
+  // A web thread is keyed by user id, not digits. Stripping non-digits made
+  // every portal conversation unreachable from the agency side.
+  const raw = decodeURIComponent(params.phone)
+  const phone = isWebKey(raw) ? raw : raw.replace(/\D/g, '')
   const conversation = await getConversation(session.oid, phone)
   if (!conversation) notFound()
   return (

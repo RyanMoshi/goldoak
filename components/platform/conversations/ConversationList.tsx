@@ -38,7 +38,7 @@ function Section({ title, count, rows, basePath, showOrganization, tone }: { tit
           const name = r.clientName ?? r.userName ?? r.displayName ?? formatPhone(r.phone)
           return (
             <li key={r.phone}>
-              <Link href={`${basePath}/${r.phone}`} className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-surface-3 focus-ring">
+              <Link href={`${basePath}/${encodeURIComponent(r.phone)}`} className="flex items-start gap-3 px-5 py-3.5 transition-colors hover:bg-surface-3 focus-ring">
                 <span className={cn('mt-0.5 inline-flex size-9 shrink-0 items-center justify-center rounded-full', r.mode === 'human' ? 'bg-gold/15 text-gold-700' : 'bg-forest-100 text-forest')}>
                   {r.mode === 'human' ? <UserRound className="size-4" aria-hidden="true" strokeWidth={1.75} /> : <Bot className="size-4" aria-hidden="true" strokeWidth={1.75} />}
                 </span>

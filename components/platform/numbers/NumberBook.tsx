@@ -254,7 +254,7 @@ function Row({ row, canEdit, selected, onToggle }: { row: ContactNumber; canEdit
         </td>
       ) : null}
       <td className="px-4 py-3">
-        <Link href={`/agency/conversations/${row.phone}`} className="font-mono text-[12.5px] font-semibold text-forest hover:underline focus-ring">
+        <Link href={`/agency/conversations/${encodeURIComponent(row.phone)}`} className="font-mono text-[12.5px] font-semibold text-forest hover:underline focus-ring">
           {prettyPhone(row.phone)}
         </Link>
       </td>

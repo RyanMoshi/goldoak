@@ -23,6 +23,15 @@ export function webKey(userId: string): string {
   return `web:${userId}`
 }
 
+/**
+ * Whether a conversation key belongs to the web portal rather than a phone.
+ * A web thread has no gateway behind it: the reply is delivered by being
+ * written down, because the portal reads the same thread back.
+ */
+export function isWebKey(key: string): boolean {
+  return key.startsWith('web:')
+}
+
 async function contactFor(userId: string, organizationId: string): Promise<WhatsAppContact> {
   const sql = getSql()
   const key = webKey(userId)
