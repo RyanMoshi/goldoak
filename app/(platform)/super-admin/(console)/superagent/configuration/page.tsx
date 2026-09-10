@@ -69,7 +69,7 @@ export default async function SuperAgentConfigurationPage() {
           <CardHeader title="Where each setting lives" />
           <ul className="mt-4 space-y-3 text-[13.5px] leading-6 text-ink">
             <li>
-              <strong>Platform rules and shared knowledge</strong> — <Link href="/superagent/knowledge" className="text-forest underline focus-ring">Global knowledge</Link>. Applies to every agency.
+              <strong>Platform rules and shared knowledge</strong> — <Link href="/super-admin/superagent/knowledge" className="text-forest underline focus-ring">Global knowledge</Link>. Applies to every agency.
             </li>
             <li>
               <strong>An agency&rsquo;s products, tone and escalation</strong> — that agency&rsquo;s own <span className="font-mono text-[12.5px]">/agency/ai</span> page. Only its own staff can see or change it.

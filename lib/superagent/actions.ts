@@ -25,8 +25,8 @@ export async function saveGlobalPolicyAction(formData: FormData): Promise<Policy
   try {
     await saveGlobalPolicy({ groundRules, knowledge, bannedPhrases, updatedBy: session.uid })
     await audit({ organizationId: null, actorUserId: session.uid, action: 'ai.policy-updated', target: 'global', detail: { rules: groundRules.length, knowledge: knowledge.length } })
-    revalidatePath('/superagent/knowledge')
-    revalidatePath('/superagent/configuration')
+    revalidatePath('/super-admin/superagent/knowledge')
+    revalidatePath('/super-admin/superagent/configuration')
     return { success: 'Saved. New answers use this within a minute.' }
   } catch (error) {
     console.error('saveGlobalPolicy failed', error instanceof Error ? error.message : error)

@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { Building2, LogOut, Mail, MessagesSquare, Server, ShieldCheck, Smartphone, Sparkles, Type } from 'lucide-react'
+import { Building2, LogOut, Mail, MessagesSquare, Server, ShieldCheck, Smartphone, Sparkles, Type, Users } from 'lucide-react'
 import { signOutAction } from '@/lib/auth/actions'
 import { requireSession } from '@/lib/auth/server'
 
@@ -13,14 +13,24 @@ export const dynamic = 'force-dynamic'
  * link into any agency workspace, and nothing shared with the tenant shell
  * beyond the design tokens. Someone signed in here should never be one click
  * from a tenant's data by accident.
+ *
+ * There is one console, not two. Everything an operator needs, including the
+ * assistant's own pages, hangs off this rail.
+ */
+/**
+ * One console. Super Admin is not a tenant with a sidebar of its own beside
+ * another console for the AI: it is the whole platform, so everything lives
+ * under one rail in the order an operator actually needs it. People first,
+ * because "who is this account" is the question that gets asked most.
  */
 const SECTIONS: { href: string; label: string; icon: typeof Building2; hint: string }[] = [
+  { href: '/super-admin/users', label: 'Everyone', icon: Users, hint: 'Every account on the platform' },
   { href: '/super-admin', label: 'Agencies', icon: Building2, hint: 'Tenants and their accounts' },
-  { href: '/superagent', label: 'Super Agent', icon: Sparkles, hint: 'The AI product' },
   { href: '/super-admin/conversations', label: 'Conversations', icon: MessagesSquare, hint: 'Every WhatsApp thread' },
   { href: '/super-admin/channels', label: 'WhatsApp', icon: Smartphone, hint: 'Numbers and gateways' },
   { href: '/super-admin/emails', label: 'Emails', icon: Mail, hint: 'Delivery across the platform' },
   { href: '/super-admin/templates', label: 'Templates', icon: Type, hint: 'Global email wording' },
+  { href: '/super-admin/superagent', label: 'Super Agent', icon: Sparkles, hint: 'The assistant: knowledge and monitoring' },
   { href: '/super-admin/system', label: 'System', icon: Server, hint: 'Health, jobs, dead letters' },
 ]
 
