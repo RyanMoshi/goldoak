@@ -1,3 +1,10 @@
+export interface CampaignMedia {
+  path: string
+  filename: string
+  mimetype: string
+  kind: 'image' | 'document'
+}
+
 /**
  * Promotional and announcement campaigns. A campaign is composed once, its
  * audience is resolved into `campaign_recipients` rows, and a background
@@ -42,6 +49,8 @@ export interface Campaign {
   body: string
   ctaLabel: string | null
   ctaUrl: string | null
+  /** A picture or document sent alongside the message. */
+  media: CampaignMedia | null
   scheduledAt: string | null
   startedAt: string | null
   finishedAt: string | null

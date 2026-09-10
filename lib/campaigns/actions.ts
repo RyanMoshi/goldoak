@@ -38,10 +38,23 @@ function readAudience(formData: FormData): CampaignAudience {
   }
 }
 
+function readMedia(formData: FormData) {
+  const path = String(formData.get('mediaPath') ?? '').trim()
+  if (!path) return null
+  const kind = String(formData.get('mediaKind') ?? '')
+  return {
+    path,
+    filename: String(formData.get('mediaFilename') ?? 'attachment'),
+    mimetype: String(formData.get('mediaMimetype') ?? 'application/octet-stream'),
+    kind: kind === 'image' ? ('image' as const) : ('document' as const),
+  }
+}
+
 function readCampaign(formData: FormData) {
   const channelRaw = String(formData.get('channel') ?? 'email')
   const channel: CampaignChannel = channelRaw === 'whatsapp' ? 'whatsapp' : channelRaw === 'both' ? 'both' : 'email'
   return {
+    media: readMedia(formData),
     name: String(formData.get('name') ?? '').trim(),
     channel,
     subject: String(formData.get('subject') ?? '').trim() || null,

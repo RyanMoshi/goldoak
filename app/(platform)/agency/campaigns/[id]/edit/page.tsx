@@ -4,6 +4,8 @@ import { notFound } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { CampaignComposer } from '@/components/platform/campaigns/CampaignComposer'
 import { listNames } from '@/services/numbers'
+import { callingCodes, defaultCountry } from '@/lib/phone'
+import { getOrganization } from '@/services/users'
 import { PageHeader } from '@/components/platform/ui/PageHeader'
 import { requireAgencyAdmin } from '@/lib/auth/server'
 import { getCampaign } from '@/services/campaigns'
@@ -14,6 +16,8 @@ export const dynamic = 'force-dynamic'
 export default async function EditCampaignPage({ params }: { params: { id: string } }) {
   const session = await requireAgencyAdmin()
   const numberLists = await listNames(session.oid)
+  const org = await getOrganization(session.oid)
+  const countries = callingCodes().map((c) => ({ code: c.country, label: `${c.country} +${c.code}` }))
   const campaign = await getCampaign(session.oid, params.id)
   if (!campaign) notFound()
   if (campaign.status !== 'draft' && campaign.status !== 'scheduled') {
@@ -33,7 +37,7 @@ export default async function EditCampaignPage({ params }: { params: { id: strin
         <ArrowLeft className="size-4" aria-hidden="true" /> {campaign.name}
       </Link>
       <PageHeader eyebrow="Communications" title="Edit campaign" description="Changes apply the next time it is launched." />
-      <CampaignComposer campaign={campaign} numberLists={numberLists} />
+      <CampaignComposer campaign={campaign} numberLists={numberLists} countries={countries} defaultCountry={org?.country ?? defaultCountry()} />
     </div>
   )
 }

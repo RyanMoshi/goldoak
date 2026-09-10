@@ -2,6 +2,8 @@
 
 import { Mail, MessageSquare, Users } from 'lucide-react'
 import { useState, useTransition } from 'react'
+import { CampaignMediaField } from '@/components/platform/campaigns/CampaignMedia'
+import { CampaignRecipients } from '@/components/platform/campaigns/CampaignRecipients'
 import { Card, CardHeader } from '@/components/platform/ui/Card'
 import { CheckboxField, Field, FormActions, Select, SubmitButton, TextArea, TextInput } from '@/components/platform/ui/Form'
 import { StatusLine } from '@/components/platform/ui/PageHeader'
@@ -28,11 +30,31 @@ const TYPES = [
   { id: 'corporate', label: 'Corporates' },
 ]
 
-export function CampaignComposer({ campaign, numberLists = [] }: { campaign?: Campaign; numberLists?: { name: string; count: number }[] }) {
+export function CampaignComposer({
+  campaign,
+  numberLists = [],
+  countries = [],
+  defaultCountry = 'KE',
+}: {
+  campaign?: Campaign
+  numberLists?: { name: string; count: number }[]
+  countries?: { code: string; label: string }[]
+  defaultCountry?: string
+}) {
   const [state, setState] = useState<CampaignState>({})
   const [pending, startTransition] = useTransition()
   const [channel, setChannel] = useState<CampaignChannel>(campaign?.channel ?? 'email')
   const [previewing, startPreview] = useTransition()
+  const [name, setName] = useState(campaign?.name ?? '')
+  const [lists, setLists] = useState(numberLists)
+  const [pickedLists, setPickedLists] = useState<string[]>(campaign?.audience.numberLists ?? [])
+  const [useNumbers, setUseNumbers] = useState(campaign?.audience.includeNumbers === true)
+
+  function afterImport(listName: string) {
+    setLists((prev) => (prev.some((l) => l.name === listName) ? prev : [...prev, { name: listName, count: 0 }]))
+    setPickedLists((prev) => (prev.includes(listName) ? prev : [...prev, listName]))
+    setUseNumbers(true)
+  }
 
   function submit(formData: FormData) {
     startTransition(async () => {
@@ -107,31 +129,55 @@ export function CampaignComposer({ campaign, numberLists = [] }: { campaign?: Ca
               <CheckboxField name="includeLeads" label="Include leads without a login" description="People you have recorded but who have not signed in yet." defaultChecked={campaign?.audience.includeLeads !== false} />
             </div>
           </div>
-          {numberLists.length ? (
-            <div className="mt-4 rounded-card border border-line bg-surface-2 p-4">
-              <CheckboxField
+          <div className="mt-4 rounded-card border border-line bg-surface-2 p-4">
+            <p className="text-[14px] font-bold text-ink">People who are not clients yet</p>
+            <p className="mt-1 text-[12.5px] text-ink-muted">
+              The filters above reach your clients. This reaches everyone else in your number book.
+            </p>
+
+            <label className="mt-3 flex items-start gap-2.5">
+              <input
+                type="checkbox"
                 name="includeNumbers"
-                label="Also send to the number book"
-                description="Numbers you have imported who are not clients yet. Anyone already reached as a client is not messaged twice."
-                defaultChecked={campaign?.audience.includeNumbers === true}
+                checked={useNumbers}
+                onChange={(e) => setUseNumbers(e.target.checked)}
+                className="mt-0.5 size-4 rounded border-line focus-ring"
               />
+              <span>
+                <span className="block text-[13.5px] font-semibold text-ink">Send to my number book too</span>
+                <span className="block text-[12.5px] text-ink-muted">Anyone already reached as a client is not messaged twice.</span>
+              </span>
+            </label>
+
+            {useNumbers && lists.length ? (
               <fieldset className="mt-3">
                 <legend className="label-caps text-ink-muted">Lists</legend>
                 <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                  {numberLists.map((l) => (
-                    <CheckboxField
-                      key={l.name}
-                      name="numberLists"
-                      value={l.name}
-                      label={`${l.name} (${l.count.toLocaleString('en-KE')})`}
-                      defaultChecked={campaign?.audience.numberLists?.includes(l.name)}
-                    />
+                  {lists.map((l) => (
+                    <label key={l.name} className="flex items-center gap-2 text-[13.5px] text-ink">
+                      <input
+                        type="checkbox"
+                        name="numberLists"
+                        value={l.name}
+                        checked={pickedLists.includes(l.name)}
+                        onChange={(e) =>
+                          setPickedLists((prev) => (e.target.checked ? [...prev, l.name] : prev.filter((n) => n !== l.name)))
+                        }
+                        className="size-4 rounded border-line focus-ring"
+                      />
+                      {l.name}
+                      {l.count ? <span className="text-ink-faint">({l.count.toLocaleString('en-KE')})</span> : null}
+                    </label>
                   ))}
                 </div>
                 <p className="mt-2 text-[12.5px] text-ink-faint">Leave every list unticked to use all of them.</p>
               </fieldset>
+            ) : null}
+
+            <div className="mt-4">
+              <CampaignRecipients campaignName={name} countries={countries} defaultCountry={defaultCountry} onImported={afterImport} />
             </div>
-          ) : null}
+          </div>
           <button
             type="button"
             disabled={previewing}
@@ -151,7 +197,7 @@ export function CampaignComposer({ campaign, numberLists = [] }: { campaign?: Ca
       <Card as="section">
         <CardHeader title="Message" description="Use {{first_name}}, {{full_name}} or {{agency_name}} and they are filled in per person." />
         <div className="mt-5 space-y-4">
-          <TextInput label="Campaign name" name="name" required defaultValue={campaign?.name ?? ''} placeholder="March renewals reminder" hint="Internal only; your clients never see this." error={state.field === 'name' ? state.error : undefined} />
+          <TextInput label="Campaign name" name="name" required value={name} onChange={(e) => setName(e.target.value)} placeholder="March renewals reminder" hint="Internal only; your clients never see this." error={state.field === 'name' ? state.error : undefined} />
           {channel !== 'whatsapp' ? (
             <TextInput label="Email subject" name="subject" required defaultValue={campaign?.subject ?? ''} placeholder="Your motor cover is due for renewal" error={state.field === 'subject' ? state.error : undefined} />
           ) : null}
@@ -165,6 +211,9 @@ export function CampaignComposer({ campaign, numberLists = [] }: { campaign?: Ca
             hint="Leave a blank line between paragraphs."
             error={state.field === 'body' ? state.error : undefined}
           />
+          <Field label="Attachment" hint="Optional. On WhatsApp your message becomes the caption." optional>
+            <CampaignMediaField initial={campaign?.media ?? null} />
+          </Field>
           {channel !== 'whatsapp' ? (
             <div className="grid gap-4 sm:grid-cols-2">
               <TextInput label="Button label" name="ctaLabel" defaultValue={campaign?.ctaLabel ?? ''} placeholder="See my cover" optional error={state.field === 'ctaLabel' ? state.error : undefined} />

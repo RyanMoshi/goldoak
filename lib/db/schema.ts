@@ -640,6 +640,13 @@ CREATE TABLE IF NOT EXISTS campaigns (
   updated_at       timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS campaigns_org_idx ON campaigns(organization_id, created_at DESC);
+-- A picture or a document to go with the message. Stored once in object
+-- storage; the send hands out a signed link rather than the bytes, so one
+-- upload serves ten thousand recipients.
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS media_path text;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS media_filename text;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS media_mimetype text;
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS media_kind text CHECK (media_kind IN ('image', 'document'));
 
 CREATE TABLE IF NOT EXISTS campaign_recipients (
   id               text PRIMARY KEY,

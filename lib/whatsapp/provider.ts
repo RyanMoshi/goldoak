@@ -123,6 +123,18 @@ export async function sendWhatsApp(toPhone: string, body: string, organizationId
   }
 }
 
+export async function sendWhatsAppImage(toPhone: string, doc: OutboundDocument, organizationId?: string | null): Promise<boolean> {
+  const provider = await providerForOrganization(organizationId)
+  if (!provider?.sendImage) return false
+  try {
+    await provider.sendImage(toPhone, doc)
+    return true
+  } catch (error) {
+    console.error(`whatsapp image failed (${provider.name})`, error instanceof Error ? error.message : error)
+    return false
+  }
+}
+
 export async function sendWhatsAppDocument(toPhone: string, doc: OutboundDocument, organizationId?: string | null): Promise<boolean> {
   const provider = await providerForOrganization(organizationId)
   if (!provider?.sendDocument) return false

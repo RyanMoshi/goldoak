@@ -1,12 +1,12 @@
 import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { newId } from '@/lib/ids'
-import { sendWhatsApp } from '@/lib/whatsapp/provider'
+import { sendWhatsApp, sendWhatsAppDocument, sendWhatsAppImage } from '@/lib/whatsapp/provider'
 import { audit } from '@/services/audit'
 import { deliverCampaignEmail } from '@/services/emails'
 import { enqueue } from '@/services/jobs'
 import { getOrganization } from '@/services/users'
-import type { Campaign, CampaignAudience, CampaignChannel, CampaignRecipient, CampaignStatus } from '@/types/campaigns'
+import type { Campaign, CampaignAudience, CampaignChannel, CampaignMedia, CampaignRecipient, CampaignStatus } from '@/types/campaigns'
 
 /**
  * Campaigns: one message to many clients over WhatsApp, email or both.
@@ -35,16 +35,19 @@ export interface CreateCampaignInput {
   ctaUrl?: string | null
   audience: CampaignAudience
   scheduledAt?: string | null
+  media?: CampaignMedia | null
 }
 
 export async function createCampaign(input: CreateCampaignInput): Promise<Campaign> {
   await ensureSchema()
   const sql = getSql()
   const id = newId('cmp')
-  await sql`INSERT INTO campaigns (id, organization_id, name, channel, status, audience, subject, body, cta_label, cta_url, scheduled_at, created_by)
+  await sql`INSERT INTO campaigns (id, organization_id, name, channel, status, audience, subject, body, cta_label, cta_url, scheduled_at, created_by,
+      media_path, media_filename, media_mimetype, media_kind)
     VALUES (${id}, ${input.organizationId}, ${input.name.slice(0, 160)}, ${input.channel}, ${input.scheduledAt ? 'scheduled' : 'draft'}, ${sql.json(input.audience as never)},
       ${input.subject?.slice(0, 200) ?? null}, ${input.body.slice(0, 4000)}, ${input.ctaLabel?.slice(0, 60) ?? null}, ${input.ctaUrl?.slice(0, 500) ?? null},
-      ${input.scheduledAt ?? null}, ${input.actor.id})`
+      ${input.scheduledAt ?? null}, ${input.actor.id},
+      ${input.media?.path ?? null}, ${input.media?.filename ?? null}, ${input.media?.mimetype ?? null}, ${input.media?.kind ?? null})`
   await audit({ organizationId: input.organizationId, actorUserId: input.actor.id, action: 'campaign.created', target: id, detail: { name: input.name, channel: input.channel } })
   const c = await getCampaign(input.organizationId, id)
   if (!c) throw new Error('Campaign was not created')
@@ -59,6 +62,10 @@ export async function updateCampaign(organizationId: string, id: string, input: 
   await sql`UPDATE campaigns SET name = ${input.name.slice(0, 160)}, channel = ${input.channel}, audience = ${sql.json(input.audience as never)},
       subject = ${input.subject?.slice(0, 200) ?? null}, body = ${input.body.slice(0, 4000)}, cta_label = ${input.ctaLabel?.slice(0, 60) ?? null},
       cta_url = ${input.ctaUrl?.slice(0, 500) ?? null}, scheduled_at = ${input.scheduledAt ?? null},
+      media_path = ${input.media === undefined ? sql`media_path` : (input.media?.path ?? null)},
+      media_filename = ${input.media === undefined ? sql`media_filename` : (input.media?.filename ?? null)},
+      media_mimetype = ${input.media === undefined ? sql`media_mimetype` : (input.media?.mimetype ?? null)},
+      media_kind = ${input.media === undefined ? sql`media_kind` : (input.media?.kind ?? null)},
       status = ${input.scheduledAt ? 'scheduled' : 'draft'}, updated_at = now()
     WHERE id = ${id} AND organization_id = ${organizationId}`
   return getCampaign(organizationId, id)
@@ -248,6 +255,14 @@ export async function sendBatch(campaignId: string): Promise<boolean> {
   if (campaign.status !== 'processing') return false
   const org = await getOrganization(campaign.organizationId)
 
+  // One signed link for the whole batch. The gateway and the reader both fetch
+  // it themselves, so the bytes are never copied per recipient.
+  let mediaUrl: string | null = null
+  if (campaign.media) {
+    const { signedUrl } = await import('@/lib/storage/supabase')
+    mediaUrl = await signedUrl(campaign.media.path, 7 * 24 * 3600)
+  }
+
   const claimed = await sql`UPDATE campaign_recipients SET status = 'sending'
     WHERE id IN (SELECT id FROM campaign_recipients WHERE campaign_id = ${campaignId} AND status = 'pending' ORDER BY created_at LIMIT ${BATCH} FOR UPDATE SKIP LOCKED)
     RETURNING *`
@@ -279,12 +294,21 @@ export async function sendBatch(campaignId: string): Promise<boolean> {
           heading: substitute(campaign.subject || campaign.name, vars),
           firstName: vars.first_name,
           body,
-          ctaLabel: campaign.ctaLabel,
-          ctaUrl: campaign.ctaUrl,
+          ctaLabel: campaign.ctaLabel ?? (mediaUrl ? (campaign.media?.kind === 'image' ? 'View the image' : 'Open the document') : null),
+          ctaUrl: campaign.ctaUrl ?? mediaUrl,
           campaignId,
         })
         ok = result
         if (!ok) error = 'email provider refused the message'
+      } else if (campaign.media && mediaUrl) {
+        // The picture or file carries the message as its caption, so the
+        // recipient gets one item rather than two.
+        const doc = { url: mediaUrl, mimetype: campaign.media.mimetype, filename: campaign.media.filename, caption: body }
+        ok = campaign.media.kind === 'image'
+          ? await sendWhatsAppImage(String(r.phone), doc, campaign.organizationId)
+          : await sendWhatsAppDocument(String(r.phone), doc, campaign.organizationId)
+        if (!ok) error = 'WhatsApp gateway did not accept the attachment'
+        await new Promise((res) => setTimeout(res, WHATSAPP_GAP_MS))
       } else {
         ok = await sendWhatsApp(String(r.phone), body, campaign.organizationId)
         if (!ok) error = 'WhatsApp gateway did not accept the message'
@@ -386,6 +410,14 @@ function toCampaign(r: Record<string, unknown>): Campaign {
     body: String(r.body ?? ''),
     ctaLabel: r.cta_label ? String(r.cta_label) : null,
     ctaUrl: r.cta_url ? String(r.cta_url) : null,
+    media: r.media_path
+      ? {
+          path: String(r.media_path),
+          filename: String(r.media_filename ?? 'attachment'),
+          mimetype: String(r.media_mimetype ?? 'application/octet-stream'),
+          kind: r.media_kind === 'image' ? 'image' : 'document',
+        }
+      : null,
     scheduledAt: r.scheduled_at ? new Date(r.scheduled_at as string).toISOString() : null,
     startedAt: r.started_at ? new Date(r.started_at as string).toISOString() : null,
     finishedAt: r.finished_at ? new Date(r.finished_at as string).toISOString() : null,
