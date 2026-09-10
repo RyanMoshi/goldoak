@@ -1,7 +1,7 @@
 import { getSql } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { newId } from '@/lib/ids'
-import { wahaApiKey, wahaBase, wahaConfigured } from '@/lib/whatsapp/providers/waha'
+import { resolveWahaBase, wahaApiKey, wahaReady } from '@/lib/whatsapp/providers/waha'
 import { audit } from '@/services/audit'
 
 /**
@@ -43,11 +43,11 @@ function row(r: Record<string, unknown>): Channel {
   }
 }
 
-const base = () => wahaBase()
 const headers = () => ({ 'Content-Type': 'application/json', 'X-Api-Key': wahaApiKey() })
 
-export function gatewayConfigured(): boolean {
-  return wahaConfigured()
+/** Reachable at all: pinned in the environment, or published by the gateway. */
+export async function gatewayConfigured(): Promise<boolean> {
+  return wahaReady()
 }
 
 export async function channelForOrganization(organizationId: string): Promise<Channel | null> {
@@ -72,10 +72,12 @@ export async function listChannels(): Promise<(Channel & { organizationName: str
 }
 
 async function gateway(path: string, init: RequestInit & { timeoutMs?: number } = {}): Promise<Response> {
+  const base = await resolveWahaBase()
+  if (!base) throw new Error('The WhatsApp gateway has no address yet.')
   const controller = new AbortController()
   const t = setTimeout(() => controller.abort(), init.timeoutMs ?? 30_000)
   try {
-    return await fetch(`${base()}${path}`, { ...init, headers: { ...headers(), ...(init.headers ?? {}) }, signal: controller.signal })
+    return await fetch(`${base}${path}`, { ...init, headers: { ...headers(), ...(init.headers ?? {}) }, signal: controller.signal })
   } finally {
     clearTimeout(t)
   }
@@ -110,7 +112,7 @@ function sessionName(organizationId: string): string {
  * Pairing happens by QR on the agency's dashboard.
  */
 export async function connectChannel(organizationId: string, actorUserId: string, label: string | null): Promise<Channel> {
-  if (!gatewayConfigured()) throw new Error('The WhatsApp gateway is not configured on the server.')
+  if (!(await gatewayConfigured())) throw new Error('The WhatsApp gateway is not configured on the server.')
   await ensureSchema()
   const sql = getSql()
 
@@ -161,7 +163,7 @@ export interface ChannelStatus {
 
 /** Live status from the gateway; syncs the phone number and status into our record. */
 export async function channelStatus(channel: Channel): Promise<ChannelStatus> {
-  if (!channel.sessionId || !gatewayConfigured()) return { status: channel.status, phone: channel.phone, pushName: null, qr: null, lastError: channel.lastError }
+  if (!channel.sessionId || !(await gatewayConfigured())) return { status: channel.status, phone: channel.phone, pushName: null, qr: null, lastError: channel.lastError }
   const sql = getSql()
   try {
     const res = await gateway(`/api/sessions/${encodeURIComponent(channel.sessionId)}`, { timeoutMs: 15_000 })

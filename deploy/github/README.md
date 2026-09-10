@@ -33,86 +33,80 @@ you try the multi-number feature. Do not point a real agency's WhatsApp at it.
 ## What it does
 
 Each run starts the same WAHA container the real deployment uses, opens a
-tunnel at a fixed address so Vercel can reach it, holds it open for five and a
-half hours, then saves the WhatsApp session and exits so the next run can pick
-it up.
+tunnel so Vercel can reach it, tells the platform what address the tunnel got,
+holds it open for five and a half hours, then saves the WhatsApp session and
+exits so the next run can pick it up.
+
+That middle step is what makes this work without any account anywhere. A free
+tunnel hands out a different address every time, so instead of pinning one, the
+gateway announces where it landed and the platform sends through that. Nothing
+has to be redeployed when the address changes.
 
 The session is the part worth being careful with, and it is handled the way you
 described: never in the repository. It is packed, encrypted on the runner with
-a passphrase only you hold, and stored in Supabase. A new run pulls it back and
-decrypts it, so pairing survives every handover. Without the passphrase the
-stored file is useless to anyone who somehow reaches it.
+a passphrase only you hold, and kept in the platform's own database. A new run
+pulls it back and decrypts it, so pairing survives every handover. The platform
+cannot read it either. Without the passphrase the stored blob is useless to
+anyone who reaches the table.
 
 ---
 
 ## Setting it up
 
-### 1. A fixed address
+Three secrets, and nothing to sign up for. The gateway finds its own address
+and tells the platform where it went, so there is no domain to reserve and no
+tunnel account to create.
 
-Runners get a new IP every time, so the gateway needs a tunnel with a stable
-name. ngrok's free plan includes one reserved domain, which is exactly enough.
+### Repository secrets
 
-Sign up at ngrok.com, then from the dashboard take two things: your **authtoken**,
-and a **domain** from the Domains page. It will look like
-`goldoak-gateway.ngrok-free.app`.
+In GitHub: Settings, then Secrets and variables, then Actions.
 
-### 2. Somewhere to keep the session
-
-In Supabase, create a **private** storage bucket named `gateway`. Private
-matters. Nothing about this bucket should be publicly readable, even though
-what lands in it is encrypted.
-
-### 3. Repository secrets
-
-In GitHub, go to Settings, then Secrets and variables, then Actions, and add:
-
-| Secret | What it is |
+| Secret | Value |
 |---|---|
-| `WAHA_API_KEY` | The gateway key. The same value goes on Vercel. Make it long and random |
-| `WAHA_SESSION` | The shared GoldOak session name, `goldoak` |
-| `NGROK_AUTHTOKEN` | From your ngrok dashboard |
-| `NGROK_DOMAIN` | Your reserved domain, without `https://` |
-| `SUPABASE_URL` | Your project URL, e.g. `https://xxxx.supabase.co` |
-| `SUPABASE_SERVICE_ROLE_KEY` | The service role key, from Supabase project settings |
-| `SESSION_BUCKET` | `gateway` |
-| `SESSION_PASSPHRASE` | A long random passphrase you invent. Losing it means re-pairing |
+| `ADMIN_TOKEN` | The same value already on Vercel. It is what lets the gateway publish its address |
+| `WAHA_API_KEY` | The gateway key. The same value as `OPENWA_API_KEY` on Vercel, which the platform still reads |
+| `SESSION_PASSPHRASE` | A long random passphrase. It encrypts the WhatsApp pairing. Losing it means re-pairing |
+| `WAHA_SESSION` | Optional. The shared GoldOak session name, `goldoak` |
 
-The workflow checks all of these before it starts anything and tells you which
-one is missing rather than failing halfway.
+The workflow checks these before starting anything and names the missing one.
 
-### 4. Point the platform at it
+### On Vercel
 
-On Vercel, set these and redeploy:
+Nothing new is required. The platform reads the gateway key and the webhook
+secret from the values already there.
 
-```
-WAHA_BASE_URL=https://<your ngrok domain>
-WAHA_API_KEY=<the same key as the secret above>
-WAHA_HMAC_KEY=<a long random value>
-WAHA_SESSION=goldoak
-```
+One thing to remove if you have it: `WAHA_BASE_URL`. Setting it pins the
+address, which stops the gateway from publishing where it actually is. Leave it
+unset while the gateway lives on a runner, and set it later when there is a
+real server with a fixed name.
 
-`WAHA_HMAC_KEY` is what signs inbound webhooks. Set it on Vercel only. The
-platform puts it into each session's configuration when an agency connects, so
-the gateway never needs it as an environment variable.
+### Optional: a fixed address
 
-### 5. Start it
+Without any tunnel account the address changes on every handover, which is
+handled automatically. If you would rather it never changed, a free ngrok
+account gives you one reserved domain. Add `NGROK_AUTHTOKEN` and `NGROK_DOMAIN`
+as secrets and the workflow uses them instead.
+
+### Start it
 
 Actions, then the WhatsApp gateway workflow, then Run workflow. The first run
-takes about two minutes to come up. Then pair a number from the dashboard:
-Workspace, WhatsApp, Connect, and scan the QR.
+takes about two minutes. Then pair a number from the dashboard: Workspace,
+WhatsApp, Connect, and scan the QR.
 
 ---
 
 ## Checking on it
 
-The run's own log is the honest answer to whether it is alive. Beyond that:
+The run's own log is the honest answer to whether it is alive. It prints the
+address the tunnel got. Beyond that:
 
 ```bash
-# is the gateway reachable at all
-curl -s https://<your ngrok domain>/health
+# where the platform is currently sending
+curl -s -H "x-admin-token: <ADMIN_TOKEN>" \
+  https://goldoak.vercel.app/api/admin/gateway
 
-# what the platform thinks
-curl -s https://goldoak.vercel.app/api/health
+# is that address answering
+curl -s <that address>/health
 ```
 
 The Super Admin console lists every connected number with its status under
@@ -126,13 +120,18 @@ When you move to a real server, disable the workflow so it stops burning runs:
 
 Actions, the WhatsApp gateway workflow, the three-dot menu, Disable workflow.
 
-Then set `WAHA_BASE_URL` on Vercel to the new server and redeploy. The session
-in Supabase can be downloaded, decrypted and dropped into the new machine's
-`sessions` folder if you want to avoid re-pairing:
+Then set `WAHA_BASE_URL` on Vercel to the new server and redeploy, which pins
+the address and ignores anything a runner published.
+
+The saved session can be pulled down, decrypted and dropped into the new
+machine's `sessions` folder if you want to avoid re-pairing:
 
 ```bash
-openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:<SESSION_PASSPHRASE> \
-  -in waha-sessions.tar.gz.enc | tar -xz -C /opt/goldoak-gateway/sessions
+curl -s -H "x-admin-token: <ADMIN_TOKEN>" \
+  https://goldoak.vercel.app/api/admin/gateway/session \
+  | jq -r .payload | base64 -d \
+  | openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:<SESSION_PASSPHRASE> \
+  | tar -xz -C /opt/goldoak-gateway/sessions
 ```
 
 ---
@@ -142,9 +141,9 @@ openssl enc -d -aes-256-cbc -pbkdf2 -pass pass:<SESSION_PASSPHRASE> \
 | Symptom | Cause, usually |
 |---|---|
 | Messages stop for hours | Scheduled runs disabled after sixty days of no pushes, or GitHub is delaying cron |
-| Every run asks for a new QR | The session is not being saved. Check the bucket name, and that the service role key can write to it |
-| Tunnel fails to start | The ngrok domain is already claimed by another running tunnel. Only one at a time on the free plan |
-| Gateway healthy, Vercel cannot reach it | `WAHA_BASE_URL` does not match the ngrok domain, or the API keys differ between the two sides |
+| Every run asks for a new QR | The session is not being saved. The run's log says which step failed and with what status |
+| Tunnel fails to start | Only if you added the ngrok secrets: the domain is already claimed by another running tunnel |
+| Gateway healthy, Vercel cannot reach it | `WAHA_BASE_URL` is pinned to a stale address, or the API keys differ between the two sides. `GET /api/admin/gateway` shows what the platform believes |
 | Two runs at once | Should not happen; the workflow uses a concurrency group. If it does, cancel the older run |
 
 ---

@@ -1,4 +1,5 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
+import { GATEWAY_URL_KEY, getSetting } from '@/lib/platform/settings'
 import type { InboundMedia, InboundMediaKind, InboundMessage, OutboundDocument, WhatsAppProvider } from '@/lib/whatsapp/provider'
 
 /**
@@ -20,8 +21,26 @@ import type { InboundMedia, InboundMediaKind, InboundMessage, OutboundDocument, 
  * fetched back with the same API key.
  */
 
+/**
+ * The address from the build's environment, when it is pinned to one. Only
+ * WAHA_BASE_URL pins it: OPENWA_BASE_URL belongs to the older provider, and
+ * letting it pin this one would stop the gateway from publishing where it
+ * really is.
+ */
 export function wahaBase(): string {
-  return (process.env.WAHA_BASE_URL ?? process.env.OPENWA_BASE_URL ?? '').replace(/\/$/, '')
+  return (process.env.WAHA_BASE_URL ?? '').replace(/\/$/, '')
+}
+
+/**
+ * Where the gateway actually is. A pinned address wins; otherwise the one the
+ * gateway last published, which is how a tunnel that changes address on every
+ * restart stays usable without redeploying.
+ */
+export async function resolveWahaBase(): Promise<string> {
+  const pinned = wahaBase()
+  if (pinned) return pinned
+  const published = await getSetting(GATEWAY_URL_KEY)
+  return (published ?? '').replace(/\/$/, '')
 }
 
 export function wahaApiKey(): string {
@@ -33,8 +52,14 @@ export function wahaDefaultSession(): string {
   return process.env.WAHA_SESSION ?? process.env.OPENWA_SESSION_ID ?? 'default'
 }
 
+/** True when the address is pinned in the environment. */
 export function wahaConfigured(): boolean {
   return Boolean(wahaBase() && wahaApiKey())
+}
+
+/** True when the gateway is reachable at all, pinned or published. */
+export async function wahaReady(): Promise<boolean> {
+  return Boolean(wahaApiKey() && (await resolveWahaBase()))
 }
 
 function chatId(phone: string): string {
@@ -48,16 +73,24 @@ function filePayload(doc: OutboundDocument): Record<string, unknown> {
     : { mimetype: doc.mimetype, data: doc.base64, filename: doc.filename }
 }
 
+/** The provider pointed at wherever the gateway currently is. */
+export async function wahaProvider(sessionId?: string): Promise<WahaProvider | null> {
+  const base = await resolveWahaBase()
+  if (!base || !wahaApiKey()) return null
+  return new WahaProvider(sessionId, base)
+}
+
 export class WahaProvider implements WhatsAppProvider {
   readonly name = 'waha' as const
 
-  private base = wahaBase()
+  private base: string
   private apiKey = wahaApiKey()
   private session: string
 
   /** Bound to one session: the shared number by default, or an agency's own. */
-  constructor(sessionId?: string) {
+  constructor(sessionId?: string, base?: string) {
     this.session = sessionId ?? wahaDefaultSession()
+    this.base = (base ?? wahaBase()).replace(/\/$/, '')
   }
 
   get sessionId(): string {

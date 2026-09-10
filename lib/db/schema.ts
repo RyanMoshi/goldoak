@@ -434,6 +434,27 @@ CREATE INDEX IF NOT EXISTS whatsapp_channels_org_idx ON whatsapp_channels(organi
 -- WAHA joined the provider list once the gateway gained one session per agency.
 ALTER TABLE whatsapp_channels DROP CONSTRAINT IF EXISTS whatsapp_channels_provider_check;
 ALTER TABLE whatsapp_channels ADD CONSTRAINT whatsapp_channels_provider_check CHECK (provider IN ('waha', 'openwa', 'meta'));
+
+-- Small platform-wide values that change while the app is running, so they
+-- cannot live in the build's environment. The gateway's address is the first:
+-- a tunnel hands out a new one every time it restarts, and the gateway
+-- publishes it here rather than the deployment being rebuilt.
+CREATE TABLE IF NOT EXISTS platform_settings (
+  key        text PRIMARY KEY,
+  value      text,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+-- The WhatsApp pairing, encrypted before it ever leaves the gateway machine.
+-- A temporary gateway on a disposable runner saves it here on shutdown and
+-- restores it on start, so a restart never costs a re-scan. The platform
+-- cannot read what is stored: the passphrase lives only on the gateway.
+CREATE TABLE IF NOT EXISTS gateway_session_backups (
+  id         text PRIMARY KEY,
+  payload    text NOT NULL,
+  size_bytes integer,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
 ALTER TABLE whatsapp_contacts ADD COLUMN IF NOT EXISTS channel_id text;
 ALTER TABLE conversation_messages ADD COLUMN IF NOT EXISTS channel text NOT NULL DEFAULT 'whatsapp';
 

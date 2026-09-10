@@ -1,6 +1,6 @@
 import { MetaProvider } from '@/lib/whatsapp/providers/meta'
 import { OpenWAProvider } from '@/lib/whatsapp/providers/openwa'
-import { WahaProvider, wahaConfigured } from '@/lib/whatsapp/providers/waha'
+import { WahaProvider, wahaConfigured, wahaProvider, wahaReady } from '@/lib/whatsapp/providers/waha'
 
 /**
  * WhatsApp is a channel, not the system. Providers only send messages and
@@ -71,6 +71,16 @@ export function whatsappConfigured(): boolean {
   return getProvider() !== null
 }
 
+/**
+ * Whether a message can actually be sent right now. Unlike whatsappConfigured
+ * this also counts a gateway that published its address at runtime, which is
+ * the normal case behind a tunnel.
+ */
+export async function whatsappReady(): Promise<boolean> {
+  if (await wahaReady()) return true
+  return getProvider() !== null
+}
+
 /** The provider bound to an agency's own channel, or the shared gateway. */
 export async function providerForOrganization(organizationId?: string | null): Promise<WhatsAppProvider | null> {
   if (organizationId) {
@@ -78,14 +88,18 @@ export async function providerForOrganization(organizationId?: string | null): P
       const { channelForOrganization } = await import('@/lib/whatsapp/channels')
       const channel = await channelForOrganization(organizationId)
       if (channel?.sessionId && channel.status === 'ready') {
-        if (channel.provider === 'waha' && wahaConfigured()) return new WahaProvider(channel.sessionId)
+        if (channel.provider === 'waha') {
+          const provider = await wahaProvider(channel.sessionId)
+          if (provider) return provider
+        }
         if (channel.provider === 'openwa' && process.env.OPENWA_BASE_URL && process.env.OPENWA_API_KEY) return new OpenWAProvider(channel.sessionId)
       }
     } catch (error) {
       console.error('channel lookup failed', error instanceof Error ? error.message : error)
     }
   }
-  return getProvider()
+  // The shared line, wherever the gateway currently is.
+  return (await wahaProvider()) ?? getProvider()
 }
 
 /** The number people message. Never shown as digits on the site; used only to build wa.me links. */

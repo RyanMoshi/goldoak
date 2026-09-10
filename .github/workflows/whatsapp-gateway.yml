@@ -1,16 +1,16 @@
 # Temporary WhatsApp gateway on a GitHub runner.
 #
 # This is a stopgap for testing while there is no server. It runs the same WAHA
-# gateway the real deployment runs, reachable through a tunnel at a fixed
-# address, and hands over to a fresh run before GitHub's six-hour job limit
-# kills it.
+# gateway the real deployment runs, opens a tunnel to it, tells the platform
+# where to find it, and hands over to a fresh run before GitHub's six-hour job
+# limit ends it.
 #
 # Read deploy/github/README.md before switching it on. It explains the limits,
 # what breaks, and how to turn it off.
 #
 # The WhatsApp session is never stored in this repository. It is encrypted on
-# the runner and kept in Supabase Storage, and only the passphrase - held as a
-# repository secret - can open it.
+# the runner with a passphrase held as a repository secret, then kept in the
+# platform's own database. Nothing that can read the database can open it.
 
 name: WhatsApp gateway (temporary)
 
@@ -28,21 +28,25 @@ concurrency:
 permissions:
   contents: read
 
+env:
+  SESSION_ARCHIVE: waha-sessions.tar.gz.enc
+  SITE_URL: ${{ vars.SITE_URL || 'https://goldoak.vercel.app' }}
+
 jobs:
   gateway:
     runs-on: ubuntu-latest
     # Just under GitHub's six-hour ceiling, so the shutdown steps always run.
     timeout-minutes: 350
-    env:
-      SESSION_ARCHIVE: waha-sessions.tar.gz.enc
-      BUCKET: ${{ secrets.SESSION_BUCKET }}
 
     steps:
       - name: Check the settings are present
+        env:
+          WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
+          SESSION_PASSPHRASE: ${{ secrets.SESSION_PASSPHRASE }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
         run: |
           missing=""
-          for v in WAHA_API_KEY NGROK_AUTHTOKEN NGROK_DOMAIN SUPABASE_URL \
-                   SUPABASE_SERVICE_ROLE_KEY SESSION_BUCKET SESSION_PASSPHRASE; do
+          for v in WAHA_API_KEY SESSION_PASSPHRASE ADMIN_TOKEN; do
             [ -z "${!v}" ] && missing="$missing $v"
           done
           if [ -n "$missing" ]; then
@@ -50,35 +54,31 @@ jobs:
             echo "See deploy/github/README.md for what each one is."
             exit 1
           fi
-        env:
-          WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
-          NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
-          NGROK_DOMAIN: ${{ secrets.NGROK_DOMAIN }}
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
-          SESSION_BUCKET: ${{ secrets.SESSION_BUCKET }}
-          SESSION_PASSPHRASE: ${{ secrets.SESSION_PASSPHRASE }}
+          echo "All required secrets are set. Platform: $SITE_URL"
 
       - uses: actions/checkout@v4
 
       - name: Restore the WhatsApp session
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           SESSION_PASSPHRASE: ${{ secrets.SESSION_PASSPHRASE }}
         run: |
           mkdir -p sessions media
-          code=$(curl -s -o "$SESSION_ARCHIVE" -w '%{http_code}' \
-            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-            "$SUPABASE_URL/storage/v1/object/$BUCKET/$SESSION_ARCHIVE" || echo 000)
-          if [ "$code" = "200" ] && [ -s "$SESSION_ARCHIVE" ]; then
-            openssl enc -d -aes-256-cbc -pbkdf2 -pass env:SESSION_PASSPHRASE \
-              -in "$SESSION_ARCHIVE" | tar -xz -C sessions
-            echo "Session restored; no QR needed."
+          code=$(curl -s -o saved.json -w '%{http_code}' \
+            -H "x-admin-token: $ADMIN_TOKEN" \
+            "$SITE_URL/api/admin/gateway/session" || echo 000)
+          if [ "$code" = "200" ]; then
+            jq -r '.payload' saved.json | base64 -d > "$SESSION_ARCHIVE"
+            if openssl enc -d -aes-256-cbc -pbkdf2 -pass env:SESSION_PASSPHRASE \
+                 -in "$SESSION_ARCHIVE" | tar -xz -C sessions; then
+              echo "Session restored; no QR needed."
+            else
+              echo '::warning::The saved session would not decrypt. Check SESSION_PASSPHRASE. A new QR will be needed.'
+            fi
           else
             echo "No saved session (HTTP $code). The first pairing will need a QR."
           fi
-          rm -f "$SESSION_ARCHIVE"
+          rm -f saved.json "$SESSION_ARCHIVE"
           # WAHA runs as uid 1000 inside the container.
           sudo chown -R 1000:1000 sessions media
 
@@ -109,24 +109,63 @@ jobs:
           echo "Gateway is up."
 
       - name: Open the tunnel
+        id: tunnel
         env:
           NGROK_AUTHTOKEN: ${{ secrets.NGROK_AUTHTOKEN }}
           NGROK_DOMAIN: ${{ secrets.NGROK_DOMAIN }}
         run: |
-          curl -sSL https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz \
-            | tar -xz -C /usr/local/bin ngrok
-          ngrok config add-authtoken "$NGROK_AUTHTOKEN"
-          # A reserved domain, so the address on Vercel never has to change.
-          nohup ngrok http 3000 --domain "$NGROK_DOMAIN" --log stdout > ngrok.log 2>&1 &
-          sleep 10
-          if ! grep -q 'started tunnel' ngrok.log; then
-            echo '::error::The tunnel did not start.'; tail -30 ngrok.log; exit 1
+          if [ -n "$NGROK_AUTHTOKEN" ] && [ -n "$NGROK_DOMAIN" ]; then
+            # A reserved domain, so the address never changes between runs.
+            curl -sSL https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz \
+              | tar -xz -C /usr/local/bin ngrok
+            ngrok config add-authtoken "$NGROK_AUTHTOKEN"
+            nohup ngrok http 3000 --domain "$NGROK_DOMAIN" --log stdout > tunnel.log 2>&1 &
+            sleep 10
+            grep -q 'started tunnel' tunnel.log \
+              || { echo '::error::The ngrok tunnel did not start.'; tail -30 tunnel.log; exit 1; }
+            URL="https://$NGROK_DOMAIN"
+          else
+            # No account needed. The address changes on every run, which is why
+            # the next step tells the platform where the gateway went.
+            curl -sSL -o cloudflared \
+              https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64
+            chmod +x cloudflared && sudo mv cloudflared /usr/local/bin/
+            nohup cloudflared tunnel --no-autoupdate --url http://127.0.0.1:3000 > tunnel.log 2>&1 &
+            URL=""
+            for i in $(seq 1 30); do
+              URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' tunnel.log | head -1 || true)
+              [ -n "$URL" ] && break
+              sleep 5
+            done
+            [ -n "$URL" ] \
+              || { echo '::error::The tunnel did not report an address.'; tail -30 tunnel.log; exit 1; }
           fi
-          echo "Reachable at https://$NGROK_DOMAIN"
+
+          for i in $(seq 1 20); do
+            curl -fsS --max-time 10 "$URL/health" >/dev/null 2>&1 && break
+            sleep 5
+          done
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "Reachable at $URL"
+
+      - name: Tell the platform where the gateway is
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          URL: ${{ steps.tunnel.outputs.url }}
+        run: |
+          code=$(curl -s -o response.json -w '%{http_code}' -X POST \
+            -H "x-admin-token: $ADMIN_TOKEN" \
+            -H 'Content-Type: application/json' \
+            -d "{\"url\":\"$URL\"}" \
+            "$SITE_URL/api/admin/gateway")
+          if [ "$code" != "200" ]; then
+            echo "::error::The platform rejected the address (HTTP $code)."
+            cat response.json || true
+            exit 1
+          fi
+          echo "The platform will send through $URL"
 
       - name: Hold the gateway open
-        env:
-          NGROK_DOMAIN: ${{ secrets.NGROK_DOMAIN }}
         run: |
           # Stay alive until shortly before GitHub would kill the job, checking
           # the gateway as we go. The next scheduled run takes over from here.
@@ -152,8 +191,7 @@ jobs:
         # Runs even when an earlier step failed, so a pairing is never lost.
         if: always()
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
           SESSION_PASSPHRASE: ${{ secrets.SESSION_PASSPHRASE }}
         run: |
           docker stop waha >/dev/null 2>&1 || true
@@ -163,15 +201,16 @@ jobs:
             exit 0
           fi
           tar -cz -C sessions . \
-            | openssl enc -aes-256-cbc -pbkdf2 -pass env:SESSION_PASSPHRASE -out "$SESSION_ARCHIVE"
-          code=$(curl -s -o /dev/null -w '%{http_code}' -X POST \
-            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-            -H 'Content-Type: application/octet-stream' \
-            -H 'x-upsert: true' \
-            --data-binary "@$SESSION_ARCHIVE" \
-            "$SUPABASE_URL/storage/v1/object/$BUCKET/$SESSION_ARCHIVE")
+            | openssl enc -aes-256-cbc -pbkdf2 -pass env:SESSION_PASSPHRASE \
+            | base64 -w0 > session.b64
+          code=$(curl -s -o /dev/null -w '%{http_code}' -X PUT \
+            -H "x-admin-token: $ADMIN_TOKEN" \
+            -H 'Content-Type: text/plain' \
+            --data-binary "@session.b64" \
+            "$SITE_URL/api/admin/gateway/session")
+          rm -f session.b64
           case "$code" in
-            200|201) echo "Session saved." ;;
+            200) echo "Session saved." ;;
             *) echo "::error::Could not save the session (HTTP $code). The next run will need a new QR." ; exit 1 ;;
           esac
 

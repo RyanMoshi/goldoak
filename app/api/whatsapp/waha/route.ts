@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { getSql, hasDatabase } from '@/lib/db/client'
 import { ensureSchema } from '@/lib/db/migrate'
 import { handleInbound, processInbound } from '@/lib/whatsapp/bot'
-import { acknowledgeChat, sendWhatsApp, whatsappConfigured } from '@/lib/whatsapp/provider'
+import { acknowledgeChat, sendWhatsApp, whatsappReady } from '@/lib/whatsapp/provider'
 import { parseWahaEvent, verifyWahaSignature, wahaDefaultSession } from '@/lib/whatsapp/providers/waha'
 import { runInBackground } from '@/lib/background'
 import { enqueue } from '@/services/jobs'
@@ -69,7 +69,7 @@ export async function POST(request: Request) {
     }
   }
 
-  if (!whatsappConfigured()) {
+  if (!(await whatsappReady())) {
     // No gateway: handle inline and echo, so the conversation can be tested end to end.
     const result = await handleInbound(message, channelOrganizationId)
     return NextResponse.json({ ok: true, sent: false, answered: result.answered, reply: result.replies.join('\n\n') })
