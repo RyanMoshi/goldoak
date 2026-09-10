@@ -28,7 +28,7 @@ export function SuperAdminSignIn({ next }: { next?: string }) {
     >
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <Field label="Email" htmlFor="sa-email" error={state.field === 'email' ? state.error : undefined}>
-        <input id="sa-email" name="email" type="email" autoComplete="username" required className={inputClass} placeholder="admin@goldoak.co.ke" aria-invalid={state.field === 'email'} />
+        <input id="sa-email" name="email" type="email" autoComplete="username" required className={inputClass} placeholder="you@example.com" aria-invalid={state.field === 'email'} />
       </Field>
       <Field label="Password" htmlFor="sa-password" error={state.field === 'password' ? state.error : undefined}>
         <input id="sa-password" name="password" type="password" autoComplete="current-password" required className={inputClass} aria-invalid={state.field === 'password'} />

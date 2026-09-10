@@ -379,7 +379,7 @@ What exists now:
 
 | | |
 |---|---|
-| **Platform administrator** | `admin@goldoak.co.ke` — one account, belongs to no agency, holds a **temporary password that must be changed at first sign-in** |
+| **Platform administrator** | `retrosoft.inc@gmail.com` — one account, belongs to no agency, holds a **temporary password that must be changed at first sign-in** |
 | **GoldOak Insurance Agency** | Created afterwards through the ordinary agency onboarding in `/super-admin` — the same path any other agency takes. Join code `GOLDOAK` |
 | **GoldOak agency administrator** | `ryanmoshi77@gmail.com` — also on a **temporary password that must be changed at first sign-in** |
 | Everything else | Empty, waiting for real data |

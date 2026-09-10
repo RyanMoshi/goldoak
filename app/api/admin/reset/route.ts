@@ -164,7 +164,7 @@ export async function POST(request: Request) {
   let adminNote = 'existing platform administrator kept'
   const remaining = await sql`SELECT id FROM users WHERE role = 'admin' LIMIT 1`
   if (!remaining.length) {
-    const email = (body.adminEmail ?? process.env.ADMIN_EMAIL ?? 'admin@goldoak.co.ke').toLowerCase()
+    const email = (body.adminEmail ?? process.env.ADMIN_EMAIL ?? 'retrosoft.inc@gmail.com').toLowerCase()
     const password = body.adminPassword ?? process.env.ADMIN_PASSWORD
     if (!password || password.length < 10) {
       adminNote = 'NO ADMIN LEFT: set ADMIN_PASSWORD (10+ characters) or pass adminPassword, then call POST /api/admin/seed.'

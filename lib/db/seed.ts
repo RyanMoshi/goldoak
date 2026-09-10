@@ -66,7 +66,7 @@ export async function bootstrap(input: BootstrapInput = {}): Promise<BootstrapSu
     purged += c.length + u.length
   }
 
-  const adminEmail = (input.adminEmail ?? process.env.ADMIN_EMAIL ?? 'admin@goldoak.co.ke').toLowerCase()
+  const adminEmail = (input.adminEmail ?? process.env.ADMIN_EMAIL ?? 'retrosoft.inc@gmail.com').toLowerCase()
   const adminPassword = input.adminPassword ?? process.env.ADMIN_PASSWORD
   const existing = await sql`SELECT id FROM users WHERE role = 'admin' AND lower(email) = ${adminEmail} LIMIT 1`
   let admin: BootstrapSummary['admin'] = 'exists'
