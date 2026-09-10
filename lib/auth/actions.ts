@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation'
 import { hashPassword, verifyPassword } from '@/lib/auth/password'
 import { SESSION_COOKIE, SESSION_DAYS, homeFor, signSession, type Role, type SessionPayload } from '@/lib/auth/session'
 import { getSession } from '@/lib/auth/server'
+import { setPendingCookie, signPending } from '@/lib/auth/pending'
+import { issueOtp } from '@/services/otp'
 import { DatabaseNotConfiguredError } from '@/lib/db/client'
 import { normalizePhone } from '@/lib/format'
 import { onClientSignedUp } from '@/services/automation'
@@ -70,6 +72,7 @@ export async function signInAction(formData: FormData): Promise<AuthState> {
   let role: Role
   let mustChange = false
   let multi = false
+  let challenge = false
   try {
     const user = await findUserWithSecret(email)
     const meta = requestMeta()
@@ -93,16 +96,34 @@ export async function signInAction(formData: FormData): Promise<AuthState> {
     if (user.role !== 'admin' && memberships.length === 0) {
       return { error: tab === 'agency' ? 'This email is a client account. Use the Client tab.' : 'This email is a staff account. Use the Agency tab.', field: 'email' }
     }
+    // A password is no longer enough. Issue a code and hand out a challenge
+    // rather than a session; lib/auth/login-actions.ts finishes the job.
+    const sent = await issueOtp({ email: user.email, purpose: 'login', userId: user.id, organizationId: user.organizationId, firstName: user.name.split(' ')[0] })
+    if (sent.ok || sent.reason === 'rate-limited') {
+      setPendingCookie(signPending({ uid: user.id, email: user.email, door: 'signin', tab, next: safeNext(formData.get('next'), user.role === 'admin' ? 'admin' : memberships[0]?.role ?? 'client') }))
+      await audit({ organizationId: user.organizationId, actorUserId: user.id, action: 'auth.otp-challenged', target: user.id, detail: { ...meta, tab } })
+      challenge = true
+    } else {
+      // Email is not configured on the server. Refusing every sign-in would be
+      // worse than proceeding, so the password stands and the gap is recorded.
+      console.error('login OTP could not be sent:', sent.reason)
+      await audit({ organizationId: user.organizationId, actorUserId: user.id, action: 'auth.otp-skipped', target: user.id, detail: { ...meta, reason: sent.reason } })
+    }
+
     multi = user.role !== 'admin' && memberships.length > 1
     role = user.role === 'admin' ? 'admin' : memberships[0].role
     mustChange = user.mustChangePassword
     token = await sessionFor(user, user.role === 'admin' ? null : memberships[0])
-    await recordLogin(user.id)
-    await audit({ organizationId: user.organizationId, actorUserId: user.id, action: 'auth.signed-in', target: user.id, detail: { ...meta, tab, memberships: memberships.length } })
+    if (!challenge) {
+      await recordLogin(user.id)
+      await audit({ organizationId: user.organizationId, actorUserId: user.id, action: 'auth.signed-in', target: user.id, detail: { ...meta, tab, memberships: memberships.length } })
+    }
     void sendTemplateEmail({ key: 'security-login', to: user.email, organizationId: user.organizationId, userId: user.id, vars: { first_name: user.name.split(' ')[0], login_time: new Date().toUTCString(), ip: meta.ip, device: meta.agent }, category: 'security' }).catch(() => null)
   } catch (error) {
     return friendly(error)
   }
+
+  if (challenge) redirect('/verify-login')
 
   setSessionCookie(token)
   if (mustChange) redirect('/account/password?first=1')
@@ -357,6 +378,7 @@ export async function superAdminSignInAction(formData: FormData): Promise<AuthSt
 
   let token: string
   let mustChange = false
+  let challenge = false
   try {
     const user = await findUserWithSecret(email)
     const meta = requestMeta()
@@ -372,16 +394,31 @@ export async function superAdminSignInAction(formData: FormData): Promise<AuthSt
       return { error: 'That email and password do not match a platform administrator.', field: 'password' }
     }
     mustChange = user.mustChangePassword
+    // The platform console is the last place that should take a password alone.
+    const wanted = String(formData.get('next') ?? '')
+    const next = wanted.startsWith('/super-admin') || wanted.startsWith('/superagent') ? wanted : '/super-admin'
+    const sent = await issueOtp({ email: user.email, purpose: 'login', userId: user.id, organizationId: null, firstName: user.name.split(' ')[0] })
+    if (sent.ok || sent.reason === 'rate-limited') {
+      setPendingCookie(signPending({ uid: user.id, email: user.email, door: 'super-admin', tab: 'agency', next }))
+      await audit({ organizationId: null, actorUserId: user.id, action: 'auth.otp-challenged', target: user.id, detail: { ...meta, console: 'super-admin' } })
+      challenge = true
+    } else {
+      console.error('super admin OTP could not be sent:', sent.reason)
+      await audit({ organizationId: null, actorUserId: user.id, action: 'auth.otp-skipped', target: user.id, detail: { ...meta, console: 'super-admin', reason: sent.reason } })
+    }
     token = await signSession({ uid: user.id, role: 'admin', oid: user.organizationId ?? DEFAULT_ORGANIZATION_ID, name: user.name, mcp: mustChange || undefined })
-    await recordLogin(user.id)
-    await audit({ organizationId: null, actorUserId: user.id, action: 'auth.signed-in', target: user.id, detail: { ...meta, console: 'super-admin' } })
+    if (!challenge) {
+      await recordLogin(user.id)
+      await audit({ organizationId: null, actorUserId: user.id, action: 'auth.signed-in', target: user.id, detail: { ...meta, console: 'super-admin' } })
+    }
     void sendTemplateEmail({ key: 'security-login', to: user.email, organizationId: null, userId: user.id, vars: { first_name: user.name.split(' ')[0], login_time: new Date().toUTCString(), ip: meta.ip, device: meta.agent }, category: 'security' }).catch(() => null)
   } catch (error) {
     return friendly(error)
   }
 
+  if (challenge) redirect('/verify-login')
   setSessionCookie(token)
   if (mustChange) redirect('/account/password?first=1')
-  const next = String(formData.get('next') ?? '')
-  redirect(next.startsWith('/super-admin') || next.startsWith('/superagent') ? next : '/super-admin')
+  const wanted = String(formData.get('next') ?? '')
+  redirect(wanted.startsWith('/super-admin') || wanted.startsWith('/superagent') ? wanted : '/super-admin')
 }

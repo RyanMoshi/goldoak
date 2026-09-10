@@ -26,6 +26,10 @@ function fmt(amount: number, currency: string): string {
 
 export function BillingTable({ rows, kind }: { rows: BillingListRow[]; kind: BillingKind }) {
   const label = kind === 'quote' ? 'quotation' : 'invoice'
+  // The route segment is plural; `kind` is singular. Getting this wrong is what
+  // made every row link 404.
+  const section = kind === 'quote' ? 'quotes' : 'invoices'
+  const linkTo = (id: string) => `/agency/billing/${section}/${id}`
   if (!rows.length) {
     return (
       <Card flush>
@@ -47,7 +51,7 @@ export function BillingTable({ rows, kind }: { rows: BillingListRow[]; kind: Bil
       <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 md:hidden">
         {rows.map((r) => (
           <li key={r.id}>
-            <Link href={`/agency/billing/${r.id}`} className="block rounded-card border border-line bg-surface p-4 focus-ring hover:border-ink-faint">
+            <Link href={linkTo(r.id)} className="block rounded-card border border-line bg-surface p-4 focus-ring hover:border-ink-faint">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-[14.5px] font-bold text-ink">{r.customerName}</p>
@@ -87,7 +91,7 @@ export function BillingTable({ rows, kind }: { rows: BillingListRow[]; kind: Bil
             {rows.map((r) => (
               <tr key={r.id} className="border-b border-divider last:border-b-0 hover:bg-surface-3">
                 <td className="px-4 py-3">
-                  <Link href={`/agency/billing/${r.id}`} className="font-mono text-[12.5px] font-semibold text-forest hover:underline focus-ring">
+                  <Link href={linkTo(r.id)} className="font-mono text-[12.5px] font-semibold text-forest hover:underline focus-ring">
                     {r.number}
                   </Link>
                 </td>
