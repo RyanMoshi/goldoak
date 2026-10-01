@@ -36,7 +36,8 @@ jobs:
   gateway:
     runs-on: ubuntu-latest
     # Just under GitHub's six-hour ceiling, so the shutdown steps always run.
-    timeout-minutes: 350
+    # Reduced from 350 to 340 to give a larger buffer before the 6-hour hard limit.
+    timeout-minutes: 340
 
     steps:
       - name: Check the settings are present
@@ -82,11 +83,21 @@ jobs:
           # WAHA runs as uid 1000 inside the container.
           sudo chown -R 1000:1000 sessions media
 
+      - name: Set up swap to prevent OOM
+        run: |
+          sudo fallocate -l 2G /swapfile
+          sudo chmod 600 /swapfile
+          sudo mkswap /swapfile
+          sudo swapon /swapfile
+          echo "Swap enabled: $(free -h | grep Swap)"
+
       - name: Start the gateway
         env:
           WAHA_API_KEY: ${{ secrets.WAHA_API_KEY }}
         run: |
           docker run -d --name waha \
+            --memory=2g \
+            --cpus=1 \
             -p 127.0.0.1:3000:3000 \
             -e TZ=Africa/Nairobi \
             -e WHATSAPP_DEFAULT_ENGINE=NOWEB \
@@ -172,7 +183,7 @@ jobs:
         run: |
           # Stay alive until shortly before GitHub would kill the job, checking
           # the gateway as we go. The next scheduled run takes over from here.
-          END=$(( $(date +%s) + 340 * 60 ))
+          END=$(( $(date +%s) + 330 * 60 ))
           FAILS=0
           while [ "$(date +%s)" -lt "$END" ]; do
             if curl -fsS --max-time 10 -H "X-Api-Key: $WAHA_API_KEY" http://127.0.0.1:3000/health >/dev/null 2>&1; then
@@ -184,7 +195,13 @@ jobs:
                 echo '::warning::Gateway unhealthy three times; restarting it.'
                 docker restart waha || true
                 FAILS=0
+                # Give it a moment to come back up
+                sleep 15
               fi
+            fi
+            # Log memory usage periodically to catch leaks early
+            if [ $(( $(date +%s) % 300 )) -eq 0 ]; then
+              docker stats waha --no-stream --format "table {{.MemUsage}}\t{{.CPUPerc}}" || true
             fi
             sleep 60
           done
